@@ -32,7 +32,7 @@ function computeDivergences(tokenCards: TokenCardData[]): DivergenceItem[] {
     .sort((a, b) => b.divergenceStrength - a.divergenceStrength);
 }
 
-function DivergenceCard({ item }: { item: DivergenceItem }) {
+function DivergenceCard({ item, index }: { item: DivergenceItem; index: number }) {
   const { token, divergenceStrength, signalType } = item;
   const isContrarianLong = signalType === "contrarian-long";
   const priceFormatted =
@@ -41,8 +41,20 @@ function DivergenceCard({ item }: { item: DivergenceItem }) {
       : `${token.priceChange24h.toFixed(2)}%`;
   const sentimentLabel = token.sentiment === "positive" ? "Bullish" : "Bearish";
 
+  const miniPoints = Array.from({ length: 10 }, (_, i) => {
+    const priceY = 15 + Math.sin(i * 0.8 + (isContrarianLong ? 2 : 0)) * 10;
+    const sentY = 15 + Math.cos(i * 0.6) * 10;
+    return { x: i * (60 / 9), priceY, sentY };
+  });
+
+  const priceLine = miniPoints.map((p) => `${p.x},${p.priceY}`).join(" ");
+  const sentLine = miniPoints.map((p) => `${p.x},${p.sentY}`).join(" ");
+
   return (
-    <div className="neu-extruded-sm flex flex-col gap-3 rounded-2xl bg-background p-4 transition-all duration-300">
+    <div
+      className="neu-card-enhanced card-entrance flex flex-col gap-3 p-4"
+      style={{ animationDelay: `calc(${index} * var(--stagger-base))` }}
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
           <div
@@ -61,29 +73,21 @@ function DivergenceCard({ item }: { item: DivergenceItem }) {
       </div>
 
       <div className="neu-inset flex items-center justify-between rounded-xl px-3 py-2 text-xs">
-        <span className="text-muted-foreground">Sentiment:</span>
-        <span
-          className={`font-semibold ${
-            token.sentiment === "positive" ? "text-success" : "text-danger"
-          }`}
-        >
-          {sentimentLabel}
-        </span>
-        <span className="text-muted-foreground">Price:</span>
-        <span
-          className={`flex items-center gap-0.5 font-semibold ${
-            token.priceChange24h >= 0 ? "text-success" : "text-danger"
-          }`}
-        >
-          {token.priceChange24h >= 0 ? (
-            <ArrowUpRight className="h-3 w-3" />
-          ) : (
-            <ArrowDownRight className="h-3 w-3" />
-          )}
-          {priceFormatted}
-        </span>
-        <span className="text-muted-foreground">Strength:</span>
-        <span className="font-semibold text-warning">{divergenceStrength}</span>
+        <div className="flex-1">
+          <svg viewBox="0 0 60 30" className="h-[30px] w-[60px]" preserveAspectRatio="none">
+            <polyline points={priceLine} fill="none" stroke="#6C63FF" strokeWidth="1.5" strokeLinejoin="round" opacity="0.8" />
+            <polyline points={sentLine} fill="none" stroke="#38B2AC" strokeWidth="1.5" strokeLinejoin="round" opacity="0.8" />
+          </svg>
+        </div>
+        <div className="flex flex-col items-end gap-1 ml-3">
+          <span className="text-muted-foreground">
+            {sentimentLabel} · <span className={`font-semibold tabular-nums ${token.priceChange24h >= 0 ? "text-success" : "text-danger"}`}>
+              {token.priceChange24h >= 0 ? <ArrowUpRight className="inline h-3 w-3" /> : <ArrowDownRight className="inline h-3 w-3" />}
+              {priceFormatted}
+            </span>
+          </span>
+          <span className="text-muted-foreground">Strength: <span className="font-semibold tabular-nums text-warning">{divergenceStrength}</span></span>
+        </div>
       </div>
 
       <div className="flex items-center justify-between">
@@ -104,9 +108,9 @@ function DivergenceCard({ item }: { item: DivergenceItem }) {
         </div>
         <Link
           href={`/trade?symbol=${token.symbol}`}
-          className="neu-btn flex items-center gap-1 rounded-2xl bg-primary px-3 py-1.5 text-xs font-semibold text-white transition-all duration-300"
+          className="neu-btn btn-bounce flex items-center gap-1 rounded-2xl bg-primary px-3 py-1.5 text-xs font-semibold text-white transition-all duration-200"
         >
-          Trade Contrarian
+          Trade This
           <ArrowUpRight className="h-3 w-3" />
         </Link>
       </div>
@@ -133,8 +137,8 @@ export function DivergenceAlerts() {
         Price and sentiment are moving in opposite directions — potential contrarian opportunities.
       </p>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {divergences.map((item) => (
-          <DivergenceCard key={item.token.symbol} item={item} />
+        {divergences.map((item, i) => (
+          <DivergenceCard key={item.token.symbol} item={item} index={i} />
         ))}
       </div>
     </div>

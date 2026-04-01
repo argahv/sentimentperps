@@ -13,6 +13,9 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { useState, useMemo } from "react";
+import { EarningsProjection } from "@/components/ui/EarningsProjection";
+import { ReferralLeaderboard } from "@/components/ui/ReferralLeaderboard";
+import { ShareCardPreview } from "@/components/ui/ShareCardPreview";
 
 interface ReferralStats {
   totalReferred: number;
@@ -65,7 +68,7 @@ export default function ReferralContent() {
 
   if (privyReady && !authenticated) {
     return (
-      <div className="flex flex-col items-center justify-center gap-4 p-12">
+      <div className="flex flex-col items-center justify-center gap-4 p-12 page-enter">
         <div className="neu-icon-well flex h-16 w-16 items-center justify-center rounded-2xl text-primary">
           <Share2 className="h-8 w-8" />
         </div>
@@ -85,15 +88,15 @@ export default function ReferralContent() {
   }
 
   return (
-    <div className="flex flex-col gap-6 p-6">
-      <div>
+    <div className="flex flex-col gap-6 p-6 page-enter">
+      <div className="card-entrance" style={{ animationDelay: "calc(0 * var(--stagger-base, 100ms))" }}>
         <h1 className="font-display text-2xl font-bold">Referral Program</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Share your link, earn rewards when friends trade. Powered by Fuul.
         </p>
       </div>
 
-      <div className="neu-extruded rounded-[32px] bg-primary/5 p-5">
+      <div className="neu-extruded rounded-[32px] bg-primary/5 p-5 card-entrance" style={{ animationDelay: "calc(1 * var(--stagger-base, 100ms))" }}>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-medium text-muted-foreground mb-1">Your Referral Link</p>
@@ -122,47 +125,58 @@ export default function ReferralContent() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <div className="neu-extruded-sm flex items-center gap-3 rounded-2xl bg-background p-4">
+        <div className="neu-extruded-sm flex items-center gap-3 rounded-2xl bg-background p-4 card-entrance" style={{ animationDelay: "calc(2 * var(--stagger-base, 100ms))" }}>
           <div className="neu-icon-well flex h-10 w-10 items-center justify-center rounded-xl text-primary shrink-0">
             <Users className="h-5 w-5" />
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Referred</p>
-            <p className="text-lg font-bold">{DEMO_STATS.totalReferred}</p>
+            <p className="text-lg font-bold tabular-nums">{DEMO_STATS.totalReferred}</p>
           </div>
         </div>
-        <div className="neu-extruded-sm flex items-center gap-3 rounded-2xl bg-background p-4">
+        <div className="neu-extruded-sm flex items-center gap-3 rounded-2xl bg-background p-4 card-entrance" style={{ animationDelay: "calc(3 * var(--stagger-base, 100ms))" }}>
           <div className="neu-icon-well flex h-10 w-10 items-center justify-center rounded-xl text-success shrink-0">
             <Users className="h-5 w-5" />
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Active</p>
-            <p className="text-lg font-bold">{DEMO_STATS.activeTradors}</p>
+            <p className="text-lg font-bold tabular-nums">{DEMO_STATS.activeTradors}</p>
           </div>
         </div>
-        <div className="neu-extruded-sm flex items-center gap-3 rounded-2xl bg-background p-4">
+        <div className="neu-extruded-sm flex items-center gap-3 rounded-2xl bg-background p-4 card-entrance" style={{ animationDelay: "calc(4 * var(--stagger-base, 100ms))" }}>
           <div className="neu-icon-well flex h-10 w-10 items-center justify-center rounded-xl text-amber-500 shrink-0">
             <DollarSign className="h-5 w-5" />
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Earned</p>
-            <p className="text-lg font-bold text-success">${DEMO_STATS.totalEarned}</p>
+            <p className="text-lg font-bold text-success tabular-nums">${DEMO_STATS.totalEarned}</p>
           </div>
         </div>
-        <div className="neu-extruded-sm flex items-center gap-3 rounded-2xl bg-background p-4">
+        <div className="neu-extruded-sm flex items-center gap-3 rounded-2xl bg-background p-4 card-entrance" style={{ animationDelay: "calc(5 * var(--stagger-base, 100ms))" }}>
           <div className="neu-icon-well flex h-10 w-10 items-center justify-center rounded-xl text-orange-500 shrink-0">
             <Gift className="h-5 w-5" />
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Pending</p>
-            <p className="text-lg font-bold">${DEMO_STATS.pendingRewards}</p>
+            <p className="text-lg font-bold tabular-nums">${DEMO_STATS.pendingRewards}</p>
           </div>
         </div>
       </div>
 
-      <div className="neu-extruded rounded-[32px] bg-background overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4">
-          <h3 className="text-sm font-semibold">Referred Users</h3>
+      <div className="card-entrance" style={{ animationDelay: "calc(6 * var(--stagger-base, 100ms))" }}>
+        <EarningsProjection 
+          currentEarnings={DEMO_STATS.totalEarned} 
+          referralCount={DEMO_STATS.totalReferred} 
+        />
+      </div>
+
+      <div className="card-entrance" style={{ animationDelay: "calc(7 * var(--stagger-base, 100ms))" }}>
+        <ReferralLeaderboard currentUserAddress={address} />
+      </div>
+
+      <div className="neu-extruded rounded-[32px] bg-background overflow-hidden card-entrance" style={{ animationDelay: "calc(8 * var(--stagger-base, 100ms))" }}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-primary/5">
+          <h3 className="text-sm font-semibold">Activity Timeline</h3>
           <a
             href="https://app.fuul.xyz"
             target="_blank"
@@ -172,22 +186,43 @@ export default function ReferralContent() {
             View on Fuul <ExternalLink className="h-3 w-3" />
           </a>
         </div>
-        <div className="px-1">
-          {DEMO_REFERRALS.map((ref) => (
-            <div key={ref.address} className="flex items-center justify-between px-4 py-3 mx-1 mb-1 rounded-xl transition-colors hover:bg-background/80">
-              <div className="flex flex-col gap-0.5">
-                <span className="text-sm font-mono font-medium">{ref.address}</span>
-                <span className="text-[10px] text-muted-foreground">
-                  Joined {ref.joinedAt} | {ref.trades} trades
-                </span>
+        <div className="p-5">
+          <div className="relative">
+            <div className="absolute left-[15px] top-0 bottom-0 w-0.5 bg-primary/20" />
+            {DEMO_REFERRALS.map((ref, idx) => (
+              <div 
+                key={ref.address} 
+                className="relative flex gap-4 pb-6 card-entrance" 
+                style={{ animationDelay: `calc(${idx + 9} * var(--stagger-base, 100ms))` }}
+              >
+                <div className="relative z-10 shrink-0 flex h-[30px] w-[30px] items-center justify-center">
+                  <div className={`h-2.5 w-2.5 rounded-full ${ref.trades > 5 ? 'bg-primary' : 'bg-gray-400 opacity-50'}`} />
+                </div>
+                <div className="flex-1 neu-extruded-sm rounded-2xl bg-background p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-sm font-mono font-medium">{ref.address}</span>
+                    <span className="text-[10px] text-muted-foreground">Joined {ref.joinedAt}</span>
+                  </div>
+                  <div className="flex flex-col sm:items-end gap-1">
+                    <span className="text-sm font-semibold text-success tabular-nums">+${(ref.earned).toFixed(2)}</span>
+                    <span className="text-[10px] text-muted-foreground tabular-nums">{ref.trades} trades</span>
+                  </div>
+                </div>
               </div>
-              <span className="text-sm font-semibold text-success">+${ref.earned}</span>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="neu-extruded-sm rounded-2xl bg-background p-4">
+      <div className="card-entrance" style={{ animationDelay: "calc(14 * var(--stagger-base, 100ms))" }}>
+        <ShareCardPreview 
+          referralCode={referralCode} 
+          totalEarnings={DEMO_STATS.totalEarned} 
+          referralCount={DEMO_STATS.totalReferred} 
+        />
+      </div>
+
+      <div className="neu-extruded-sm rounded-2xl bg-background p-4 card-entrance" style={{ animationDelay: "calc(15 * var(--stagger-base, 100ms))" }}>
         <h3 className="text-sm font-semibold mb-2">How it Works</h3>
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="flex gap-3">

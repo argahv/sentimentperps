@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { useMarketsStore } from "@/stores/markets";
 
 const MARKETS_API = "/api/markets";
-const POLL_INTERVAL = 60_000; // refresh every 60s
+const POLL_INTERVAL = 60_000;
 
 export function useMarkets() {
   const setMarkets = useMarketsStore((s) => s.setMarkets);
@@ -27,8 +27,8 @@ export function useMarkets() {
           setMarkets(data.markets ?? []);
           fetchedRef.current = true;
         }
-      } catch {
-        // silent — markets will stay empty, UI will show "not available"
+      } catch (err) {
+        console.error("[useMarkets]", err);
       } finally {
         if (!cancelled) setLoading(false);
       }

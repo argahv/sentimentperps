@@ -83,7 +83,11 @@ function generateDemoEntries(period: LeaderboardPeriod): LeaderboardEntry[] {
     };
   })
     .sort((a, b) => b.totalScore - a.totalScore)
-    .map((entry, i) => ({ ...entry, rank: i + 1 }));
+    .map((entry, i) => ({ 
+      ...entry, 
+      rank: i + 1,
+      previousRank: Math.max(1, i + 1 + Math.floor((rng() - 0.3) * 6))
+    }));
 }
 
 function getDemoBadges(userId: string): BadgeType[] {

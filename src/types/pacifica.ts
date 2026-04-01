@@ -3,21 +3,65 @@
 // REST: https://api.pacifica.fi/api/v1 (prod) | https://test-api.pacifica.fi/api/v1 (testnet)
 // WS: wss://ws.pacifica.fi/ws (prod) | wss://test-ws.pacifica.fi/ws (testnet)
 
-export interface PacificaMarket {
-  market_id: string;
+// ─── Raw API response types (match actual Pacifica endpoints) ───────────────
+
+/** Raw market from GET /api/v1/info */
+export interface PacificaInfoMarket {
   symbol: string;
-  base_asset: string;
-  quote_asset: string;
-  status: string;
-  min_order_size: number;
-  tick_size: number;
-  step_size: number;
+  tick_size: string;
+  lot_size: string;
   max_leverage: number;
+  isolated_only: boolean;
+  min_order_size: string;
+  max_order_size: string;
+  funding_rate: string;
+  next_funding_rate: string;
+  created_at: number;
+}
+
+/** Wrapper for GET /api/v1/info response */
+export interface PacificaInfoResponse {
+  success: boolean;
+  data: PacificaInfoMarket[];
+}
+
+/** Raw price entry from GET /api/v1/info/prices */
+export interface PacificaPriceEntry {
+  symbol: string;
+  mark: string;
+  mid: string;
+  oracle: string;
+  funding: string;
+  open_interest: string;
+  volume_24h: string;
+  next_funding: string;
+  timestamp: number;
+  yesterday_price: string;
+}
+
+/** Wrapper for GET /api/v1/info/prices response */
+export interface PacificaPricesResponse {
+  success: boolean;
+  data: PacificaPriceEntry[];
+}
+
+// ─── Normalized app-level market type (used by store & UI) ──────────────────
+
+export interface PacificaMarket {
+  symbol: string;
+  tick_size: number;
+  lot_size: number;
+  max_leverage: number;
+  isolated_only: boolean;
+  min_order_size: number;
+  max_order_size: number;
   funding_rate: number;
+  next_funding_rate: number;
+  created_at: number;
+  // Price fields — populated from /info/prices when available
   mark_price: number;
-  index_price: number;
-  last_price: number;
-  volume_24h: number;
+  mid_price: number;
+  oracle_price: number;
   open_interest: number;
 }
 
@@ -25,8 +69,16 @@ export interface PacificaMarketsResponse {
   markets: PacificaMarket[];
 }
 
+// ─── Order types ────────────────────────────────────────────────────────────
+
+/** Pacifica uses bid/ask, not buy/sell */
+export type PacificaOrderSide = "bid" | "ask";
+
+/** App-level direction used in UI */
 export type OrderSide = "buy" | "sell";
+
 export type OrderType = "market" | "limit" | "stop_market" | "stop_limit";
+export type TimeInForce = "GTC" | "IOC" | "ALO" | "TOB";
 export type OrderStatus =
   | "open"
   | "filled"
@@ -35,29 +87,28 @@ export type OrderStatus =
   | "rejected";
 export type PositionSide = "long" | "short";
 
+/** Request body for POST /api/v1/orders/create — matches Pacifica exactly */
 export interface PacificaOrderRequest {
-  market_id: string;
-  side: OrderSide;
-  type: OrderType;
-  size: number;
-  price?: number; // required for limit orders
-  stop_price?: number; // required for stop orders
+  symbol: string;
+  side: PacificaOrderSide;
+  price: string;
+  amount: string;
+  tif: TimeInForce;
+  reduce_only: boolean;
   leverage?: number;
-  reduce_only?: boolean;
-  time_in_force?: "GTC" | "IOC" | "FOK";
   builder_code?: string;
   max_builder_fee_rate?: number;
 }
 
 export interface PacificaOrder {
   order_id: string;
-  market_id: string;
-  side: OrderSide;
-  type: OrderType;
-  size: number;
-  price: number;
-  filled_size: number;
-  average_fill_price: number;
+  symbol: string;
+  side: PacificaOrderSide;
+  type: string;
+  amount: string;
+  price: string;
+  filled_amount: string;
+  average_fill_price: string;
   status: OrderStatus;
   leverage: number;
   created_at: string;
@@ -66,7 +117,6 @@ export interface PacificaOrder {
 
 export interface PacificaPosition {
   position_id: string;
-  market_id: string;
   symbol: string;
   side: PositionSide;
   size: number;

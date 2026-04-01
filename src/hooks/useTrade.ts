@@ -7,7 +7,6 @@ import bs58 from "bs58";
 import { useNotificationStore } from "@/stores/notifications";
 import { createAuthPayload, prepareSignatureMessage } from "@/lib/pacifica";
 import type { TradeDirection } from "@/types/app";
-import type { OrderSide, OrderType } from "@/types/pacifica";
 
 interface TradeParams {
   symbol: string;
@@ -61,13 +60,11 @@ export function useTrade() {
       setLastError(null);
 
       try {
-        const side: OrderSide = params.direction === "long" ? "buy" : "sell";
-        const orderType: OrderType = params.price ? "limit" : "market";
+        const side = params.direction === "long" ? "buy" : "sell";
 
         const orderPayload = {
-          market_id: params.marketId,
+          symbol: params.marketId,
           side,
-          type: orderType,
           size: params.size,
           leverage: params.leverage,
           ...(params.price && { price: params.price }),
@@ -105,14 +102,14 @@ export function useTrade() {
   );
 
   const closePosition = useCallback(
-    async (marketId: string, side: TradeDirection, size: number): Promise<TradeResult> => {
+    async (symbol: string, side: TradeDirection, size: number): Promise<TradeResult> => {
       if (!privyReady || !authenticated) throw new Error("Not authenticated");
 
       setIsSubmitting(true);
       setLastError(null);
 
       try {
-        const closePayload = { market_id: marketId, side, size };
+        const closePayload = { symbol, side, size };
         const { walletAddress, signature } = await signPayload(closePayload);
 
         const res = await fetch("/api/positions/close", {
@@ -127,7 +124,7 @@ export function useTrade() {
         addNotification({
           type: "success",
           title: "Position closed",
-          message: `Closed ${side} on ${marketId}`,
+          message: `Closed ${side} on ${symbol}`,
         });
 
         return { orderId: data.order.order_id, status: data.order.status };

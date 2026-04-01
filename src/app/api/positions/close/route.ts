@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
+import type { PacificaOrderSide } from "@/types/pacifica";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    const { market_id, side, size, walletAddress, signature } = body;
-    if (!market_id || !side || !size) {
+    const { symbol, side, size, walletAddress, signature } = body;
+    if (!symbol || !side || !size) {
       return NextResponse.json(
-        { error: "Missing required fields: market_id, side, size" },
+        { error: "Missing required fields: symbol, side, size" },
         { status: 400 }
       );
     }
@@ -18,16 +19,16 @@ export async function POST(request: Request) {
       );
     }
 
-    // Close = market order in opposite direction with reduce_only
-    const closeSide = side === "long" ? "sell" : "buy";
+    const closeSide: PacificaOrderSide = side === "long" ? "ask" : "bid";
 
     const { createOrder } = await import("@/lib/pacifica");
     const order = await createOrder(
       {
-        market_id,
+        symbol,
         side: closeSide,
-        type: "market",
-        size,
+        price: "0",
+        amount: String(size),
+        tif: "GTC",
         reduce_only: true,
       },
       { walletAddress, signature }

@@ -1,18 +1,22 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import {
   createChart,
   CandlestickSeries,
+  LineSeries,
   createSeriesMarkers,
   type IChartApi,
   type ISeriesApi,
   type ISeriesMarkersPluginApi,
   type CandlestickData,
+  type LineData,
   type SeriesMarker,
   type Time,
   ColorType,
   CrosshairMode,
+  LineStyle,
 } from "lightweight-charts";
 
 export interface CandleData {
@@ -33,6 +37,7 @@ export interface ChartMarker {
 
 interface PriceChartProps {
   data: CandleData[];
+  sentimentData?: Array<{ time: number; value: number }>;
   markers?: ChartMarker[];
   height?: number;
   symbol?: string;
@@ -42,11 +47,13 @@ function toLWCTime(ts: number): Time {
   return (ts / 1000) as Time;
 }
 
-export function PriceChart({ data, markers, height = 400, symbol }: PriceChartProps) {
+export function PriceChart({ data, sentimentData, markers, height = 400, symbol }: PriceChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick", Time> | null>(null);
+  const sentimentSeriesRef = useRef<ISeriesApi<"Line", Time> | null>(null);
   const markersRef = useRef<ISeriesMarkersPluginApi<Time> | null>(null);
+  const [showSentiment, setShowSentiment] = useState(true);
 
   const initChart = useCallback(() => {
     if (!containerRef.current) return;
@@ -55,6 +62,7 @@ export function PriceChart({ data, markers, height = 400, symbol }: PriceChartPr
       chartRef.current.remove();
       chartRef.current = null;
       seriesRef.current = null;
+      sentimentSeriesRef.current = null;
       markersRef.current = null;
     }
 
@@ -101,8 +109,20 @@ export function PriceChart({ data, markers, height = 400, symbol }: PriceChartPr
       wickDownColor: "#EF4444",
     });
 
+    const sentimentSeries = chart.addSeries(LineSeries, {
+      color: "rgba(56, 178, 172, 0.5)",
+      lineWidth: 1,
+      lineStyle: LineStyle.Dashed,
+      priceScaleId: "sentiment",
+    });
+    
+    chart.priceScale("sentiment").applyOptions({
+      visible: false,
+    });
+
     chartRef.current = chart;
     seriesRef.current = series;
+    sentimentSeriesRef.current = sentimentSeries;
   }, [height]);
 
   useEffect(() => {
@@ -144,6 +164,17 @@ export function PriceChart({ data, markers, height = 400, symbol }: PriceChartPr
 
     seriesRef.current.setData(lwcData);
 
+    if (sentimentSeriesRef.current && sentimentData && sentimentData.length > 0) {
+      const lwcSentimentData: LineData[] = sentimentData.map((d) => ({
+        time: toLWCTime(d.time),
+        value: d.value,
+      }));
+      sentimentSeriesRef.current.setData(lwcSentimentData);
+      sentimentSeriesRef.current.applyOptions({ visible: showSentiment });
+    } else if (sentimentSeriesRef.current) {
+      sentimentSeriesRef.current.setData([]);
+    }
+
     if (markers?.length) {
       const lwcMarkers: SeriesMarker<Time>[] = markers
         .sort((a, b) => a.time - b.time)
@@ -165,18 +196,31 @@ export function PriceChart({ data, markers, height = 400, symbol }: PriceChartPr
     if (chartRef.current) {
       chartRef.current.timeScale().fitContent();
     }
-  }, [data, markers]);
+  }, [data, sentimentData, markers, showSentiment]);
+
+  const hasSentimentData = sentimentData && sentimentData.length > 0;
 
   return (
     <div className="neu-extruded relative overflow-hidden rounded-[32px] bg-background">
-      {symbol && (
-        <div className="absolute left-4 top-3 z-10 flex items-center gap-2">
-          <span className="text-sm font-semibold font-display text-foreground/60">{symbol}/USDC</span>
-          <span className="neu-extruded-sm rounded-lg px-1.5 py-0.5 text-[10px] text-muted-foreground">
-            PERP
-          </span>
-        </div>
-      )}
+      <div className="absolute left-4 top-3 z-10 flex items-center justify-between w-[calc(100%-2rem)]">
+        {symbol ? (
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold font-display text-foreground/60">{symbol}/USDC</span>
+            <span className="neu-extruded-sm rounded-lg px-1.5 py-0.5 text-[10px] text-muted-foreground">
+              PERP
+            </span>
+          </div>
+        ) : <div />}
+        {hasSentimentData && (
+          <button
+            onClick={() => setShowSentiment(!showSentiment)}
+            className="neu-extruded-sm flex items-center justify-center p-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+            title="Toggle Sentiment Overlay"
+          >
+            {showSentiment ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+          </button>
+        )}
+      </div>
       <div ref={containerRef} />
     </div>
   );

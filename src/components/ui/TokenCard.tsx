@@ -14,17 +14,36 @@ function formatChange(pct: number): string {
   return `${sign}${pct.toFixed(1)}%`;
 }
 
-export function TokenCard({ token }: { token: TokenCardData }) {
+export function TokenCard({ token, intensity }: { token: TokenCardData; intensity?: number }) {
   const changePositive = token.mentionChange >= 0;
+  const intensityValue = intensity ?? 0;
+  const heatLabel = intensityValue > 0.7 ? "Hot" : intensityValue > 0.4 ? "Warm" : null;
 
   return (
     <Link
       href={`/trade?symbol=${token.symbol}`}
       className="neu-card group flex flex-col gap-3 rounded-[32px] bg-background p-4 transition-all active:scale-[0.98]"
+      style={{
+        background: intensityValue > 0
+          ? `linear-gradient(135deg, rgba(108,99,255,${intensityValue * 0.15}), transparent)`
+          : undefined,
+        borderLeft: intensityValue > 0.3
+          ? `3px solid rgba(108,99,255,${intensityValue * 0.6})`
+          : undefined,
+      }}
     >
       <div className="flex items-start justify-between">
         <div className="flex flex-col gap-1">
-          <span className="text-base font-semibold font-display">{token.symbol}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-base font-semibold font-display">{token.symbol}</span>
+            {heatLabel && (
+              <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${
+                heatLabel === "Hot" ? "bg-primary/20 text-primary" : "bg-warning/20 text-warning"
+              }`}>
+                {heatLabel}
+              </span>
+            )}
+          </div>
           <span className="text-xs text-muted-foreground">{token.name}</span>
         </div>
         <SentimentBadge sentiment={token.sentiment} />

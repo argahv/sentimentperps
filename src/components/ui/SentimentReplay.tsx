@@ -106,10 +106,12 @@ function MiniChart({
   candles,
   signalIndex,
   direction,
+  chartId,
 }: {
   candles: Candle[];
   signalIndex: number;
   direction: "long" | "short";
+  chartId: string;
 }) {
   if (candles.length < 2) return null;
 
@@ -130,13 +132,29 @@ function MiniChart({
     })
     .join(" ");
 
+  const polygonPoints = `${points} ${W},${H} 0,${H}`;
+
   const signalX = signalIndex * step;
   const signalY = H - ((prices[signalIndex] - min) / range) * H;
 
   const strokeColor = direction === "long" ? "#38B2AC" : "#EF4444";
+  const gradientId = `gradient-fill-${chartId}`;
+
+  const approximatePathLength = prices.length * step * 1.2;
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor={strokeColor} stopOpacity="0.15" />
+          <stop offset="100%" stopColor={strokeColor} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <polygon
+        points={polygonPoints}
+        fill={`url(#${gradientId})`}
+        className="opacity-60"
+      />
       <polyline
         points={points}
         fill="none"
@@ -144,7 +162,14 @@ function MiniChart({
         strokeWidth="1.5"
         strokeLinejoin="round"
         strokeLinecap="round"
-        opacity="0.8"
+        style={{
+          strokeDasharray: approximatePathLength,
+          strokeDashoffset: approximatePathLength,
+          animationName: "svg-draw",
+          animationDuration: "1.5s",
+          animationFillMode: "forwards",
+          animationTimingFunction: "ease-out",
+        }}
       />
       <circle cx={signalX} cy={signalY} r="3.5" fill="#6C63FF" opacity="0.9" />
       <circle cx={signalX} cy={signalY} r="6" fill="#6C63FF" opacity="0.2" />
@@ -152,17 +177,20 @@ function MiniChart({
   );
 }
 
-function formatPrice(symbol: string, price: number): string {
+function formatPrice(price: number): string {
   if (price >= 1000) return `$${price.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
   if (price >= 1) return `$${price.toFixed(2)}`;
   return `$${price.toFixed(4)}`;
 }
 
-function ReplayCard({ scenario }: { scenario: ReplayScenario }) {
+function ReplayCard({ scenario, index }: { scenario: ReplayScenario; index: number }) {
   const isLong = scenario.direction === "long";
 
   return (
-    <div className="neu-extruded min-w-[240px] max-w-[260px] shrink-0 flex flex-col gap-3 rounded-[32px] bg-background p-4 transition-all duration-300">
+    <div
+      className="neu-extruded min-w-[240px] max-w-[260px] shrink-0 flex flex-col gap-3 rounded-[32px] bg-background p-4 transition-all duration-300 card-entrance"
+      style={{ animationDelay: `calc(${index} * var(--stagger-base))` }}
+    >
       <div className="flex items-center justify-between">
         <span className="font-display text-sm font-bold">{scenario.symbol}</span>
         <span
@@ -182,30 +210,31 @@ function ReplayCard({ scenario }: { scenario: ReplayScenario }) {
           candles={scenario.candles}
           signalIndex={Math.min(6, scenario.candles.length - 1)}
           direction={scenario.direction}
+          chartId={scenario.symbol}
         />
       </div>
 
       <div className="grid grid-cols-2 gap-2 text-xs">
         <div className="flex flex-col gap-0.5">
           <span className="text-muted-foreground">Signal at</span>
-          <span className="font-semibold">{formatPrice(scenario.symbol, scenario.signalPrice)}</span>
+          <span className="font-semibold tabular-nums">{formatPrice(scenario.signalPrice)}</span>
         </div>
         <div className="flex flex-col gap-0.5">
           <span className="text-muted-foreground">Peak at</span>
-          <span className="font-semibold">{formatPrice(scenario.symbol, scenario.peakPrice)}</span>
+          <span className="font-semibold tabular-nums">{formatPrice(scenario.peakPrice)}</span>
         </div>
       </div>
 
       <div className="neu-inset flex items-center justify-between rounded-2xl px-3 py-2">
         <span className="text-xs text-muted-foreground">5x PnL</span>
-        <span className="font-display text-base font-bold text-success">
+        <span className="font-display text-base font-bold text-success tabular-nums">
           +{scenario.pnlPct.toFixed(1)}%
         </span>
       </div>
 
       <Link
         href={`/trade?symbol=${scenario.symbol}`}
-        className="neu-btn flex items-center justify-center gap-1 rounded-2xl bg-primary py-2 text-xs font-semibold text-white transition-all duration-300"
+        className="neu-btn flex items-center justify-center gap-1 rounded-2xl bg-primary py-2 text-xs font-semibold text-white transition-all duration-300 btn-bounce"
       >
         Trade {scenario.symbol} →
       </Link>
@@ -233,8 +262,8 @@ export function SentimentReplay() {
         Real generated examples where sentiment crossed the threshold before a major move.
       </p>
       <div className="flex gap-4 overflow-x-auto pb-3">
-        {scenarios.map((s) => (
-          <ReplayCard key={s.symbol} scenario={s} />
+        {scenarios.map((s, idx) => (
+          <ReplayCard key={s.symbol} scenario={s} index={idx} />
         ))}
       </div>
     </div>

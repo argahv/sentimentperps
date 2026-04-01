@@ -11,6 +11,10 @@ export function HotTokensFeed() {
     .sort((a, b) => b.velocity - a.velocity)
     .slice(0, 10);
 
+  const maxVelocity = hotTokens.length > 0 ? hotTokens[0].velocity : 1;
+  const getIntensity = (velocity: number) =>
+    maxVelocity > 0 ? Math.min(velocity / maxVelocity, 1) : 0;
+
   const risingTokens = [...tokenCards]
     .filter((t) => t.mentionChange > 50)
     .sort((a, b) => b.mentionChange - a.mentionChange)
@@ -50,7 +54,7 @@ export function HotTokensFeed() {
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {hotTokens.map((token) => (
-              <TokenCard key={token.symbol} token={token} />
+              <TokenCard key={token.symbol} token={token} intensity={getIntensity(token.velocity)} />
             ))}
           </div>
         )}
@@ -64,7 +68,7 @@ export function HotTokensFeed() {
           <div className="flex gap-3 overflow-x-auto pb-2">
             {risingTokens.map((token) => (
               <div key={token.symbol} className="min-w-[260px] shrink-0">
-                <TokenCard token={token} />
+                <TokenCard token={token} intensity={getIntensity(token.velocity)} />
               </div>
             ))}
           </div>

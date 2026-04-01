@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { useSentimentPolling } from "@/hooks/useSentimentPolling";
 import { useTrade } from "@/hooks/useTrade";
@@ -16,7 +16,8 @@ import { SentimentTriggerForm } from "@/components/ui/SentimentTriggerForm";
 import { ActiveTriggers } from "@/components/ui/ActiveTriggers";
 import { PositionsSidebar } from "@/components/ui/PositionsSidebar";
 import { useSentimentTriggerEngine } from "@/hooks/useSentimentTriggerEngine";
-import { LogIn, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { SentimentConfidenceMeter } from "@/components/ui/SentimentConfidenceMeter";
+import { LogIn, ArrowUpRight, ArrowDownRight, Zap, ChevronDown } from "lucide-react";
 import type { TradeDirection } from "@/types/app";
 
 export default function TradeContent() {
@@ -38,6 +39,7 @@ export default function TradeContent() {
   useSentimentTriggerEngine();
 
   const isPositive = priceChange >= 0;
+  const [showTriggers, setShowTriggers] = useState(false);
 
   const handleSubmit = useCallback(
     async (data: {
@@ -77,25 +79,38 @@ export default function TradeContent() {
       : currentPrice.toFixed(4);
 
   return (
-    <div className="flex flex-col gap-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold">Trade — {symbol}</h1>
-          <div className="mt-1 flex items-center gap-3">
-            <span className="text-lg font-semibold">${formattedPrice}</span>
-            <span
-              className={`flex items-center gap-0.5 text-sm font-medium ${
-                isPositive ? "text-success" : "text-danger"
-              }`}
-            >
-              {isPositive ? (
-                <ArrowUpRight className="h-3.5 w-3.5" />
-              ) : (
-                <ArrowDownRight className="h-3.5 w-3.5" />
-              )}
-              {isPositive ? "+" : ""}
-              {priceChangePct.toFixed(2)}%
-            </span>
+    <div className="page-enter flex flex-col gap-3 p-3 lg:gap-4 lg:p-5">
+      <div
+        className="card-entrance flex items-center justify-between"
+        style={{ animationDelay: `calc(0 * var(--stagger-base))` }}
+      >
+        <div className="flex items-center gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="font-display text-xl font-bold lg:text-2xl">{symbol}/USDC</h1>
+              <span className="neu-inset-sm rounded-lg px-2 py-0.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                Perp
+              </span>
+            </div>
+            <div className="mt-0.5 flex items-center gap-3">
+              <span className="tabular-nums text-lg font-semibold">${formattedPrice}</span>
+              <span
+                className={`tabular-nums flex items-center gap-0.5 text-sm font-medium ${
+                  isPositive ? "text-success" : "text-danger"
+                }`}
+              >
+                {isPositive ? (
+                  <ArrowUpRight className="h-3.5 w-3.5" />
+                ) : (
+                  <ArrowDownRight className="h-3.5 w-3.5" />
+                )}
+                {isPositive ? "+" : ""}
+                {priceChangePct.toFixed(2)}%
+              </span>
+            </div>
+          </div>
+          <div className="hidden sm:block">
+            <SentimentConfidenceMeter symbol={symbol} />
           </div>
         </div>
 
@@ -110,11 +125,35 @@ export default function TradeContent() {
         )}
       </div>
 
-      <div className="flex flex-col gap-6 xl:flex-row">
-        <div className="flex flex-1 flex-col gap-6">
-          <PriceChart data={candles} markers={markers} symbol={symbol} />
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:gap-4">
+        <div className="flex min-w-0 flex-1 flex-col gap-3 lg:gap-4">
+          <div
+            className="card-entrance"
+            style={{ animationDelay: `calc(1 * var(--stagger-base))` }}
+          >
+            <PriceChart data={candles} markers={markers} symbol={symbol} height={480} />
+          </div>
 
-          <div className="grid gap-6 md:grid-cols-2">
+          <div
+            className="card-entrance sm:hidden"
+            style={{ animationDelay: `calc(2 * var(--stagger-base))` }}
+          >
+            <SentimentConfidenceMeter symbol={symbol} />
+          </div>
+
+          <div
+            className="card-entrance"
+            style={{ animationDelay: `calc(3 * var(--stagger-base))` }}
+          >
+            <SentimentPanel symbol={symbol} />
+          </div>
+        </div>
+
+        <div className="flex w-full shrink-0 flex-col gap-3 lg:w-[340px] xl:w-[380px] lg:sticky lg:top-4 lg:max-h-[calc(100dvh-88px)] lg:gap-4 lg:overflow-y-auto">
+          <div
+            className="card-entrance"
+            style={{ animationDelay: `calc(4 * var(--stagger-base))` }}
+          >
             <OrderForm
               symbol={symbol}
               marketId={marketId}
@@ -125,17 +164,42 @@ export default function TradeContent() {
               sentimentLabel={tokenCard?.sentiment}
               sentimentVelocity={tokenCard?.velocity}
             />
-            <SentimentPanel symbol={symbol} />
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2">
-            <SentimentTriggerForm symbol={symbol} />
-            <ActiveTriggers />
+          <div
+            className="card-entrance"
+            style={{ animationDelay: `calc(5 * var(--stagger-base))` }}
+          >
+            <PositionsSidebar onClosePosition={handleClosePosition} />
           </div>
-        </div>
 
-        <div className="w-full xl:w-72 shrink-0">
-          <PositionsSidebar onClosePosition={handleClosePosition} />
+          <div
+            className="card-entrance"
+            style={{ animationDelay: `calc(6 * var(--stagger-base))` }}
+          >
+            <button
+              type="button"
+              onClick={() => setShowTriggers((prev) => !prev)}
+              className="neu-extruded flex w-full items-center justify-between rounded-[32px] bg-background px-4 py-3 text-left transition-all duration-200 hover:shadow-[var(--neu-extruded-hover)]"
+            >
+              <div className="flex items-center gap-2">
+                <Zap className="h-4 w-4 text-primary" />
+                <span className="font-display text-sm font-semibold">Auto-Trade Triggers</span>
+              </div>
+              <ChevronDown
+                className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
+                  showTriggers ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+
+            {showTriggers && (
+              <div className="mt-3 flex flex-col gap-3">
+                <SentimentTriggerForm symbol={symbol} />
+                <ActiveTriggers />
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

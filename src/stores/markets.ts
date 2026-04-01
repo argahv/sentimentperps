@@ -20,15 +20,11 @@ export const useMarketsStore = create<MarketsState>((set, get) => ({
 
   getMarketBySymbol: (symbol) => {
     const upper = symbol.toUpperCase();
-    return get().markets.find(
-      (m) => m.symbol === upper || m.base_asset === upper
-    );
+    return get().markets.find((m) => m.symbol.toUpperCase() === upper);
   },
 
-  // Fallback: derive market_id from symbol when markets haven't loaded
-  // Pacifica format: "BTC-USDC-PERP"
   getMarketId: (symbol) => {
     const market = get().getMarketBySymbol(symbol);
-    return market?.market_id ?? null;
+    return market?.symbol ?? null;
   },
 }));

@@ -1,5 +1,7 @@
 "use client";
 
+import { type ReactNode } from "react";
+
 interface SkeletonProps {
   className?: string;
 }
@@ -10,6 +12,19 @@ export function Skeleton({ className = "" }: SkeletonProps) {
       className={`neu-inset animate-pulse rounded-lg bg-background ${className}`}
     />
   );
+}
+
+interface SkeletonTransitionProps {
+  loading: boolean;
+  skeleton: ReactNode;
+  children: ReactNode;
+}
+
+export function SkeletonTransition({ loading, skeleton, children }: SkeletonTransitionProps) {
+  if (loading) {
+    return <div className="transition-opacity duration-200">{skeleton}</div>;
+  }
+  return <div className="skeleton-reveal">{children}</div>;
 }
 
 export function CardSkeleton() {

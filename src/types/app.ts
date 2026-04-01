@@ -39,6 +39,7 @@ export interface LeaderboardEntry {
   avatarUrl?: string;
   period: LeaderboardPeriod;
   rank: number;
+  previousRank?: number;
   totalScore: number;
   winRate: number;
   totalTrades: number;

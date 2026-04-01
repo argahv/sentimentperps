@@ -1,9 +1,13 @@
 "use client";
 
+import { useState } from "react";
+import { usePrivy } from "@privy-io/react-auth";
+import { useWallets } from "@privy-io/react-auth/solana";
 import { useLeaderboardStore, getDemoBadges } from "@/stores/leaderboard";
 import { BadgeList } from "@/components/ui/BadgeChip";
 import { Trophy, TrendingUp, Target, Flame, Zap } from "lucide-react";
 import type { LeaderboardPeriod, LeaderboardEntry } from "@/types/app";
+import { TraderComparisonModal } from "@/components/ui/TraderComparisonModal";
 
 const PERIOD_TABS: { value: LeaderboardPeriod; label: string }[] = [
   { value: "daily", label: "Today" },
@@ -11,11 +15,34 @@ const PERIOD_TABS: { value: LeaderboardPeriod; label: string }[] = [
   { value: "all-time", label: "All Time" },
 ];
 
-function RankDisplay({ rank }: { rank: number }) {
-  if (rank === 1) return <span className="text-lg font-bold text-amber-500">1</span>;
-  if (rank === 2) return <span className="text-lg font-bold text-gray-500">2</span>;
-  if (rank === 3) return <span className="text-lg font-bold text-orange-500">3</span>;
-  return <span className="text-sm font-medium text-muted-foreground">{rank}</span>;
+function RankDisplay({ rank, previousRank }: { rank: number; previousRank?: number }) {
+  const delta = previousRank !== undefined ? previousRank - rank : 0;
+  
+  return (
+    <div className="flex flex-col items-center justify-center gap-1">
+      {rank === 1 ? (
+        <span className="text-lg font-bold text-amber-500 tabular-nums">1</span>
+      ) : rank === 2 ? (
+        <span className="text-lg font-bold text-gray-500 tabular-nums">2</span>
+      ) : rank === 3 ? (
+        <span className="text-lg font-bold text-orange-500 tabular-nums">3</span>
+      ) : (
+        <span className="text-sm font-medium text-muted-foreground tabular-nums">{rank}</span>
+      )}
+      
+      {previousRank !== undefined && (
+        <span className="tabular-nums text-[10px] leading-none">
+          {delta > 0 ? (
+            <span className="text-success">▲{delta}</span>
+          ) : delta < 0 ? (
+            <span className="text-danger">▼{Math.abs(delta)}</span>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          )}
+        </span>
+      )}
+    </div>
+  );
 }
 
 function SentimentAccuracyBar({ accuracy }: { accuracy: number }) {
@@ -30,65 +57,89 @@ function SentimentAccuracyBar({ accuracy }: { accuracy: number }) {
           }}
         />
       </div>
-      <span className="text-[9px] text-muted-foreground">{accuracy.toFixed(0)}% acc</span>
+      <span className="text-[9px] text-muted-foreground tabular-nums">{accuracy.toFixed(0)}% acc</span>
     </div>
   );
 }
 
-function LeaderboardRow({ entry }: { entry: LeaderboardEntry }) {
+interface LeaderboardRowProps {
+  entry: LeaderboardEntry;
+  isCurrentUser?: boolean;
+  maxScore?: number;
+  index?: number;
+  onClick?: () => void;
+}
+
+function LeaderboardRow({ entry, isCurrentUser, maxScore = 1, index = 0, onClick }: LeaderboardRowProps) {
   const badges = getDemoBadges(entry.userId);
   const winRatePct = Math.round(entry.winRate * 100);
   const pnlApprox = entry.bestCallPnl / 100;
   const formulaMinutes = entry.avgResponseTime;
+  const scorePercent = Math.min(100, Math.max(0, (entry.totalScore / maxScore) * 100));
 
   return (
     <div
-      className={`flex items-center gap-4 rounded-2xl px-4 py-3 transition-all duration-300 ${
+      onClick={onClick}
+      className={`relative flex items-center gap-4 rounded-2xl px-4 py-3 transition-all duration-300 cursor-pointer overflow-hidden ${
         entry.rank <= 3
-          ? "neu-extruded bg-background"
-          : "neu-extruded-sm bg-background hover:shadow-neu-hover hover:translate-y-[-2px]"
+          ? "neu-extruded"
+          : "neu-extruded-sm hover:shadow-neu-hover hover:translate-y-[-2px]"
+      } ${
+        isCurrentUser
+          ? "border-l-3 border-[var(--primary)] bg-[rgba(108,99,255,0.05)]"
+          : "bg-background"
       }`}
     >
-      <div className="flex w-8 items-center justify-center shrink-0">
-        <RankDisplay rank={entry.rank} />
+      <div 
+        className="absolute left-0 top-0 bottom-0 bg-primary/15 z-0 bar-animate" 
+        style={{ width: `${scorePercent}%`, animationDelay: `calc(${index} * 30ms)` }} 
+      />
+
+      <div className="relative z-10 flex w-8 items-center justify-center shrink-0">
+        <RankDisplay rank={entry.rank} previousRank={entry.previousRank} />
       </div>
 
-      <div className="flex flex-1 flex-col gap-1 min-w-0">
+      <div className="relative z-10 flex flex-1 flex-col gap-1 min-w-0">
         <div className="flex items-center gap-2">
           <div className="neu-inset flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold text-primary shrink-0">
             {entry.username.charAt(0).toUpperCase()}
           </div>
           <span className="text-sm font-semibold truncate">{entry.username}</span>
+          {isCurrentUser && (
+            <span className="bg-primary text-white text-[10px] px-1.5 py-0.5 rounded-full shrink-0 leading-none">
+              You
+            </span>
+          )}
         </div>
         {badges.length > 0 && <BadgeList badges={badges} max={3} />}
         <SentimentAccuracyBar accuracy={entry.sentimentAccuracy} />
       </div>
 
-      <div className="hidden sm:flex items-center gap-4 shrink-0">
+      <div className="relative z-10 hidden sm:flex items-center gap-4 shrink-0">
         <div className="flex flex-col items-end">
           <span className="text-[10px] text-muted-foreground">Win Rate</span>
-          <span className={`text-sm font-semibold ${winRatePct >= 60 ? "text-success" : winRatePct >= 40 ? "text-foreground" : "text-danger"}`}>
+          <span className={`text-sm font-semibold tabular-nums ${winRatePct >= 60 ? "text-success" : winRatePct >= 40 ? "text-foreground" : "text-danger"}`}>
             {winRatePct}%
           </span>
         </div>
         <div className="flex flex-col items-end">
           <span className="text-[10px] text-muted-foreground">Trades</span>
-          <span className="text-sm font-medium">{entry.totalTrades}</span>
+          <span className="text-sm font-medium tabular-nums">{entry.totalTrades}</span>
         </div>
         <div className="flex flex-col items-end">
           <span className="text-[10px] text-muted-foreground">Best Call</span>
-          <span className="text-sm font-semibold text-success">+${entry.bestCallPnl}</span>
+          <span className="text-sm font-semibold text-success tabular-nums">+${entry.bestCallPnl}</span>
         </div>
         <div className="flex flex-col items-end">
           <span className="text-[10px] text-muted-foreground">Signal Speed</span>
-          <span className="text-sm font-medium text-primary">{entry.avgResponseTime.toFixed(1)}m</span>
+          <span className="text-sm font-medium text-primary tabular-nums">{entry.avgResponseTime.toFixed(1)}m</span>
         </div>
       </div>
 
-      <div className="flex flex-col items-end shrink-0 ml-2">
+      <div className="relative z-10 flex flex-col items-end shrink-0 ml-2">
         <span className="text-[10px] text-muted-foreground">Score</span>
-        <span className="text-base font-bold text-primary">{entry.totalScore.toLocaleString()}</span>
-        <span className="text-[9px] text-muted-foreground mt-0.5 whitespace-nowrap">
+        <span className="text-base font-bold text-primary tabular-nums">{entry.totalScore.toLocaleString()}</span>
+        <span className="text-[9px] text-muted-foreground mt-0.5 whitespace-nowrap tabular-nums">
           = {pnlApprox.toFixed(1)}% × (1/{formulaMinutes.toFixed(1)}m)
         </span>
       </div>
@@ -98,15 +149,22 @@ function LeaderboardRow({ entry }: { entry: LeaderboardEntry }) {
 
 export default function LeaderboardContent() {
   const { entries, period, setPeriod } = useLeaderboardStore();
+  const { authenticated, user } = usePrivy();
+  const { wallets } = useWallets();
+  const [selectedTrader, setSelectedTrader] = useState<LeaderboardEntry | null>(null);
 
   const topTrader = entries[0];
+  const maxScore = topTrader?.totalScore ?? 1;
   const avgResponseTime =
     entries.length > 0
       ? (entries.reduce((sum, e) => sum + e.avgResponseTime, 0) / entries.length).toFixed(1)
       : "—";
 
+  const demoYourEntry = entries[4] || null;
+  const yourEntry = demoYourEntry;
+
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="flex flex-col gap-6 p-6 page-enter">
       <div>
         <h1 className="font-display text-2xl font-bold">Leaderboard</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -115,7 +173,7 @@ export default function LeaderboardContent() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
-        <div className="neu-extruded-sm flex items-center gap-3 rounded-2xl bg-background p-4">
+        <div className="neu-extruded-sm flex items-center gap-3 rounded-2xl bg-background p-4 card-entrance" style={{ animationDelay: `calc(0 * var(--stagger-base))` }}>
           <div className="neu-icon-well flex h-10 w-10 items-center justify-center rounded-xl text-amber-500 shrink-0">
             <Trophy className="h-5 w-5" />
           </div>
@@ -124,40 +182,40 @@ export default function LeaderboardContent() {
             <p className="text-sm font-bold truncate">{topTrader?.username ?? "—"}</p>
           </div>
         </div>
-        <div className="neu-extruded-sm flex items-center gap-3 rounded-2xl bg-background p-4">
+        <div className="neu-extruded-sm flex items-center gap-3 rounded-2xl bg-background p-4 card-entrance" style={{ animationDelay: `calc(1 * var(--stagger-base))` }}>
           <div className="neu-icon-well flex h-10 w-10 items-center justify-center rounded-xl text-success shrink-0">
             <TrendingUp className="h-5 w-5" />
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Top Score</p>
-            <p className="text-sm font-bold">{topTrader?.totalScore.toLocaleString() ?? "—"}</p>
+            <p className="text-sm font-bold tabular-nums">{topTrader?.totalScore.toLocaleString() ?? "—"}</p>
           </div>
         </div>
-        <div className="neu-extruded-sm flex items-center gap-3 rounded-2xl bg-background p-4">
+        <div className="neu-extruded-sm flex items-center gap-3 rounded-2xl bg-background p-4 card-entrance" style={{ animationDelay: `calc(2 * var(--stagger-base))` }}>
           <div className="neu-icon-well flex h-10 w-10 items-center justify-center rounded-xl text-primary shrink-0">
             <Target className="h-5 w-5" />
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Traders</p>
-            <p className="text-sm font-bold">{entries.length}</p>
+            <p className="text-sm font-bold tabular-nums">{entries.length}</p>
           </div>
         </div>
-        <div className="neu-extruded-sm flex items-center gap-3 rounded-2xl bg-background p-4">
+        <div className="neu-extruded-sm flex items-center gap-3 rounded-2xl bg-background p-4 card-entrance" style={{ animationDelay: `calc(3 * var(--stagger-base))` }}>
           <div className="neu-icon-well flex h-10 w-10 items-center justify-center rounded-xl text-orange-500 shrink-0">
             <Flame className="h-5 w-5" />
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Best Call</p>
-            <p className="text-sm font-bold text-success">+${topTrader?.bestCallPnl ?? 0}</p>
+            <p className="text-sm font-bold text-success tabular-nums">+${topTrader?.bestCallPnl ?? 0}</p>
           </div>
         </div>
-        <div className="neu-extruded-sm flex items-center gap-3 rounded-2xl bg-background p-4">
+        <div className="neu-extruded-sm flex items-center gap-3 rounded-2xl bg-background p-4 card-entrance" style={{ animationDelay: `calc(4 * var(--stagger-base))` }}>
           <div className="neu-icon-well flex h-10 w-10 items-center justify-center rounded-xl text-primary shrink-0">
             <Zap className="h-5 w-5" />
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Avg Signal Response</p>
-            <p className="text-sm font-bold">{avgResponseTime}m</p>
+            <p className="text-sm font-bold tabular-nums">{avgResponseTime}m</p>
           </div>
         </div>
       </div>
@@ -189,9 +247,19 @@ export default function LeaderboardContent() {
           <span className="w-24 text-right ml-2">Score</span>
         </div>
 
-        {entries.map((entry) => (
-          <LeaderboardRow key={entry.id} entry={entry} />
-        ))}
+        {entries.map((entry, index) => {
+          const isCurrentUser = index === 4;
+          return (
+            <LeaderboardRow
+              key={entry.id}
+              entry={entry}
+              isCurrentUser={isCurrentUser}
+              maxScore={maxScore}
+              index={index}
+              onClick={() => setSelectedTrader(entry)}
+            />
+          );
+        })}
       </div>
 
       <div className="neu-extruded-sm rounded-2xl bg-background p-5 flex flex-col gap-3">
@@ -214,6 +282,15 @@ export default function LeaderboardContent() {
           </div>
         </div>
       </div>
+
+      {selectedTrader && (
+        <TraderComparisonModal
+          isOpen={true}
+          onClose={() => setSelectedTrader(null)}
+          yourEntry={yourEntry}
+          theirEntry={selectedTrader}
+        />
+      )}
     </div>
   );
 }

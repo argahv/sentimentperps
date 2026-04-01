@@ -72,7 +72,11 @@ export default function DashboardLayout({
         </div>
       </nav>
 
-      <main className="flex-1 overflow-y-auto pb-20 md:pb-0">{children}</main>
+      <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
+        <div className="page-enter" key={pathname}>
+          {children}
+        </div>
+      </main>
 
       <nav className="fixed bottom-0 left-0 right-0 z-50 flex bg-background md:hidden" style={{ boxShadow: "0 -4px 12px rgb(163,177,198,0.3)" }}>
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {

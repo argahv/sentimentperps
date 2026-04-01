@@ -5,6 +5,7 @@ import { ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 import { TradeConfirmationModal } from "@/components/ui/TradeConfirmationModal";
 import { SentimentSparkline } from "@/components/ui/SentimentSparkline";
 import { useSentimentStore } from "@/stores/sentiment";
+import { usePositionsStore } from "@/stores/positions";
 import type { TradeDirection } from "@/types/app";
 
 const LEVERAGE_OPTIONS = [1, 2, 5, 10, 20] as const;
@@ -55,6 +56,9 @@ export function OrderForm({
 
   const signalFromStore = useSentimentStore((s) => s.getSignalBySymbol(symbol));
   const currentVelocity = sentimentVelocity ?? signalFromStore?.velocity ?? 0;
+
+  const positions = usePositionsStore((s) => s.positions);
+  const avgSize = positions.length > 0 ? positions.reduce((s, p) => s + p.margin, 0) / Math.min(positions.length, 10) : 0;
 
   const sizeNum = Number(size);
   const isValid = !!marketId && size !== "" && sizeNum > 0;
@@ -172,14 +176,22 @@ export function OrderForm({
           </div>
         )}
 
-        <div className="neu-inset grid grid-cols-2 gap-1 rounded-2xl p-1">
+        <div className="neu-inset relative grid grid-cols-2 gap-1 rounded-2xl p-1">
+          <div
+            className="absolute bottom-1 top-1 w-[calc(50%-6px)] rounded-xl transition-transform duration-200 ease-in-out"
+            style={{
+              transform: direction === "long" ? "translateX(4px)" : "translateX(calc(100% + 8px))",
+              backgroundColor: direction === "long" ? "var(--success)" : "var(--danger)",
+              opacity: direction === "long" ? 1 : 0.6,
+            }}
+          />
           <button
             type="button"
             onClick={() => setDirection("long")}
             disabled={isSubmitting}
-            className={`rounded-xl py-2 text-sm font-semibold transition-all ${
+            className={`relative z-10 rounded-xl py-2 text-sm font-semibold transition-all ${
               direction === "long"
-                ? "neu-extruded-sm bg-success text-white"
+                ? "neu-extruded-sm text-white"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -189,9 +201,9 @@ export function OrderForm({
             type="button"
             onClick={() => setDirection("short")}
             disabled={isSubmitting}
-            className={`rounded-xl py-2 text-sm font-semibold transition-all ${
+            className={`relative z-10 rounded-xl py-2 text-sm font-semibold transition-all ${
               direction === "short"
-                ? "neu-extruded-sm bg-danger text-white"
+                ? "neu-extruded-sm text-white"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -210,14 +222,15 @@ export function OrderForm({
             step="0.01"
             value={size}
             onChange={(e) => setSize(e.target.value)}
-            placeholder="0.00"
+            placeholder={avgSize > 0 ? `Suggested: ${avgSize.toFixed(2)}` : "0.00"}
             disabled={isSubmitting}
-            className="neu-input rounded-2xl bg-background px-3 py-2.5 text-sm placeholder:text-muted disabled:opacity-50"
+            className="neu-input rounded-2xl bg-background px-3 py-2.5 text-sm placeholder:text-muted disabled:opacity-50 focus:outline-none focus:shadow-[0_0_16px_2px_rgba(108,99,255,0.35)] transition-shadow"
           />
+          {avgSize > 0 && <span className="text-[10px] text-muted-foreground">Based on your avg position</span>}
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs text-muted-foreground">
+          <span className="tabular-nums text-xs text-muted-foreground">
             Leverage — {leverage}x
           </span>
           <div className="flex gap-1.5">
@@ -227,7 +240,7 @@ export function OrderForm({
                 type="button"
                 onClick={() => setLeverage(lev)}
                 disabled={isSubmitting}
-                className={`flex-1 rounded-xl py-1.5 text-xs font-medium transition-all ${
+                className={`btn-bounce flex-1 rounded-xl py-1.5 text-xs font-medium transition-all ${
                   leverage === lev
                     ? "neu-extruded-sm bg-primary text-white"
                     : "neu-inset-sm text-muted-foreground hover:text-foreground"
@@ -272,7 +285,7 @@ export function OrderForm({
                 onChange={(e) => setTakeProfit(e.target.value)}
                 placeholder="—"
                 disabled={isSubmitting}
-                className="neu-input rounded-2xl bg-background px-3 py-2 text-sm placeholder:text-muted disabled:opacity-50"
+                className="neu-input rounded-2xl bg-background px-3 py-2 text-sm placeholder:text-muted disabled:opacity-50 focus:outline-none focus:shadow-[0_0_16px_2px_rgba(108,99,255,0.35)] transition-shadow"
               />
             </div>
             <div className="flex flex-col gap-1.5">
@@ -288,7 +301,7 @@ export function OrderForm({
                 onChange={(e) => setStopLoss(e.target.value)}
                 placeholder="—"
                 disabled={isSubmitting}
-                className="neu-input rounded-2xl bg-background px-3 py-2 text-sm placeholder:text-muted disabled:opacity-50"
+                className="neu-input rounded-2xl bg-background px-3 py-2 text-sm placeholder:text-muted disabled:opacity-50 focus:outline-none focus:shadow-[0_0_16px_2px_rgba(108,99,255,0.35)] transition-shadow"
               />
             </div>
           </div>
@@ -303,7 +316,9 @@ export function OrderForm({
         <button
           type="submit"
           disabled={!isValid || isSubmitting}
-          className={`neu-btn flex items-center justify-center gap-2 rounded-2xl py-3 text-sm font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed ${
+          className={`neu-btn flex items-center justify-center gap-2 rounded-2xl py-3 text-sm font-semibold text-white transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:-translate-y-0.5 hover:shadow-lg ${
+            isSubmitting ? "animate-pulse" : ""
+          } ${
             direction === "long"
               ? "bg-success"
               : "bg-danger"
