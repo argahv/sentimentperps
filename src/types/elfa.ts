@@ -10,7 +10,7 @@ export interface ElfaToken {
 }
 
 export interface ElfaTrendingToken {
-  token: ElfaToken;
+  token: ElfaToken | string; // API returns string, we normalize to object
   current_count: number;
   previous_count: number;
   change_percent: number;
@@ -18,7 +18,9 @@ export interface ElfaTrendingToken {
 
 export interface ElfaTrendingResponse {
   success: boolean;
-  data: ElfaTrendingToken[];
+  data: {
+    data: ElfaTrendingToken[];
+  };
 }
 
 export interface ElfaMention {

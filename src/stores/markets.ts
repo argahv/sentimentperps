@@ -8,7 +8,7 @@ interface MarketsState {
   setMarkets: (markets: PacificaMarket[]) => void;
   setLoading: (loading: boolean) => void;
   getMarketBySymbol: (symbol: string) => PacificaMarket | undefined;
-  getMarketId: (symbol: string) => string;
+  getMarketId: (symbol: string) => string | null;
 }
 
 export const useMarketsStore = create<MarketsState>((set, get) => ({
@@ -29,7 +29,6 @@ export const useMarketsStore = create<MarketsState>((set, get) => ({
   // Pacifica format: "BTC-USDC-PERP"
   getMarketId: (symbol) => {
     const market = get().getMarketBySymbol(symbol);
-    if (market) return market.market_id;
-    return `${symbol.toUpperCase()}-USDC-PERP`;
+    return market?.market_id ?? null;
   },
 }));

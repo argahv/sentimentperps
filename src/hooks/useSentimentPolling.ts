@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback } from "react";
 import { useSentimentStore } from "@/stores/sentiment";
+import { pushVelocity } from "@/stores/velocityHistory";
 import type { SentimentSignal } from "@/types/elfa";
 import type { TokenCardData } from "@/types/app";
 
@@ -58,6 +59,10 @@ export function useSentimentPolling(intervalMs: number = 60_000) {
 
       setSignals(signals);
       setTokenCards(signals.map(signalToTokenCard));
+
+      for (const signal of signals) {
+        pushVelocity(signal.symbol, signal.velocity);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch sentiment");
     } finally {

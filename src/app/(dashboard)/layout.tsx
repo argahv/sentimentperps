@@ -12,6 +12,7 @@ import {
   ArrowRightLeft,
 } from "lucide-react";
 import { DepositBridgeModal } from "@/components/ui/DepositBridgeModal";
+import { useMarkets } from "@/hooks/useMarkets";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -28,6 +29,7 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const [showDeposit, setShowDeposit] = useState(false);
+  useMarkets();
 
   return (
     <div className="flex h-full min-h-dvh flex-col md:flex-row">

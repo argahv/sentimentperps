@@ -24,7 +24,7 @@ export async function getTrendingTokens(
   timeWindow: string = "24h",
   page: number = 1,
   pageSize: number = 20,
-  minMentions: number = 5
+  minMentions: number = 5,
 ): Promise<ElfaTrendingResponse> {
   const params = new URLSearchParams({
     timeWindow,
@@ -35,7 +35,7 @@ export async function getTrendingTokens(
 
   const res = await fetch(
     `${ELFA_BASE_URL}/aggregations/trending-tokens?${params}`,
-    { headers: headers(), next: { revalidate: 60 } }
+    { headers: headers(), next: { revalidate: 60 } },
   );
 
   if (!res.ok) throw new Error(`Elfa trending failed: ${res.status}`);
@@ -46,7 +46,7 @@ export async function getTopMentions(
   ticker: string,
   timeWindow: string = "24h",
   page: number = 1,
-  pageSize: number = 10
+  pageSize: number = 10,
 ): Promise<ElfaTopMentionsResponse> {
   const params = new URLSearchParams({
     ticker,
@@ -68,7 +68,7 @@ export async function getKeywordMentions(
   from?: number,
   to?: number,
   limit: number = 20,
-  cursor?: string
+  cursor?: string,
 ): Promise<ElfaKeywordMentionsResponse> {
   const params = new URLSearchParams({
     keywords: keywords.join(","),
@@ -88,33 +88,36 @@ export async function getKeywordMentions(
 
 export function toSentimentSignals(
   trending: ElfaTrendingToken[],
-  mentionsMap: Map<string, ElfaTopMentionsResponse>
+  mentionsMap: Map<string, ElfaTopMentionsResponse>,
 ): SentimentSignal[] {
-  return trending.map((t) => {
-    const mentions = mentionsMap.get(t.token.token_symbol);
-    const topMentions = mentions?.data.mentions.slice(0, 5) ?? [];
+  return trending
+    .map((t) => {
+      const tokenData = typeof t.token === "string" ? { token_symbol: t.token.toUpperCase(), token_name: t.token.toUpperCase() } : t.token;
+      const symbol = tokenData.token_symbol;
+      const mentions = mentionsMap.get(symbol);
+      const topMentions = (mentions?.data?.mentions ?? []).slice(0, 5);
 
-    const sentimentCounts = { positive: 0, negative: 0, neutral: 0 };
-    for (const m of topMentions) {
-      if (m.sentiment) sentimentCounts[m.sentiment]++;
-    }
-    const dominantSentiment =
-      sentimentCounts.positive >= sentimentCounts.negative
-        ? sentimentCounts.positive > 0
-          ? "positive"
-          : "neutral"
-        : "negative";
+      const sentimentCounts = { positive: 0, negative: 0, neutral: 0 };
+      for (const m of topMentions) {
+        if (m.sentiment) sentimentCounts[m.sentiment]++;
+      }
+      const dominantSentiment =
+        sentimentCounts.positive >= sentimentCounts.negative
+          ? sentimentCounts.positive > 0
+            ? "positive"
+            : "neutral"
+          : "negative";
 
-    return {
-      symbol: t.token.token_symbol,
-      name: t.token.token_name,
-      sentiment: dominantSentiment as "positive" | "negative" | "neutral",
-      mentionCount: t.current_count,
-      mentionChange: t.change_percent,
-      // velocity = mentions per minute over the time window (24h = 1440 min)
-      velocity: t.current_count / 1440,
-      topMentions,
-      updatedAt: new Date(),
-    };
-  });
+      return {
+        symbol,
+        name: tokenData.token_name,
+        sentiment: dominantSentiment as "positive" | "negative" | "neutral",
+        mentionCount: t.current_count,
+        mentionChange: t.change_percent,
+        velocity: t.current_count / 1440,
+        topMentions,
+        updatedAt: new Date(),
+      };
+    })
+    .filter((s) => Boolean(s.symbol));
 }

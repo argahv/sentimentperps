@@ -60,6 +60,12 @@ function generateDemoEntries(period: LeaderboardPeriod): LeaderboardEntry[] {
     const totalScore = Math.floor((1000 - i * 60) * (0.8 + rng() * 0.4));
     const bestCallPnl = Math.floor(rng() * 2000) + 50;
 
+    const avgResponseTime = Math.round((0.5 + rng() * 9.5) * 10) / 10;
+    const sentimentAccuracy = Math.round((40 + rng() * 55) * 10) / 10;
+    const profitPct = 1 + rng() * 29;
+    const rawScore = profitPct * (1 / avgResponseTime);
+    const sentimentScore = Math.min(100, Math.round(rawScore * 3.5));
+
     return {
       id: `lb-${period}-${i}`,
       userId: `user-${i}`,
@@ -71,8 +77,12 @@ function generateDemoEntries(period: LeaderboardPeriod): LeaderboardEntry[] {
       totalTrades,
       bestCallPnl,
       updatedAt: now,
+      sentimentScore,
+      avgResponseTime,
+      sentimentAccuracy,
     };
-  }).sort((a, b) => b.totalScore - a.totalScore)
+  })
+    .sort((a, b) => b.totalScore - a.totalScore)
     .map((entry, i) => ({ ...entry, rank: i + 1 }));
 }
 

@@ -1,17 +1,29 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 import { TradeConfirmationModal } from "@/components/ui/TradeConfirmationModal";
+import { SentimentSparkline } from "@/components/ui/SentimentSparkline";
+import { useSentimentStore } from "@/stores/sentiment";
 import type { TradeDirection } from "@/types/app";
 
 const LEVERAGE_OPTIONS = [1, 2, 5, 10, 20] as const;
 
+function getSuggestedLeverage(score: number, sentiment: "positive" | "negative"): number {
+  const confidence = sentiment === "positive" ? score : 100 - score;
+  if (confidence >= 80) return 10;
+  if (confidence >= 70) return 5;
+  return 2;
+}
+
 interface OrderFormProps {
   symbol: string;
-  marketId: string;
+  marketId: string | null;
   currentPrice?: number;
   isSubmitting?: boolean;
+  sentimentScore?: number;
+  sentimentLabel?: "positive" | "negative" | "neutral";
+  sentimentVelocity?: number;
   onSubmit?: (data: {
     symbol: string;
     marketId: string;
@@ -23,7 +35,16 @@ interface OrderFormProps {
   }) => void;
 }
 
-export function OrderForm({ symbol, marketId, currentPrice, isSubmitting, onSubmit }: OrderFormProps) {
+export function OrderForm({
+  symbol,
+  marketId,
+  currentPrice,
+  isSubmitting,
+  sentimentScore,
+  sentimentLabel,
+  sentimentVelocity,
+  onSubmit,
+}: OrderFormProps) {
   const [direction, setDirection] = useState<TradeDirection>("long");
   const [size, setSize] = useState("");
   const [leverage, setLeverage] = useState(5);
@@ -32,8 +53,11 @@ export function OrderForm({ symbol, marketId, currentPrice, isSubmitting, onSubm
   const [showTpSl, setShowTpSl] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
+  const signalFromStore = useSentimentStore((s) => s.getSignalBySymbol(symbol));
+  const currentVelocity = sentimentVelocity ?? signalFromStore?.velocity ?? 0;
+
   const sizeNum = Number(size);
-  const isValid = size && sizeNum > 0;
+  const isValid = !!marketId && size !== "" && sizeNum > 0;
 
   const tpNum = takeProfit ? Number(takeProfit) : undefined;
   const slNum = stopLoss ? Number(stopLoss) : undefined;
@@ -45,6 +69,7 @@ export function OrderForm({ symbol, marketId, currentPrice, isSubmitting, onSubm
   };
 
   const handleConfirm = () => {
+    if (!marketId) return;
     setShowModal(false);
     onSubmit?.({
       symbol,
@@ -61,10 +86,91 @@ export function OrderForm({ symbol, marketId, currentPrice, isSubmitting, onSubm
     setShowModal(false);
   };
 
+  const hasSuggestion =
+    sentimentScore !== undefined &&
+    sentimentLabel !== undefined &&
+    sentimentLabel !== "neutral";
+
+  const suggestedDirection: TradeDirection | null = hasSuggestion
+    ? sentimentLabel === "positive"
+      ? "long"
+      : "short"
+    : null;
+
+  const suggestedLeverage =
+    hasSuggestion && sentimentScore !== undefined
+      ? getSuggestedLeverage(sentimentScore, sentimentLabel as "positive" | "negative")
+      : null;
+
+  const confidence =
+    hasSuggestion && sentimentScore !== undefined
+      ? sentimentLabel === "positive"
+        ? sentimentScore
+        : 100 - sentimentScore
+      : null;
+
+  const handleApplySuggestion = () => {
+    if (suggestedDirection) setDirection(suggestedDirection);
+    if (suggestedLeverage) setLeverage(suggestedLeverage);
+  };
+
   return (
     <>
       <form onSubmit={handleSubmit} className="neu-extruded flex flex-col gap-4 rounded-[32px] bg-background p-4">
         <h3 className="text-sm font-semibold font-display">Place Order — {symbol}</h3>
+
+        <div className="neu-inset rounded-2xl p-2 flex flex-col gap-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Sentiment Velocity</span>
+            <span className="text-xs font-semibold text-primary">{currentVelocity.toFixed(1)}/min</span>
+          </div>
+          <SentimentSparkline symbol={symbol} currentVelocity={currentVelocity} />
+        </div>
+
+        {hasSuggestion && suggestedDirection && suggestedLeverage !== null && confidence !== null && (
+          <div className="neu-inset flex flex-col gap-2 rounded-2xl p-3 transition-all duration-300">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span
+                  className={`relative flex h-2 w-2 shrink-0`}
+                >
+                  <span
+                    className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 ${
+                      sentimentLabel === "positive" ? "bg-success" : "bg-danger"
+                    }`}
+                  />
+                  <span
+                    className={`relative inline-flex h-2 w-2 rounded-full ${
+                      sentimentLabel === "positive" ? "bg-success" : "bg-danger"
+                    }`}
+                  />
+                </span>
+                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                <span className="text-xs font-semibold text-foreground">
+                  AI Sentiment suggests:{" "}
+                  <span
+                    className={
+                      suggestedDirection === "long" ? "text-success" : "text-danger"
+                    }
+                  >
+                    {suggestedDirection === "long" ? "Long" : "Short"} {symbol}
+                  </span>
+                  , {suggestedLeverage}x
+                  <span className="text-muted-foreground">
+                    {" "}(confidence: {confidence}%)
+                  </span>
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleApplySuggestion}
+                className="neu-btn shrink-0 rounded-2xl bg-primary px-3 py-1 text-xs font-semibold text-white transition-all duration-300"
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="neu-inset grid grid-cols-2 gap-1 rounded-2xl p-1">
           <button
@@ -185,6 +291,12 @@ export function OrderForm({ symbol, marketId, currentPrice, isSubmitting, onSubm
                 className="neu-input rounded-2xl bg-background px-3 py-2 text-sm placeholder:text-muted disabled:opacity-50"
               />
             </div>
+          </div>
+        )}
+
+        {!marketId && (
+          <div className="neu-inset rounded-2xl p-3 text-center text-xs text-muted-foreground">
+            {symbol} is not available for trading on Pacifica
           </div>
         )}
 

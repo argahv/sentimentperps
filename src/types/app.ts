@@ -44,6 +44,12 @@ export interface LeaderboardEntry {
   totalTrades: number;
   bestCallPnl: number;
   updatedAt: Date;
+  /** 0-100 composite sentiment-weighted score */
+  sentimentScore: number;
+  /** Average minutes between signal and trade execution */
+  avgResponseTime: number;
+  /** Percentage of sentiment-aligned trades that were profitable */
+  sentimentAccuracy: number;
 }
 
 export type BadgeType =

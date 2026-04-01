@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { getTrendingTokens, getTopMentions, toSentimentSignals } from "@/lib/elfa";
+import {
+  getTrendingTokens,
+  getTopMentions,
+  toSentimentSignals,
+} from "@/lib/elfa";
 import type { ElfaTopMentionsResponse } from "@/types/elfa";
 
 export async function GET(request: Request) {
@@ -10,21 +14,26 @@ export async function GET(request: Request) {
 
     const trending = await getTrendingTokens(timeWindow, 1, limit);
 
-    const tokens = trending.data.slice(0, 10);
+    const trendingTokens = trending.data?.data ?? [];
+    const tokens = trendingTokens.slice(0, 10);
     const mentionsMap = new Map<string, ElfaTopMentionsResponse>();
 
     const mentionResults = await Promise.allSettled(
-      tokens.map((t) => getTopMentions(t.token.token_symbol, timeWindow, 1, 5))
+      tokens.map((t) => {
+        const symbol = typeof t.token === "string" ? t.token.toUpperCase() : t.token.token_symbol;
+        return getTopMentions(symbol, timeWindow, 1, 5);
+      }),
     );
 
     tokens.forEach((t, i) => {
+      const symbol = typeof t.token === "string" ? t.token.toUpperCase() : t.token.token_symbol;
       const result = mentionResults[i];
       if (result.status === "fulfilled") {
-        mentionsMap.set(t.token.token_symbol, result.value);
+        mentionsMap.set(symbol, result.value);
       }
     });
 
-    const signals = toSentimentSignals(trending.data, mentionsMap);
+    const signals = toSentimentSignals(trendingTokens, mentionsMap);
 
     return NextResponse.json({ signals, updatedAt: new Date().toISOString() });
   } catch (error) {

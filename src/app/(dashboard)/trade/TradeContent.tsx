@@ -8,10 +8,14 @@ import { useTrade } from "@/hooks/useTrade";
 import { usePositions } from "@/hooks/usePositions";
 import { usePriceData } from "@/hooks/usePriceData";
 import { useMarketsStore } from "@/stores/markets";
+import { useSentimentStore } from "@/stores/sentiment";
 import { PriceChart } from "@/components/ui/PriceChart";
 import { SentimentPanel } from "@/components/ui/SentimentPanel";
 import { OrderForm } from "@/components/ui/OrderForm";
+import { SentimentTriggerForm } from "@/components/ui/SentimentTriggerForm";
+import { ActiveTriggers } from "@/components/ui/ActiveTriggers";
 import { PositionsSidebar } from "@/components/ui/PositionsSidebar";
+import { useSentimentTriggerEngine } from "@/hooks/useSentimentTriggerEngine";
 import { LogIn, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import type { TradeDirection } from "@/types/app";
 
@@ -23,11 +27,15 @@ export default function TradeContent() {
   const getMarketId = useMarketsStore((s) => s.getMarketId);
   const marketId = getMarketId(symbol);
 
+  const tokenCards = useSentimentStore((s) => s.tokenCards);
+  const tokenCard = tokenCards.find((t) => t.symbol === symbol);
+
   const { isSubmitting, submitTrade, closePosition, walletAddress } = useTrade();
   const { refetch: refetchPositions } = usePositions(walletAddress, null, 15_000);
   const { candles, markers, currentPrice, priceChange, priceChangePct } = usePriceData(symbol);
 
   useSentimentPolling(30_000);
+  useSentimentTriggerEngine();
 
   const isPositive = priceChange >= 0;
 
@@ -41,6 +49,7 @@ export default function TradeContent() {
       takeProfit?: number;
       stopLoss?: number;
     }) => {
+      if (!data.marketId) return;
       await submitTrade({
         symbol: data.symbol,
         marketId: data.marketId,
@@ -112,8 +121,16 @@ export default function TradeContent() {
               currentPrice={currentPrice}
               isSubmitting={isSubmitting}
               onSubmit={handleSubmit}
+              sentimentScore={tokenCard?.sentimentScore}
+              sentimentLabel={tokenCard?.sentiment}
+              sentimentVelocity={tokenCard?.velocity}
             />
             <SentimentPanel symbol={symbol} />
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <SentimentTriggerForm symbol={symbol} />
+            <ActiveTriggers />
           </div>
         </div>
 

@@ -8,6 +8,8 @@ import { HotTokensFeed } from "@/components/ui/HotTokensFeed";
 import { PositionsSidebar } from "@/components/ui/PositionsSidebar";
 import { MissedMoves } from "@/components/ui/MissedMoves";
 import { PriceTicker } from "@/components/ui/PriceTicker";
+import { DivergenceAlerts } from "@/components/ui/DivergenceAlerts";
+import { SentimentReplay } from "@/components/ui/SentimentReplay";
 import { LogIn } from "lucide-react";
 
 const TICKER_SYMBOLS = ["BTC", "ETH", "SOL", "DOGE", "ARB", "AVAX"];
@@ -46,6 +48,8 @@ export default function DashboardContent() {
 
       <PriceTicker symbols={TICKER_SYMBOLS} />
 
+      <DivergenceAlerts />
+
       <MissedMoves />
 
       <div className="flex flex-col gap-6 lg:flex-row">
@@ -56,6 +60,8 @@ export default function DashboardContent() {
           <PositionsSidebar onClosePosition={authenticated ? handleClose : undefined} />
         </div>
       </div>
+
+      <SentimentReplay />
     </div>
   );
 }
