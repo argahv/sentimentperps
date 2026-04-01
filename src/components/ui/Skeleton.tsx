@@ -1,0 +1,50 @@
+"use client";
+
+interface SkeletonProps {
+  className?: string;
+}
+
+export function Skeleton({ className = "" }: SkeletonProps) {
+  return (
+    <div
+      className={`neu-inset animate-pulse rounded-lg bg-background ${className}`}
+    />
+  );
+}
+
+export function CardSkeleton() {
+  return (
+    <div className="neu-extruded flex flex-col gap-3 rounded-[32px] bg-background p-4">
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-4 w-20" />
+        <Skeleton className="h-5 w-16 rounded-full" />
+      </div>
+      <Skeleton className="h-8 w-32" />
+      <div className="flex gap-4">
+        <Skeleton className="h-3 w-24" />
+        <Skeleton className="h-3 w-16" />
+      </div>
+    </div>
+  );
+}
+
+export function ChartSkeleton() {
+  return (
+    <div className="neu-extruded rounded-[32px] bg-background overflow-hidden">
+      <Skeleton className="h-[400px] w-full rounded-none" />
+    </div>
+  );
+}
+
+export function TableRowSkeleton() {
+  return (
+    <div className="flex items-center gap-4 px-4 py-3">
+      <Skeleton className="h-8 w-8 rounded-full" />
+      <div className="flex flex-1 flex-col gap-1.5">
+        <Skeleton className="h-4 w-28" />
+        <Skeleton className="h-3 w-20" />
+      </div>
+      <Skeleton className="h-4 w-16" />
+    </div>
+  );
+}
