@@ -68,73 +68,65 @@ export default function DashboardContent() {
         <DashboardHeroStats />
       </div>
 
-      {/* ── Two-column terminal layout ── */}
-      <div className="flex flex-col lg:flex-row gap-3">
-        {/* ── LEFT: Data & Discovery ── */}
-        <div className="flex-1 min-w-0 flex flex-col gap-3">
-          {/* Portfolio hero — full width of left column */}
-          <div className="card-entrance" style={{ animationDelay: "calc(2 * var(--stagger-base))" }}>
-            <PortfolioPerformanceCard />
-          </div>
+      {/* ── Portfolio (full width) ── */}
+      <div className="card-entrance" style={{ animationDelay: "calc(2 * var(--stagger-base))" }}>
+        <PortfolioPerformanceCard />
+      </div>
 
-          {/* Divergence Alerts — primary action driver */}
-          <div className="card-entrance" style={{ animationDelay: "calc(3 * var(--stagger-base))" }}>
+      {/* ── 2-col cockpit: Left stack + Right stack ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        {/* Left column */}
+        <div className="flex flex-col gap-3 min-w-0">
+          <div className="card-entrance" style={{ animationDelay: "calc(2.5 * var(--stagger-base))" }}>
             <DivergenceAlerts />
           </div>
-
-          {/* Recent Wins — proof of edge, social proof */}
           <div className="card-entrance" style={{ animationDelay: "calc(3.5 * var(--stagger-base))" }}>
             <RecentWinsFeed />
           </div>
+        </div>
 
-          {/* Missed Moves — FOMO / urgency strip */}
-          <div className="card-entrance" style={{ animationDelay: "calc(4 * var(--stagger-base))" }}>
+        {/* Right column */}
+        <div className="flex flex-col gap-3 min-w-0">
+          <div className="card-entrance" style={{ animationDelay: "calc(3 * var(--stagger-base))" }}>
             <MissedMoves />
           </div>
-
-          {/* Hot Tokens — browsing / discovery */}
-          <div className="card-entrance" style={{ animationDelay: "calc(5 * var(--stagger-base))" }}>
+          <div className="card-entrance" style={{ animationDelay: "calc(3.5 * var(--stagger-base))" }}>
             <HotTokensFeed />
           </div>
-
-          {/* Sentiment Replay — trust / proof, lowest priority */}
-          <div className="card-entrance" style={{ animationDelay: "calc(6 * var(--stagger-base))" }}>
-            <SentimentReplay />
+          <div className="card-entrance" style={{ animationDelay: "calc(4 * var(--stagger-base))" }}>
+            <PositionsSidebar onClosePosition={authenticated ? handleClose : undefined} />
+          </div>
+          <div className="card-entrance" style={{ animationDelay: "calc(4.5 * var(--stagger-base))" }}>
+            {/* Your Edge — collapsible progressive disclosure */}
+            <span className="flat-card rounded-lg overflow-hidden transition-all duration-300">
+              <button
+                onClick={() => setEdgeOpen((v) => !v)}
+                className="flex w-full items-center justify-between px-5 py-3.5 text-left transition-colors duration-200 hover:bg-surface-elevated"
+              >
+                <div className="flex items-center gap-2">
+                  <Crosshair className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-semibold">Your Edge</span>
+                </div>
+                <ChevronDown
+                  className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${edgeOpen ? "rotate-180" : ""}`}
+                />
+              </button>
+              <div
+                className="transition-all duration-300 ease-in-out overflow-hidden"
+                style={{ maxHeight: edgeOpen ? "500px" : "0px", opacity: edgeOpen ? 1 : 0 }}
+              >
+                <div className="px-2 pb-3">
+                  <YourEdgeCard />
+                </div>
+              </div>
+            </span>
           </div>
         </div>
+      </div>
 
-        {/* ── RIGHT: Positions & Edge (sticky sidebar) ── */}
-        <div
-          className="w-full lg:w-[340px] xl:w-[380px] shrink-0 flex flex-col gap-3 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-88px)] lg:overflow-y-auto card-entrance"
-          style={{ animationDelay: "calc(2 * var(--stagger-base))" }}
-        >
-          {/* Positions — always visible, actionable */}
-          <PositionsSidebar onClosePosition={authenticated ? handleClose : undefined} />
-
-          {/* Your Edge — collapsible progressive disclosure */}
-          <span className="flat-card rounded-lg overflow-hidden transition-all duration-300">
-            <button
-              onClick={() => setEdgeOpen((v) => !v)}
-              className="flex w-full items-center justify-between px-5 py-3.5 text-left transition-colors duration-200 hover:bg-surface-elevated"
-            >
-              <div className="flex items-center gap-2">
-                <Crosshair className="h-4 w-4 text-primary" />
-                <span className="text-sm font-semibold">Your Edge</span>
-              </div>
-              <ChevronDown
-                className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${edgeOpen ? "rotate-180" : ""}`}
-              />
-            </button>
-            <div
-              className="transition-all duration-300 ease-in-out overflow-hidden"
-              style={{ maxHeight: edgeOpen ? "500px" : "0px", opacity: edgeOpen ? 1 : 0 }}
-            >
-              <div className="px-2 pb-3">
-                <YourEdgeCard />
-              </div>
-            </div>
-          </span>
-        </div>
+      {/* ── Sentiment Replay (full width — trust/proof, lowest priority) ── */}
+      <div className="card-entrance" style={{ animationDelay: "calc(5 * var(--stagger-base))" }}>
+        <SentimentReplay />
       </div>
     </div>
   );

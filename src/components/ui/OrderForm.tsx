@@ -181,7 +181,7 @@ export function OrderForm({
             className="absolute bottom-1 top-1 w-[calc(50%-6px)] transition-transform duration-200 ease-in-out"
             style={{
               transform: direction === "long" ? "translateX(4px)" : "translateX(calc(100% + 8px))",
-              backgroundColor: direction === "long" ? "var(--success)" : "var(--danger)",
+              backgroundColor: direction === "long" ? "var(--color-success)" : "var(--color-danger)",
               opacity: direction === "long" ? 1 : 0.6,
             }}
           />

@@ -38,7 +38,7 @@ export function EarningsProjection({
           value={additional}
           onChange={(e) => setAdditional(Number(e.target.value))}
           className="w-full h-2 rounded-full appearance-none bg-primary/20 border border-border-muted"
-          style={{ accentColor: "var(--primary)" }}
+          style={{ accentColor: "var(--color-primary)" }}
         />
       </div>
 
@@ -60,8 +60,8 @@ export function EarningsProjection({
           >
             <defs>
               <linearGradient id="earnings-gradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--success)" stopOpacity="0.5" />
-                <stop offset="100%" stopColor="var(--success)" stopOpacity="0" />
+                <stop offset="0%" stopColor="var(--color-success)" stopOpacity="0.5" />
+                <stop offset="100%" stopColor="var(--color-success)" stopOpacity="0" />
               </linearGradient>
             </defs>
             <path
@@ -72,7 +72,7 @@ export function EarningsProjection({
             <path
               d={pathData}
               fill="none"
-              stroke="var(--success)"
+              stroke="var(--color-success)"
               strokeWidth="3"
               strokeLinecap="round"
               strokeDasharray="150"

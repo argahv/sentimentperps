@@ -48,39 +48,48 @@ async function main() {
 
   console.log("Seeding trades...");
 
-  const now = Date.now();
-  const DAY = 86400000;
-  let tradeCount = 0;
+    let tradeCount = 0;
+    const now = Date.now();
+    const DAY = 86400000;
 
-  for (let w = 0; w < WALLETS.length; w++) {
-    const wallet = WALLETS[w];
-    const rng = seededRng((w + 1) * 7919);
-    const numTrades = Math.floor(randomBetween(rng, 15, 45));
+    for (let w = 0; w < WALLETS.length; w++) {
+      const wallet = WALLETS[w];
+      const rng = seededRng((w + 1) * 7919);
+      const numTrades = Math.floor(randomBetween(rng, 15, 45));
 
-    for (let t = 0; t < numTrades; t++) {
-      const symbol = SYMBOLS[Math.floor(rng() * SYMBOLS.length)];
-      const direction = DIRECTIONS[Math.floor(rng() * 2)];
-      const leverage = Math.floor(randomBetween(rng, 1, 10));
-      const size = Math.round(randomBetween(rng, 50, 5000) * 100) / 100;
-      const base = BASE_PRICES[symbol] ?? 100;
-      const entryPrice = Math.round(base * randomBetween(rng, 0.92, 1.08) * 100) / 100;
+      for (let t = 0; t < numTrades; t++) {
+        const symbol = SYMBOLS[Math.floor(rng() * SYMBOLS.length)];
+        const direction = DIRECTIONS[Math.floor(rng() * 2)];
+        const leverage = Math.floor(randomBetween(rng, 1, 10));
+        const size = Math.round(randomBetween(rng, 50, 5000) * 100) / 100;
+        const base = BASE_PRICES[symbol] ?? 100;
+        const entryPrice = Math.round(base * randomBetween(rng, 0.92, 1.08) * 100) / 100;
 
-      const pnlPct = randomBetween(rng, -25, 40);
-      const exitPrice = Math.round(entryPrice * (1 + pnlPct / 100 / leverage) * 100) / 100;
-      const pnlUsdc = Math.round(size * (pnlPct / 100) * 100) / 100;
+        const pnlPct = randomBetween(rng, -25, 40);
+        const exitPrice = Math.round(entryPrice * (1 + pnlPct / 100 / leverage) * 100) / 100;
+        const pnlUsdc = Math.round(size * (pnlPct / 100) * 100) / 100;
 
-      const sentimentAligned = rng() > 0.3;
-      const sentimentScoreAtEntry = Math.round(randomBetween(rng, 20, 95));
-      const minutesAfterSignal = Math.round(randomBetween(rng, 0.3, 15) * 10) / 10;
+        const sentimentAligned = rng() > 0.3;
+        const sentimentScoreAtEntry = Math.round(randomBetween(rng, 20, 95));
+        const minutesAfterSignal = Math.round(randomBetween(rng, 0.3, 15) * 10) / 10;
 
-      const score =
-        minutesAfterSignal > 0 && pnlPct > 0
-          ? Math.round(pnlPct * (1 / minutesAfterSignal) * 100) / 100
-          : 0;
+        const score =
+          minutesAfterSignal > 0 && pnlPct > 0
+            ? Math.round(pnlPct * (1 / minutesAfterSignal) * 100) / 100
+            : 0;
 
-      const daysAgo = Math.floor(randomBetween(rng, 0, 30));
-      const closedAt = new Date(now - daysAgo * DAY - Math.floor(rng() * DAY));
-      const createdAt = new Date(closedAt.getTime() - Math.floor(randomBetween(rng, 60000, 3600000)));
+        const tradeFraction = t / numTrades;
+        let daysAgo: number;
+        if (tradeFraction < 0.3) {
+          daysAgo = rng() * 0.8;
+        } else if (tradeFraction < 0.6) {
+          daysAgo = 1 + rng() * 5;
+        } else {
+          daysAgo = 6 + Math.floor(randomBetween(rng, 0, 24));
+        }
+
+        const closedAt = new Date(now - daysAgo * DAY - Math.floor(rng() * DAY * 0.5));
+        const createdAt = new Date(closedAt.getTime() - Math.floor(randomBetween(rng, 60000, 3600000)));
 
       await prisma.trade.create({
         data: {

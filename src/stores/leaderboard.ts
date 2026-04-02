@@ -1,11 +1,18 @@
 import { create } from "zustand";
 import type { LeaderboardEntry, LeaderboardPeriod } from "@/types/app";
 
+interface LeaderboardAggregates {
+  totalTraders: number;
+  totalTradesAllTime: number;
+  totalPnlUsdc: number;
+}
+
 interface LeaderboardState {
   entries: LeaderboardEntry[];
   period: LeaderboardPeriod;
   isLoading: boolean;
   error: string | null;
+  aggregates: LeaderboardAggregates;
 
   setPeriod: (period: LeaderboardPeriod) => void;
   setEntries: (entries: LeaderboardEntry[]) => void;
@@ -18,6 +25,7 @@ export const useLeaderboardStore = create<LeaderboardState>((set, get) => ({
   period: "daily",
   isLoading: false,
   error: null,
+  aggregates: { totalTraders: 0, totalTradesAllTime: 0, totalPnlUsdc: 0 },
 
   setPeriod: (period) => {
     set({ period });
@@ -38,8 +46,12 @@ export const useLeaderboardStore = create<LeaderboardState>((set, get) => ({
         throw new Error(data.error ?? "Failed to fetch leaderboard");
       }
 
-      const { entries } = await res.json();
-      set({ entries: entries ?? [], isLoading: false });
+      const { entries, aggregates } = await res.json();
+      set({
+        entries: entries ?? [],
+        aggregates: aggregates ?? get().aggregates,
+        isLoading: false,
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to fetch leaderboard";
       set({ error: message, isLoading: false });

@@ -133,7 +133,20 @@ export async function GET(request: Request) {
         rank: i + 1,
       }));
 
-    return NextResponse.json({ entries });
+    // Aggregate social proof stats (all-time, regardless of period filter)
+    const allTimeAgg = await prisma.trade.aggregate({
+      _count: { id: true },
+      _sum: { pnlUsdc: true },
+    });
+    const uniqueTraders = await prisma.trade.groupBy({ by: ["walletAddress"] });
+
+    const aggregates = {
+      totalTraders: uniqueTraders.length,
+      totalTradesAllTime: allTimeAgg._count.id,
+      totalPnlUsdc: Math.round(allTimeAgg._sum.pnlUsdc ?? 0),
+    };
+
+    return NextResponse.json({ entries, aggregates });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to fetch leaderboard";
     console.error("[leaderboard] GET error:", message);

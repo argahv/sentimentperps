@@ -51,7 +51,7 @@ export function YourEdgeCard() {
             cy="50"
             r={radius}
             fill="none"
-            stroke="var(--primary)"
+            stroke="var(--color-primary)"
             strokeWidth="8"
             strokeLinecap="round"
             strokeDasharray={circumference}

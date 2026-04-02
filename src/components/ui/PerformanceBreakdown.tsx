@@ -40,7 +40,7 @@ export function PerformanceBreakdown({
         {sorted.map((item, idx) => {
           const winRate = (item.wins / item.trades) * 100;
           const avgSize = item.totalSize / item.trades;
-          const pnlColor = item.totalPnl >= 0 ? "text-[var(--success)]" : "text-[var(--danger)]";
+          const pnlColor = item.totalPnl >= 0 ? "text-[var(--color-success)]" : "text-[var(--color-danger)]";
           const pnlPrefix = item.totalPnl >= 0 ? "+" : "";
 
           return (

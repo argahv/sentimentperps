@@ -75,8 +75,8 @@ function DivergenceCard({ item, index }: { item: DivergenceItem; index: number }
       <div className="bg-surface-elevated rounded-md flex items-center justify-between px-3 py-2 text-xs">
         <div className="flex-1">
           <svg viewBox="0 0 60 30" className="h-[30px] w-[60px]" preserveAspectRatio="none">
-            <polyline points={priceLine} fill="none" stroke="var(--primary)" strokeWidth="1.5" strokeLinejoin="round" opacity="0.8" />
-            <polyline points={sentLine} fill="none" stroke="var(--success)" strokeWidth="1.5" strokeLinejoin="round" opacity="0.8" />
+            <polyline points={priceLine} fill="none" stroke="var(--color-primary)" strokeWidth="1.5" strokeLinejoin="round" opacity="0.8" />
+            <polyline points={sentLine} fill="none" stroke="var(--color-success)" strokeWidth="1.5" strokeLinejoin="round" opacity="0.8" />
           </svg>
         </div>
         <div className="flex flex-col items-end gap-1 ml-3">

@@ -36,7 +36,7 @@ export function WinRateDonut({
             cy={size / 2}
             r={radius}
             fill="transparent"
-            stroke="var(--danger)"
+            stroke="var(--color-danger)"
             strokeWidth={strokeWidth}
             className="opacity-20"
           />
@@ -45,7 +45,7 @@ export function WinRateDonut({
             cy={size / 2}
             r={radius}
             fill="transparent"
-            stroke="var(--success)"
+            stroke="var(--color-success)"
             strokeWidth={strokeWidth}
             strokeDasharray={circumference}
             strokeDashoffset={offset}

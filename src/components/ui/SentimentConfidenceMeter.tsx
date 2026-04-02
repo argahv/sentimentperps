@@ -16,11 +16,11 @@ export function SentimentConfidenceMeter({ symbol }: { symbol: string }) {
   const sentimentScore = tokenCard?.sentimentScore ?? 50;
   const confidence = Math.round(Math.abs(sentimentScore - 50) * 2);
 
-  let colorVar = "var(--danger)";
+  let colorVar = "var(--color-danger)";
   if (confidence >= 66) {
-    colorVar = "var(--success)";
+    colorVar = "var(--color-success)";
   } else if (confidence >= 33) {
-    colorVar = "var(--warning, #FFD600)";
+    colorVar = "var(--color-warning, #FFD600)";
   }
 
   const radius = 60;
@@ -43,7 +43,7 @@ export function SentimentConfidenceMeter({ symbol }: { symbol: string }) {
           <path
             d={`M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`}
             fill="none"
-            stroke="var(--foreground)"
+            stroke="var(--color-foreground)"
             strokeOpacity={0.1}
             strokeWidth={strokeWidth}
             strokeLinecap="round"

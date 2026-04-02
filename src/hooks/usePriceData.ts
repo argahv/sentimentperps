@@ -5,16 +5,16 @@ import type { CandleData, ChartMarker } from "@/components/ui/PriceChart";
 import { useSentimentStore } from "@/stores/sentiment";
 
 const BASE_PRICES: Record<string, number> = {
-  BTC: 67500,
-  ETH: 3450,
-  SOL: 178,
-  DOGE: 0.165,
-  ARB: 1.25,
-  AVAX: 38.5,
-  MATIC: 0.72,
-  LINK: 14.8,
-  UNI: 7.4,
-  AAVE: 92,
+  BTC: 66800,
+  ETH: 2050,
+  SOL: 79,
+  DOGE: 0.09,
+  ARB: 0.09,
+  AVAX: 8.7,
+  MATIC: 0.15,
+  LINK: 8.6,
+  UNI: 3.1,
+  AAVE: 95,
 };
 
 function getBasePrice(symbol: string): number {
@@ -89,6 +89,18 @@ function generateNewCandle(prev: CandleData, symbol: string): CandleData {
   };
 }
 
+async function fetchPacificaKlines(symbol: string): Promise<CandleData[] | null> {
+  try {
+    const res = await fetch(`/api/klines?symbol=${encodeURIComponent(symbol)}&days=7&interval=15m`);
+    if (!res.ok) return null;
+    const { candles } = await res.json();
+    if (!Array.isArray(candles) || candles.length < 10) return null;
+    return candles as CandleData[];
+  } catch {
+    return null;
+  }
+}
+
 async function fetchOhlcCandles(symbol: string): Promise<CandleData[] | null> {
   try {
     const res = await fetch(`/api/ohlc?symbol=${encodeURIComponent(symbol)}&days=7`);
@@ -101,38 +113,64 @@ async function fetchOhlcCandles(symbol: string): Promise<CandleData[] | null> {
   }
 }
 
+const TICK_INTERVAL = 15_000;
+const REFETCH_INTERVAL = 5 * 60 * 1000;
+
 export function usePriceData(symbol: string) {
   const [candles, setCandles] = useState<CandleData[]>([]);
   const [markers, setMarkers] = useState<ChartMarker[]>([]);
   const [isLive, setIsLive] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isLiveRef = useRef(false);
+  const lastFetchRef = useRef(0);
   const signals = useSentimentStore((s) => s.signals);
 
   useEffect(() => {
     let cancelled = false;
 
     async function init() {
+      const pacificaCandles = await fetchPacificaKlines(symbol);
+      if (!cancelled && pacificaCandles) {
+        setCandles(pacificaCandles);
+        isLiveRef.current = true;
+        lastFetchRef.current = Date.now();
+        setIsLive(true);
+        return;
+      }
+
       const liveCandles = await fetchOhlcCandles(symbol);
       if (cancelled) return;
 
       if (liveCandles) {
         setCandles(liveCandles);
+        isLiveRef.current = true;
+        lastFetchRef.current = Date.now();
         setIsLive(true);
       } else {
         setCandles(generateHistoricalCandles(symbol));
+        isLiveRef.current = false;
         setIsLive(false);
       }
     }
 
     init();
 
-    intervalRef.current = setInterval(() => {
+    intervalRef.current = setInterval(async () => {
+      const sinceLastFetch = Date.now() - lastFetchRef.current;
+      if (isLiveRef.current && sinceLastFetch >= REFETCH_INTERVAL) {
+        const fresh = await fetchPacificaKlines(symbol) ?? await fetchOhlcCandles(symbol);
+        if (fresh && fresh.length > 0) {
+          lastFetchRef.current = Date.now();
+          setCandles(fresh);
+          return;
+        }
+      }
       setCandles((prev) => {
         if (!prev.length) return prev;
         const newCandle = generateNewCandle(prev[prev.length - 1], symbol);
         return [...prev.slice(-299), newCandle];
       });
-    }, 10_000);
+    }, TICK_INTERVAL);
 
     return () => {
       cancelled = true;

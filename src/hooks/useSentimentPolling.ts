@@ -6,22 +6,40 @@ import { pushVelocity } from "@/stores/velocityHistory";
 import type { SentimentSignal } from "@/types/elfa";
 import type { TokenCardData } from "@/types/app";
 
-function sentimentToScore(sentiment: "positive" | "negative" | "neutral"): number {
-  switch (sentiment) {
-    case "positive": return 75;
-    case "negative": return 25;
-    case "neutral": return 50;
-  }
+function clamp(v: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, v));
 }
 
-function signalToTokenCard(signal: SentimentSignal): TokenCardData {
-  return {
+function computeSentimentScores(signals: SentimentSignal[]): Map<string, number> {
+  const scores = new Map<string, number>();
+  if (signals.length === 0) return scores;
+
+  const maxVelocity = Math.max(...signals.map((s) => s.velocity), 0.001);
+  const maxMentions = Math.max(...signals.map((s) => s.mentionCount), 1);
+
+  for (const s of signals) {
+    const sentimentBase = s.sentiment === "positive" ? 15 : s.sentiment === "negative" ? -15 : 0;
+    const velocityPts = (s.velocity / maxVelocity) * 40;
+    const momentumPts = clamp(s.mentionChange, -100, 100) / 100 * 30;
+    const volumePts = (s.mentionCount / maxMentions) * 30;
+
+    const raw = 50 + sentimentBase + velocityPts + momentumPts + volumePts;
+    scores.set(s.symbol, Math.round(clamp(raw, 5, 95)));
+  }
+
+  return scores;
+}
+
+function signalsToTokenCards(signals: SentimentSignal[]): TokenCardData[] {
+  const scores = computeSentimentScores(signals);
+
+  return signals.map((signal) => ({
     symbol: signal.symbol,
     name: signal.name,
     price: 0,
     priceChange24h: 0,
     sentiment: signal.sentiment,
-    sentimentScore: sentimentToScore(signal.sentiment),
+    sentimentScore: scores.get(signal.symbol) ?? 50,
     mentionCount: signal.mentionCount,
     mentionChange: signal.mentionChange,
     velocity: signal.velocity,
@@ -34,7 +52,7 @@ function signalToTokenCard(signal: SentimentSignal): TokenCardData {
             signal.topMentions[0].engagement.retweet_count,
         }
       : undefined,
-  };
+  }));
 }
 
 export function useSentimentPolling(intervalMs: number = 60_000) {
@@ -58,7 +76,7 @@ export function useSentimentPolling(intervalMs: number = 60_000) {
       );
 
       setSignals(signals);
-      setTokenCards(signals.map(signalToTokenCard));
+      setTokenCards(signalsToTokenCards(signals));
 
       for (const signal of signals) {
         pushVelocity(signal.symbol, signal.velocity);

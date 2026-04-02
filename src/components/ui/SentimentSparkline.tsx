@@ -90,7 +90,7 @@ export function SentimentSparkline({ symbol, currentVelocity }: SentimentSparkli
   const last = history[history.length - 1];
   const secondLast = history[history.length - 2];
   const dotColor =
-    last > secondLast ? "var(--success)" : last < secondLast ? "var(--danger)" : "var(--primary)";
+    last > secondLast ? "var(--color-success)" : last < secondLast ? "var(--color-danger)" : "var(--color-primary)";
 
   const minVal = Math.min(...history);
   const maxVal = Math.max(...history);
@@ -113,8 +113,8 @@ export function SentimentSparkline({ symbol, currentVelocity }: SentimentSparkli
     >
       <defs>
         <linearGradient id={`fill-${symbol}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.25" />
-          <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
+          <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.25" />
+          <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0" />
         </linearGradient>
       </defs>
 
@@ -125,7 +125,7 @@ export function SentimentSparkline({ symbol, currentVelocity }: SentimentSparkli
 
       <path
         d={smoothPath}
-        stroke="var(--primary)"
+        stroke="var(--color-primary)"
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"

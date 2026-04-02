@@ -11,9 +11,11 @@ import {
   Target,
   Flame,
   Zap,
-  ChevronDown,
   LogIn,
   User,
+  Users,
+  BarChart3,
+  DollarSign,
 } from "lucide-react";
 import type { LeaderboardPeriod, LeaderboardEntry, BadgeType } from "@/types/app";
 import { TraderComparisonModal } from "@/components/ui/TraderComparisonModal";
@@ -62,7 +64,7 @@ function SentimentAccuracyBar({ accuracy }: { accuracy: number }) {
           className="h-full rounded-full transition-all duration-300"
           style={{
             width: `${Math.min(100, accuracy)}%`,
-            background: accuracy >= 60 ? "var(--success)" : accuracy >= 40 ? "var(--primary)" : "var(--danger)",
+            background: accuracy >= 60 ? "var(--color-success)" : accuracy >= 40 ? "var(--color-primary)" : "var(--color-danger)",
           }}
         />
       </div>
@@ -91,7 +93,7 @@ function LeaderboardRow({ entry, isCurrentUser, maxScore = 1, index = 0, onClick
       onClick={onClick}
       className={`relative flex items-center gap-4 px-4 py-3 transition-all duration-200 cursor-pointer overflow-hidden rounded-md bg-surface hover:bg-surface-elevated ${
         isCurrentUser
-          ? "border-l-[3px] border-l-[var(--primary)] bg-primary-muted"
+          ? "border-l-[3px] border-l-[var(--color-primary)] bg-primary-muted"
           : ""
       }`}
     >
@@ -158,11 +160,10 @@ function shortenAddress(addr: string): string {
 }
 
 export default function LeaderboardContent() {
-  const { entries, period, setPeriod, isLoading, error, fetchLeaderboard } = useLeaderboardStore();
+  const { entries, period, setPeriod, isLoading, error, fetchLeaderboard, aggregates } = useLeaderboardStore();
   const { authenticated, login, ready } = usePrivy();
   const { wallets } = useWallets();
   const [selectedTrader, setSelectedTrader] = useState<LeaderboardEntry | null>(null);
-  const [formulaOpen, setFormulaOpen] = useState(false);
 
   useEffect(() => {
     fetchLeaderboard();
@@ -401,6 +402,38 @@ export default function LeaderboardContent() {
             )}
           </div>
 
+          <div className="flat-card rounded-lg overflow-hidden">
+            <div className="px-5 py-3.5 flex items-center gap-2 border-b border-border">
+              <Zap className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold uppercase tracking-wider">The Innovation</span>
+            </div>
+            <div className="px-5 py-4 flex flex-col gap-3">
+              <div className="bg-surface-elevated rounded-md px-4 py-3 border border-border">
+                <p className="text-sm font-mono text-primary font-bold tracking-tight">
+                  Score = profit% × (1 / minutes)
+                </p>
+              </div>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-start gap-2">
+                  <span className="bg-surface-elevated rounded-md px-2 py-0.5 text-[10px] font-semibold text-success shrink-0">profit%</span>
+                  <span className="text-[11px] text-muted-foreground">Your trade&apos;s percentage return.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="bg-surface-elevated rounded-md px-2 py-0.5 text-[10px] font-semibold text-primary shrink-0">1 / min</span>
+                  <span className="text-[11px] text-muted-foreground">Speed bonus — 1 min scores 5× over 5 min.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="bg-surface-elevated rounded-md px-2 py-0.5 text-[10px] font-semibold text-amber-500 shrink-0">sentiment</span>
+                  <span className="text-[11px] text-muted-foreground">Direction aligned with sentiment signal.</span>
+                </div>
+              </div>
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                Fast movers who read sentiment correctly score highest. This isn&apos;t just PnL — it&apos;s
+                <span className="text-primary font-semibold"> signal-to-action speed</span>.
+              </p>
+            </div>
+          </div>
+
           <div className="flat-card rounded-lg flex flex-col gap-3 overflow-hidden">
             <div className="grid grid-cols-2 gap-px bg-background">
               <div className="flex flex-col items-center gap-1 bg-surface px-3 py-3">
@@ -421,46 +454,33 @@ export default function LeaderboardContent() {
               <div className="flex flex-col items-center gap-1 bg-surface px-3 py-3">
                 <Target className="h-4 w-4 text-primary" />
                 <span className="text-xs font-bold tabular-nums">{summaryStats.totalTrades.toLocaleString()}</span>
-                <span className="text-[10px] text-muted-foreground">Total Trades</span>
+                <span className="text-[10px] text-muted-foreground">Period Trades</span>
               </div>
             </div>
           </div>
 
-          <div className="flat-card rounded-lg overflow-hidden transition-all duration-300">
-            <button
-              onClick={() => setFormulaOpen((v) => !v)}
-              className="flex w-full items-center justify-between px-5 py-3.5 text-left transition-colors duration-200 hover:bg-surface-elevated"
-            >
-              <div className="flex items-center gap-2">
-                <Zap className="h-4 w-4 text-primary" />
-                <span className="text-sm font-semibold uppercase tracking-wider">Scoring Formula</span>
+          <div className="flat-card rounded-lg overflow-hidden">
+            <div className="px-5 py-3.5 flex items-center gap-2 border-b border-border">
+              <Users className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold uppercase tracking-wider">Platform Stats</span>
+            </div>
+            <div className="grid grid-cols-3 gap-px bg-background">
+              <div className="flex flex-col items-center gap-1 bg-surface px-2 py-3">
+                <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-sm font-bold tabular-nums">{aggregates.totalTraders}</span>
+                <span className="text-[9px] text-muted-foreground">Traders</span>
               </div>
-              <ChevronDown
-                className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${formulaOpen ? "rotate-180" : ""}`}
-              />
-            </button>
-            <div
-              className="transition-all duration-300 ease-in-out overflow-hidden"
-              style={{ maxHeight: formulaOpen ? "500px" : "0px", opacity: formulaOpen ? 1 : 0 }}
-            >
-              <div className="px-5 pb-4 flex flex-col gap-3">
-                <p className="text-xs font-mono text-primary">
-                  Score = profit_pct × (1 / minutes_after_signal)
-                </p>
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-start gap-2">
-                    <span className="bg-surface-elevated rounded-md px-2 py-0.5 text-[10px] font-semibold text-success shrink-0">profit_pct</span>
-                    <span className="text-[11px] text-muted-foreground">Your trade&apos;s percentage return.</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="bg-surface-elevated rounded-md px-2 py-0.5 text-[10px] font-semibold text-primary shrink-0">1 / minutes</span>
-                    <span className="text-[11px] text-muted-foreground">Speed bonus: 1 min scores 5× over 5 min.</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="bg-surface-elevated rounded-md px-2 py-0.5 text-[10px] font-semibold text-amber-500 shrink-0">sentiment acc</span>
-                    <span className="text-[11px] text-muted-foreground">Direction aligned with sentiment signal.</span>
-                  </div>
-                </div>
+              <div className="flex flex-col items-center gap-1 bg-surface px-2 py-3">
+                <BarChart3 className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-sm font-bold tabular-nums">{aggregates.totalTradesAllTime.toLocaleString()}</span>
+                <span className="text-[9px] text-muted-foreground">All-Time Trades</span>
+              </div>
+              <div className="flex flex-col items-center gap-1 bg-surface px-2 py-3">
+                <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className={`text-sm font-bold tabular-nums ${aggregates.totalPnlUsdc >= 0 ? "text-success" : "text-danger"}`}>
+                  {aggregates.totalPnlUsdc >= 0 ? "+" : ""}${Math.abs(aggregates.totalPnlUsdc).toLocaleString()}
+                </span>
+                <span className="text-[9px] text-muted-foreground">Total PnL</span>
               </div>
             </div>
           </div>

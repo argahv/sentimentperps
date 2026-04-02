@@ -167,6 +167,34 @@ export function useTrade() {
     [privyReady, authenticated, signPayload, addNotification]
   );
 
+  const setTpSl = useCallback(async (params: {
+    symbol: string;
+    takeProfit?: number;
+    stopLoss?: number;
+  }) => {
+    try {
+      const { walletAddress: addr, signature } = await signPayload({ symbol: params.symbol, action: "set_tpsl" });
+      const res = await fetch("/api/positions/tpsl", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          symbol: params.symbol,
+          takeProfit: params.takeProfit,
+          stopLoss: params.stopLoss,
+          walletAddress: addr,
+          signature,
+        }),
+      });
+      if (!res.ok) {
+        const { error } = await res.json();
+        throw new Error(error || "TP/SL update failed");
+      }
+      addNotification({ type: "success", title: "TP/SL Set", message: `Updated for ${params.symbol}`, duration: 4000 });
+    } catch (err) {
+      addNotification({ type: "error", title: "TP/SL Failed", message: err instanceof Error ? err.message : "Unknown error", duration: 6000 });
+    }
+  }, [signPayload, addNotification]);
+
   return {
     ready: privyReady && walletsReady,
     authenticated,
@@ -176,5 +204,6 @@ export function useTrade() {
     submitTrade,
     closePosition,
     signPayload,
+    setTpSl,
   };
 }

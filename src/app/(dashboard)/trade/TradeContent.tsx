@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { useSentimentPolling } from "@/hooks/useSentimentPolling";
 import { useTrade } from "@/hooks/useTrade";
@@ -31,12 +31,39 @@ export default function TradeContent() {
   const tokenCards = useSentimentStore((s) => s.tokenCards);
   const tokenCard = tokenCards.find((t) => t.symbol === symbol);
 
-  const { isSubmitting, submitTrade, closePosition, walletAddress } = useTrade();
+  const { isSubmitting, submitTrade, closePosition, walletAddress, setTpSl } = useTrade();
   const { refetch: refetchPositions } = usePositions(walletAddress, null, 15_000);
   const { candles, markers, currentPrice, priceChange, priceChangePct } = usePriceData(symbol);
 
   useSentimentPolling(30_000);
-  useSentimentTriggerEngine();
+
+  const [autoTradeEnabled, setAutoTradeEnabled] = useState(false);
+
+  const onAutoTrade = useCallback(
+    async (params: { symbol: string; direction: "long" | "short"; size: number; leverage: number }) => {
+      const mId = getMarketId(params.symbol);
+      if (!mId) throw new Error(`No market ID for ${params.symbol}`);
+      await submitTrade({
+        symbol: params.symbol,
+        marketId: mId,
+        direction: params.direction,
+        size: params.size,
+        leverage: params.leverage,
+      });
+      refetchPositions();
+    },
+    [getMarketId, submitTrade, refetchPositions]
+  );
+
+  const triggerOptions = useMemo(
+    () =>
+      authenticated && autoTradeEnabled
+        ? { autoExecute: true as const, onAutoTrade }
+        : undefined,
+    [authenticated, autoTradeEnabled, onAutoTrade]
+  );
+
+  useSentimentTriggerEngine(triggerOptions);
 
   const isPositive = priceChange >= 0;
   const [showTriggers, setShowTriggers] = useState(false);
@@ -60,8 +87,12 @@ export default function TradeContent() {
         leverage: data.leverage,
       });
       refetchPositions();
+
+      if (data.takeProfit !== undefined || data.stopLoss !== undefined) {
+        setTpSl({ symbol: data.symbol, takeProfit: data.takeProfit, stopLoss: data.stopLoss });
+      }
     },
-    [submitTrade, refetchPositions]
+    [submitTrade, refetchPositions, setTpSl]
   );
 
   const handleClosePosition = useCallback(
@@ -190,6 +221,9 @@ export default function TradeContent() {
               <div className="flex items-center gap-2">
                 <Zap className="h-4 w-4 text-primary" />
                 <span className="text-sm font-semibold">Auto-Trade Triggers</span>
+                {autoTradeEnabled && authenticated && (
+                  <span className="led-indicator led-green h-2 w-2 rounded-full" />
+                )}
               </div>
               <ChevronDown
                 className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
@@ -200,6 +234,25 @@ export default function TradeContent() {
 
             {showTriggers && (
               <div className="mt-3 flex flex-col gap-3">
+                {authenticated && (
+                  <div className="flex items-center justify-between px-4 py-2 rounded-md bg-surface-elevated">
+                    <div className="flex items-center gap-2">
+                      <span className={`h-2 w-2 rounded-full ${autoTradeEnabled ? "led-indicator led-green" : "bg-muted-foreground/30"}`} />
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {autoTradeEnabled ? "Auto-execute ON" : "Auto-execute OFF"}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setAutoTradeEnabled((v) => !v)}
+                      className={`relative h-5 w-9 rounded-full transition-colors duration-200 ${autoTradeEnabled ? "bg-success" : "bg-muted-foreground/30"}`}
+                    >
+                      <span
+                        className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform duration-200 ${autoTradeEnabled ? "translate-x-4" : ""}`}
+                      />
+                    </button>
+                  </div>
+                )}
                 <SentimentTriggerForm symbol={symbol} />
                 <ActiveTriggers />
               </div>

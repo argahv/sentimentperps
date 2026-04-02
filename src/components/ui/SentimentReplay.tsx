@@ -137,7 +137,7 @@ function MiniChart({
   const signalX = signalIndex * step;
   const signalY = H - ((prices[signalIndex] - min) / range) * H;
 
-  const strokeColor = direction === "long" ? "var(--success)" : "var(--danger)";
+  const strokeColor = direction === "long" ? "var(--color-success)" : "var(--color-danger)";
   const gradientId = `gradient-fill-${chartId}`;
 
   const approximatePathLength = prices.length * step * 1.2;
@@ -171,8 +171,8 @@ function MiniChart({
           animationTimingFunction: "ease-out",
         }}
       />
-      <circle cx={signalX} cy={signalY} r="3.5" fill="var(--primary)" opacity="0.9" />
-      <circle cx={signalX} cy={signalY} r="6" fill="var(--primary)" opacity="0.2" />
+      <circle cx={signalX} cy={signalY} r="3.5" fill="var(--color-primary)" opacity="0.9" />
+      <circle cx={signalX} cy={signalY} r="6" fill="var(--color-primary)" opacity="0.2" />
     </svg>
   );
 }

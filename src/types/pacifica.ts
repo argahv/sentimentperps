@@ -177,3 +177,10 @@ export interface PacificaBuilderInfo {
   total_volume: number;
   total_fees_earned: number;
 }
+
+/** Request body for POST /api/v1/positions/tpsl */
+export interface PacificaTpSlRequest {
+  symbol: string;
+  take_profit?: string;
+  stop_loss?: string;
+}

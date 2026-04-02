@@ -179,3 +179,65 @@ export async function cancelOrder(
   });
   if (!res.ok) throw new Error(`Pacifica cancel failed: ${res.status}`);
 }
+
+export async function setPositionTpSl(
+  params: { symbol: string; takeProfit?: number; stopLoss?: number },
+  auth: AuthHeaders
+): Promise<void> {
+  const body: Record<string, unknown> = {
+    symbol: params.symbol,
+    account: auth.walletAddress,
+    signature: auth.signature,
+    timestamp: Date.now(),
+  };
+  if (params.takeProfit !== undefined) body.take_profit = String(params.takeProfit);
+  if (params.stopLoss !== undefined) body.stop_loss = String(params.stopLoss);
+
+  const res = await fetch(`${PACIFICA_BASE_URL}/positions/tpsl`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Pacifica TP/SL failed: ${res.status} — ${err}`);
+  }
+}
+
+export interface PacificaKline {
+  t: number;   // open time (ms)
+  T: number;   // close time (ms)
+  s: string;   // symbol
+  i: string;   // interval
+  o: string;   // open
+  c: string;   // close
+  h: string;   // high
+  l: string;   // low
+  v: string;   // volume
+  n: number;   // number of trades
+}
+
+export async function getKlines(
+  symbol: string,
+  interval: string = "15m",
+  startTime: number,
+  endTime?: number
+): Promise<PacificaKline[]> {
+  const params = new URLSearchParams({
+    symbol,
+    interval,
+    start_time: String(startTime),
+  });
+  if (endTime) params.set("end_time", String(endTime));
+
+  const res = await fetch(`${PACIFICA_BASE_URL}/kline?${params}`, {
+    next: { revalidate: 60 },
+  });
+  if (!res.ok) throw new Error(`Pacifica kline failed: ${res.status}`);
+  const json = await res.json();
+  // Pacifica wraps response: { success, data: [...], error, code }
+  const arr = json.data ?? json;
+  if (!Array.isArray(arr)) throw new Error("Unexpected kline response shape");
+  return arr as PacificaKline[];
+}

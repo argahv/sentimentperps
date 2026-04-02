@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { usePositionsStore } from "@/stores/positions";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingUp, TrendingDown, Crosshair } from "lucide-react";
 
 type TimeRange = "1D" | "1W" | "1M";
 
@@ -79,8 +80,23 @@ export function PortfolioPerformanceCard() {
 
   if (positions.length === 0) {
     return (
-      <div className="flat-card rounded-lg p-6 card-entrance col-span-full industrial-screws flex items-center justify-center min-h-[160px]">
-        <p className="text-muted-foreground">No positions yet</p>
+      <div className="flat-card rounded-lg p-8 card-entrance col-span-full industrial-screws flex flex-col items-center justify-center min-h-[240px] text-center gap-4">
+        <div className="flat-icon-well p-4 rounded-full bg-surface-elevated text-primary mb-2">
+          <Crosshair size={32} />
+        </div>
+        <div className="space-y-1">
+          <h3 className="text-xl font-display font-bold text-foreground">Ready to Trade?</h3>
+          <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+            Open a sentiment-driven position to track your portfolio performance here.
+          </p>
+        </div>
+        <Link 
+          href="/trade" 
+          className="flat-btn-primary px-6 py-2 rounded-md font-semibold mt-2 inline-flex items-center gap-2"
+        >
+          <TrendingUp size={16} />
+          Start Trading
+        </Link>
       </div>
     );
   }
@@ -94,7 +110,7 @@ export function PortfolioPerformanceCard() {
           <h2 className="text-3xl sm:text-4xl font-bold tabular-nums tracking-tight text-foreground">
             ${currentTotalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </h2>
-          <span className={`flex items-center text-sm font-semibold tabular-nums px-2 py-1 rounded-full ${isPositive ? 'bg-success-muted text-[var(--success)]' : 'bg-danger-muted text-[var(--danger)]'}`}>
+          <span className={`flex items-center text-sm font-semibold tabular-nums px-2 py-1 rounded-full ${isPositive ? 'bg-success-muted text-[var(--color-success)]' : 'bg-danger-muted text-[var(--color-danger)]'}`}>
             {isPositive ? <TrendingUp size={14} className="mr-1" /> : <TrendingDown size={14} className="mr-1" />}
             {Math.abs(pnlDiff).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({Math.abs(pnlPercent).toFixed(2)}%)
           </span>
@@ -123,8 +139,8 @@ export function PortfolioPerformanceCard() {
             <svg viewBox="0 0 120 40" className="w-full h-full overflow-visible">
               <defs>
                 <linearGradient id="sparkline-gradient" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.2" />
-                  <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
+                  <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.2" />
+                  <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0" />
                 </linearGradient>
               </defs>
               <polygon
@@ -135,7 +151,7 @@ export function PortfolioPerformanceCard() {
               <polyline
                 points={sparklinePaths.polyline}
                 fill="none"
-                stroke="var(--primary)"
+                stroke="var(--color-primary)"
                 strokeWidth="2.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -152,7 +168,7 @@ export function PortfolioPerformanceCard() {
           ) : (
             <div className="w-full h-full flex items-center justify-center">
               <div className="w-full h-1 bg-surface-elevated rounded-full overflow-hidden">
-                <div className="h-full w-1/3 bg-[var(--primary)] bar-animate" />
+                <div className="h-full w-1/3 bg-[var(--color-primary)] bar-animate" />
               </div>
             </div>
           )}
