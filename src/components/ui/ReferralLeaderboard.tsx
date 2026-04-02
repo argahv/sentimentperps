@@ -1,56 +1,58 @@
 "use client";
 
-import { useMemo } from "react";
+import { Trophy } from "lucide-react";
 
-const DEMO_REFERRERS = [
-  { address: "8xPq...dF4k", referrals: 28, earned: 342.50 },
-  { address: "3jRm...xP2s", referrals: 22, earned: 268.30 },
-  { address: "9kLn...wQ7r", referrals: 18, earned: 215.60 },
-  { address: "5vMx...bR9t", referrals: 12, earned: 156.42 },
-  { address: "7wNz...cS1u", referrals: 8, earned: 89.20 },
-];
+interface LeaderboardEntry {
+  address: string;
+  fullAddress: string;
+  referrals: number;
+  earned: number;
+}
 
 export function ReferralLeaderboard({
   currentUserAddress,
+  leaderboard,
 }: {
   currentUserAddress: string | null;
+  leaderboard: LeaderboardEntry[];
 }) {
-  const leaderBoard = useMemo(() => {
-    if (!currentUserAddress) return DEMO_REFERRERS;
-    return DEMO_REFERRERS.map((ref, idx) => {
-      if (idx === 3) {
-        return { ...ref, address: currentUserAddress, isYou: true };
-      }
-      return ref;
-    });
-  }, [currentUserAddress]);
+  if (leaderboard.length === 0) {
+    return (
+      <div className="neu-card-enhanced glass-panel p-6 rounded-[32px] flex flex-col gap-4">
+        <div>
+          <h3 className="font-display text-lg font-bold">Leaderboard</h3>
+          <p className="text-sm text-muted-foreground mt-1">Top referrers this month.</p>
+        </div>
+        <div className="neu-extruded-sm rounded-2xl bg-background p-8 flex flex-col items-center gap-3">
+          <Trophy className="h-8 w-8 text-muted-foreground/40" />
+          <p className="text-sm text-muted-foreground text-center">
+            No referral activity yet. Be the first to share!
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="neu-card-enhanced glass-panel p-6 rounded-[32px] flex flex-col gap-6">
       <div>
         <h3 className="font-display text-lg font-bold">Leaderboard</h3>
-        <p className="text-sm text-muted-foreground mt-1">
-          Top referrers this month.
-        </p>
+        <p className="text-sm text-muted-foreground mt-1">Top referrers this month.</p>
       </div>
 
       <div className="flex flex-col border border-primary/10 rounded-2xl overflow-hidden">
-        {leaderBoard.map((referrer, idx) => {
-          const isYou = "isYou" in referrer && referrer.isYou;
-          const displayAddress = isYou 
-            ? `${referrer.address.slice(0, 4)}...${referrer.address.slice(-4)}`
-            : referrer.address;
-            
+        {leaderboard.map((referrer, idx) => {
+          const isYou =
+            currentUserAddress !== null &&
+            referrer.fullAddress.toLowerCase() === currentUserAddress.toLowerCase();
+          const displayAddress = referrer.address;
+
           return (
             <div
-              key={referrer.address + idx}
+              key={referrer.fullAddress}
               className={`flex items-center justify-between p-4 card-entrance ${
-                idx !== leaderBoard.length - 1 ? "border-b border-primary/5" : ""
-              } ${
-                isYou
-                  ? "border-l-[3px] border-l-primary bg-primary/5"
-                  : "bg-background/40"
-              }`}
+                idx !== leaderboard.length - 1 ? "border-b border-primary/5" : ""
+              } ${isYou ? "border-l-[3px] border-l-primary bg-primary/5" : "bg-background/40"}`}
               style={{ animationDelay: `calc(${idx} * var(--stagger-base, 100ms))` }}
             >
               <div className="flex items-center gap-4">
@@ -62,10 +64,8 @@ export function ReferralLeaderboard({
                 </div>
                 <div className="flex flex-col">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm font-medium">
-                      {displayAddress}
-                    </span>
-                    {Boolean(isYou) && (
+                    <span className="font-mono text-sm font-medium">{displayAddress}</span>
+                    {isYou && (
                       <span className="text-[10px] font-bold bg-primary text-white px-1.5 py-0.5 rounded-full">
                         You
                       </span>

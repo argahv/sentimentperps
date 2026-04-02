@@ -19,8 +19,13 @@ import {
   BarChart3,
   Clock,
   LogIn,
+  Wallet,
+  Shield,
+  Hash,
+  ArrowUpRight,
+  RefreshCw,
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import type { BadgeType } from "@/types/app";
 
 const BADGE_TIERS = [
@@ -34,58 +39,73 @@ const BADGE_TIERS = [
   { type: "contrarian" as BadgeType, label: "Contrarian", threshold: 1, metric: "contrarian" },
 ];
 
-interface DemoTrade {
+interface ProfileStats {
+  totalTrades: number;
+  winRate: number;
+  totalPnl: number;
+  bestTrade: number;
+  totalScore: number;
+  avgResponseTime: number;
+  sentimentAccuracy: number;
+  rank: number | null;
+  totalTraders: number;
+}
+
+interface DbTrade {
   id: string;
   symbol: string;
   direction: "long" | "short";
-  entryPrice: number;
-  exitPrice: number;
   leverage: number;
   size: number;
-  won: boolean;
+  entryPrice: number;
+  exitPrice: number;
   pnlUsdc: number;
   pnlPct: number;
+  sentimentAligned: boolean;
+  score: number;
   closedAt: string;
 }
 
-function seededRandom(seed: number): () => number {
-  let s = seed;
-  return () => {
-    s = (s * 16807 + 0) % 2147483647;
-    return s / 2147483647;
-  };
+function StatSkeleton() {
+  return (
+    <div className="neu-extruded-sm flex flex-col justify-center items-center gap-2 rounded-2xl bg-background p-4 animate-pulse">
+      <div className="h-10 w-10 rounded-xl bg-muted-foreground/15" />
+      <div className="h-3 w-16 rounded bg-muted-foreground/15" />
+      <div className="h-6 w-20 rounded bg-muted-foreground/15" />
+    </div>
+  );
 }
 
-function generateDemoTrades(): DemoTrade[] {
-  const rng = seededRandom(314159);
-  const symbols = ["BTC", "ETH", "SOL", "ARB", "DOGE"];
+function TradeRowSkeleton() {
+  return (
+    <div className="flex items-center gap-4 px-4 py-3 mx-1 mb-1 animate-pulse">
+      <div className="flex flex-col gap-1.5 flex-1">
+        <div className="h-4 w-20 rounded bg-muted-foreground/15" />
+        <div className="h-3 w-32 rounded bg-muted-foreground/10" />
+      </div>
+      <div className="flex flex-col items-end gap-1.5">
+        <div className="h-4 w-16 rounded bg-muted-foreground/15" />
+        <div className="h-3 w-12 rounded bg-muted-foreground/10" />
+      </div>
+    </div>
+  );
+}
 
-  return Array.from({ length: 8 }, (_, i) => {
-    const symbol = symbols[Math.floor(rng() * symbols.length)];
-    const direction = rng() > 0.5 ? ("long" as const) : ("short" as const);
-    const leverage = [2, 5, 10, 20][Math.floor(rng() * 4)];
-    const entryPrice = symbol === "BTC" ? 60000 + rng() * 10000 : symbol === "ETH" ? 3000 + rng() * 500 : 50 + rng() * 150;
-    const pnlPct = (rng() - 0.4) * 40;
-    const pnlUsdc = Math.round(pnlPct * (10 + rng() * 50)) / 100;
-    const exitPrice = direction === "long"
-      ? entryPrice * (1 + pnlPct / 100 / leverage)
-      : entryPrice * (1 - pnlPct / 100 / leverage);
-
-    const day = 28 - i;
-    return {
-      id: `trade-${i}`,
-      symbol,
-      direction,
-      entryPrice: Math.round(entryPrice * 100) / 100,
-      exitPrice: Math.round(exitPrice * 100) / 100,
-      leverage,
-      size: Math.round(entryPrice * leverage * 0.01 * 100) / 100,
-      won: pnlUsdc > 0,
-      pnlUsdc: Math.round(pnlUsdc * 100) / 100,
-      pnlPct: Math.round(pnlPct * 100) / 100,
-      closedAt: `2026-03-${day.toString().padStart(2, "0")}`,
-    };
-  });
+function SidebarSkeleton() {
+  return (
+    <div className="neu-extruded rounded-[32px] bg-background p-5 animate-pulse flex flex-col gap-4">
+      <div className="h-4 w-24 rounded bg-muted-foreground/15" />
+      <div className="h-12 w-12 rounded-2xl bg-muted-foreground/15 mx-auto" />
+      <div className="grid grid-cols-2 gap-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="neu-inset rounded-xl px-3 py-3">
+            <div className="h-3 w-12 rounded bg-muted-foreground/10 mb-1.5" />
+            <div className="h-4 w-8 rounded bg-muted-foreground/15" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default function ProfileContent() {
@@ -94,6 +114,13 @@ export default function ProfileContent() {
   const { positions, closedPositions } = usePositionsStore();
   const [copied, setCopied] = useState(false);
 
+  const [dbTrades, setDbTrades] = useState<DbTrade[]>([]);
+  const [dbStats, setDbStats] = useState<ProfileStats | null>(null);
+  const [tradesLoading, setTradesLoading] = useState(false);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [tradesError, setTradesError] = useState<string | null>(null);
+  const [statsError, setStatsError] = useState<string | null>(null);
+
   const wallet = useMemo(
     () => wallets.find((w) => w.standardWallet.name === "Privy") ?? wallets[0] ?? null,
     [wallets]
@@ -101,44 +128,117 @@ export default function ProfileContent() {
 
   const address = wallet?.address ?? null;
   const shortAddress = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : null;
-  const earnedBadges: BadgeType[] = address ? getDemoBadges(address) : ["first_mover", "streak_3", "speed_demon"];
-  
-  const trades = useMemo(() => {
-    const hasRealPositions = positions.length > 0 || closedPositions.length > 0;
-    if (hasRealPositions) {
-      return [...closedPositions, ...positions].map(p => {
-        const pnl = p.realized_pnl + p.unrealized_pnl;
-        return {
-          id: p.position_id,
-          symbol: p.symbol,
-          direction: p.side as "long" | "short",
-          entryPrice: p.entry_price,
-          exitPrice: p.mark_price,
-          leverage: p.leverage,
-          size: p.size,
-          won: pnl > 0,
-          pnlUsdc: pnl,
-          pnlPct: p.margin > 0 ? (pnl / p.margin) * 100 : 0,
-          closedAt: p.updated_at,
-        };
-      });
+  const walletProvider = wallet?.standardWallet?.name ?? "Unknown";
+  const isEmbeddedWallet = walletProvider === "Privy";
+  const earnedBadges: BadgeType[] = address ? getDemoBadges(address) : [];
+
+  const fetchTrades = useCallback(async () => {
+    if (!address) return;
+    setTradesLoading(true);
+    setTradesError(null);
+    try {
+      const res = await fetch(`/api/profile/trades?wallet=${address}`);
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error ?? "Failed to fetch trades");
+      }
+      const { trades } = await res.json();
+      setDbTrades(trades ?? []);
+    } catch (err) {
+      setTradesError(err instanceof Error ? err.message : "Failed to fetch trades");
+    } finally {
+      setTradesLoading(false);
     }
-    return generateDemoTrades();
+  }, [address]);
+
+  const fetchStats = useCallback(async () => {
+    if (!address) return;
+    setStatsLoading(true);
+    setStatsError(null);
+    try {
+      const res = await fetch(`/api/profile/stats?wallet=${address}`);
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error ?? "Failed to fetch stats");
+      }
+      const { stats } = await res.json();
+      setDbStats(stats ?? null);
+    } catch (err) {
+      setStatsError(err instanceof Error ? err.message : "Failed to fetch stats");
+    } finally {
+      setStatsLoading(false);
+    }
+  }, [address]);
+
+  useEffect(() => {
+    if (address) {
+      fetchTrades();
+      fetchStats();
+    }
+  }, [address, fetchTrades, fetchStats]);
+
+  const livePositionTrades = useMemo(() => {
+    return [...closedPositions, ...positions].map((p) => {
+      const pnl = p.realized_pnl + p.unrealized_pnl;
+      return {
+        id: p.position_id,
+        symbol: p.symbol,
+        direction: p.side as "long" | "short",
+        entryPrice: p.entry_price,
+        exitPrice: p.mark_price,
+        leverage: p.leverage,
+        size: p.size,
+        won: pnl > 0,
+        pnlUsdc: pnl,
+        pnlPct: p.margin > 0 ? (pnl / p.margin) * 100 : 0,
+        closedAt: p.updated_at,
+      };
+    });
   }, [positions, closedPositions]);
 
-  const hasAnyPositions = positions.length > 0 || closedPositions.length > 0;
+  const displayTrades = useMemo(() => {
+    if (dbTrades.length > 0) {
+      return dbTrades.map((t) => ({
+        id: t.id,
+        symbol: t.symbol,
+        direction: t.direction,
+        entryPrice: t.entryPrice,
+        exitPrice: t.exitPrice,
+        leverage: t.leverage,
+        size: t.size,
+        won: t.pnlUsdc > 0,
+        pnlUsdc: t.pnlUsdc,
+        pnlPct: t.pnlPct,
+        closedAt: typeof t.closedAt === "string" ? t.closedAt.split("T")[0] : t.closedAt,
+      }));
+    }
+    if (livePositionTrades.length > 0) return livePositionTrades;
+    return [];
+  }, [dbTrades, livePositionTrades]);
 
-  const stats = useMemo(() => {
-    const wins = trades.filter((t) => t.pnlUsdc > 0).length;
-    const totalPnl = trades.reduce((sum, t) => sum + t.pnlUsdc, 0);
-    const best = trades.reduce((best, t) => (t.pnlUsdc > best ? t.pnlUsdc : best), -Infinity);
+  const localStats = useMemo(() => {
+    if (displayTrades.length === 0) {
+      return { totalTrades: 0, winRate: 0, totalPnl: 0, bestTrade: 0 };
+    }
+    const wins = displayTrades.filter((t) => t.pnlUsdc > 0).length;
+    const totalPnl = displayTrades.reduce((sum, t) => sum + t.pnlUsdc, 0);
+    const best = displayTrades.reduce((b, t) => (t.pnlUsdc > b ? t.pnlUsdc : b), -Infinity);
     return {
-      totalTrades: trades.length,
-      winRate: trades.length ? Math.round((wins / trades.length) * 100) : 0,
+      totalTrades: displayTrades.length,
+      winRate: displayTrades.length ? Math.round((wins / displayTrades.length) * 100) : 0,
       totalPnl: Math.round(totalPnl * 100) / 100,
       bestTrade: best === -Infinity ? 0 : Math.round(best * 100) / 100,
     };
-  }, [trades]);
+  }, [displayTrades]);
+
+  const stats = dbStats
+    ? {
+        totalTrades: dbStats.totalTrades,
+        winRate: dbStats.winRate,
+        totalPnl: dbStats.totalPnl,
+        bestTrade: dbStats.bestTrade,
+      }
+    : localStats;
 
   const totalTradesAnim = useCountUp(stats.totalTrades, 1200);
   const winRateAnim = useCountUp(stats.winRate, 1200);
@@ -151,6 +251,8 @@ export default function ProfileContent() {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  const hasData = displayTrades.length > 0 || (dbStats !== null && dbStats.totalTrades > 0);
 
   if (privyReady && !authenticated) {
     return (
@@ -174,157 +276,401 @@ export default function ProfileContent() {
   }
 
   return (
-    <div className="flex flex-col gap-6 p-6 page-enter">
-      <div className="flex items-center gap-4">
-        <div className="neu-icon-well flex h-14 w-14 items-center justify-center rounded-2xl text-primary shrink-0">
-          <User className="h-7 w-7" />
+    <div className="flex flex-col gap-3 p-4 lg:p-6 page-enter">
+      <div className="flex items-center justify-between card-entrance" style={{ animationDelay: "0ms" }}>
+        <div className="flex items-center gap-4">
+          <div className="neu-icon-well flex h-14 w-14 items-center justify-center rounded-2xl text-primary shrink-0">
+            <User className="h-7 w-7" />
+          </div>
+          <div className="min-w-0">
+            <h1 className="font-display text-xl font-bold truncate">
+              {user?.email?.address ?? shortAddress ?? "Trader"}
+            </h1>
+            {address && (
+              <button
+                onClick={handleCopy}
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <span className="font-mono">{shortAddress}</span>
+                {copied ? <Check className="h-3 w-3 text-success" /> : <Copy className="h-3 w-3" />}
+              </button>
+            )}
+          </div>
         </div>
-        <div className="min-w-0">
-          <h1 className="font-display text-xl font-bold truncate">
-            {user?.email?.address ?? shortAddress ?? "Trader"}
-          </h1>
-          {address && (
-            <button onClick={handleCopy} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
-              <span className="font-mono">{shortAddress}</span>
-              {copied ? <Check className="h-3 w-3 text-success" /> : <Copy className="h-3 w-3" />}
-            </button>
-          )}
-        </div>
+        {hasData && (
+          <button
+            onClick={() => {
+              fetchTrades();
+              fetchStats();
+            }}
+            className="neu-btn flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${tradesLoading || statsLoading ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
+        )}
       </div>
 
-      <div className="neu-extruded rounded-[32px] bg-background p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-primary" />
-            Achievements
-          </h3>
-          <span className="text-xs font-semibold text-muted-foreground bg-muted/30 px-2 py-1 rounded-full tabular-nums">
-            {earnedBadges.length} / {BADGE_TIERS.length} unlocked
-          </span>
-        </div>
-        
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {BADGE_TIERS.map((badge, idx) => {
-            const isEarned = earnedBadges.includes(badge.type);
-            return (
-              <div key={badge.type} className="flex flex-col gap-2 card-entrance" style={{ animationDelay: `${idx * 50}ms` }}>
-                <div className={`transition-all duration-300 ${!isEarned ? "opacity-30 grayscale" : "hover:scale-105"}`}>
-                  <BadgeList badges={[badge.type]} size="md" max={1} />
+      <div className="flex flex-col lg:flex-row gap-3">
+        <div className="flex-1 min-w-0 flex flex-col gap-3">
+          {!hasData && !tradesLoading && !statsLoading ? (
+            <div className="flex flex-col items-center justify-center gap-4 p-12 neu-card-enhanced rounded-[32px] card-entrance">
+              <BarChart3 className="h-10 w-10 text-muted-foreground opacity-50" />
+              <h2 className="font-display text-lg font-semibold text-foreground">No trading history yet</h2>
+              <p className="text-sm text-muted-foreground text-center max-w-sm mb-2">
+                Start trading to see your analytics, performance breakdown, and earn badges.
+              </p>
+              <Link
+                href="/trade"
+                className="neu-btn px-6 py-2.5 bg-primary text-white rounded-2xl font-semibold text-sm btn-bounce flex items-center gap-2"
+              >
+                <ArrowUpRight className="h-4 w-4" />
+                Start Trading
+              </Link>
+            </div>
+          ) : (
+            <>
+              {statsLoading && !dbStats ? (
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <StatSkeleton key={i} />
+                  ))}
                 </div>
-                {!isEarned && (
-                  <div className="w-full h-1.5 neu-inset rounded-full overflow-hidden mt-1">
-                    <div className="h-full bg-primary/40 rounded-full w-1/4 bar-animate" />
+              ) : statsError ? (
+                <div className="neu-inset rounded-2xl px-6 py-6 text-center flex flex-col items-center gap-2 card-entrance">
+                  <Target className="h-6 w-6 text-danger" />
+                  <p className="text-sm text-danger font-medium">Failed to load stats</p>
+                  <p className="text-xs text-muted-foreground">{statsError}</p>
+                  <button
+                    onClick={fetchStats}
+                    className="neu-btn rounded-xl bg-primary px-4 py-1.5 text-xs font-semibold text-white btn-bounce mt-1"
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <div
+                    className="neu-extruded-sm flex flex-col justify-center items-center gap-2 rounded-2xl bg-background p-4 card-entrance"
+                    style={{ animationDelay: "100ms" }}
+                  >
+                    <div className="neu-icon-well flex h-10 w-10 items-center justify-center rounded-xl text-primary mb-1">
+                      <BarChart3 className="h-5 w-5" />
+                    </div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
+                      Total Trades
+                    </p>
+                    <p className="text-2xl font-bold font-display tabular-nums">
+                      {totalTradesAnim.toFixed(0)}
+                    </p>
+                  </div>
+
+                  <div
+                    className="neu-extruded-sm flex flex-col justify-center items-center gap-2 rounded-2xl bg-background p-4 card-entrance"
+                    style={{ animationDelay: "150ms" }}
+                  >
+                    <WinRateDonut winRate={winRateAnim} size={64} />
+                  </div>
+
+                  <div
+                    className="neu-extruded-sm flex flex-col justify-center items-center gap-2 rounded-2xl bg-background p-4 card-entrance"
+                    style={{ animationDelay: "200ms" }}
+                  >
+                    <div className="neu-icon-well flex h-10 w-10 items-center justify-center rounded-xl text-amber-500 mb-1">
+                      <TrendingUp className="h-5 w-5" />
+                    </div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
+                      Total PnL
+                    </p>
+                    <p
+                      className={`text-2xl font-bold font-display tabular-nums ${stats.totalPnl >= 0 ? "text-success" : "text-danger"}`}
+                    >
+                      {stats.totalPnl >= 0 ? "+" : ""}${totalPnlAnim.toFixed(2)}
+                    </p>
+                  </div>
+
+                  <div
+                    className="neu-extruded-sm flex flex-col justify-center items-center gap-2 rounded-2xl bg-background p-4 card-entrance"
+                    style={{ animationDelay: "250ms" }}
+                  >
+                    <div className="neu-icon-well flex h-10 w-10 items-center justify-center rounded-xl text-orange-500 mb-1">
+                      <Trophy className="h-5 w-5" />
+                    </div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
+                      Best Trade
+                    </p>
+                    <p className="text-2xl font-bold font-display tabular-nums text-success">
+                      +${bestTradeAnim.toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div
+                className="neu-extruded rounded-[32px] bg-background overflow-hidden p-2 card-entrance"
+                style={{ animationDelay: "300ms" }}
+              >
+                <div className="px-3 py-2 mb-2">
+                  <h3 className="text-sm font-semibold flex items-center gap-2">
+                    <Target className="h-4 w-4 text-primary" />
+                    Performance Breakdown
+                  </h3>
+                </div>
+                {displayTrades.length > 0 ? (
+                  <PerformanceBreakdown
+                    trades={displayTrades.map((t) => ({
+                      symbol: t.symbol,
+                      pnl: t.pnlUsdc,
+                      size: t.size,
+                      won: t.won,
+                    }))}
+                  />
+                ) : (
+                  <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+                    No trade data available for breakdown.
                   </div>
                 )}
               </div>
-            );
-          })}
-        </div>
-      </div>
 
-      {!hasAnyPositions ? (
-        <div className="flex flex-col items-center justify-center gap-4 p-12 neu-card-enhanced rounded-[32px] card-entrance">
-          <BarChart3 className="h-10 w-10 text-muted-foreground opacity-50" />
-          <h2 className="font-display text-lg font-semibold text-foreground">No trading history yet</h2>
-          <p className="text-sm text-muted-foreground text-center max-w-sm mb-2">
-            Start trading to see your analytics, performance breakdown, and earn badges.
-          </p>
-          <Link href="/trade" className="neu-btn px-6 py-2.5 bg-primary text-white rounded-2xl font-semibold text-sm btn-bounce">
-            Start Trading
-          </Link>
-          
-          <div className="mt-8 w-full opacity-60 pointer-events-none">
-            <div className="text-xs font-semibold text-muted-foreground text-center mb-4 uppercase tracking-wider">
-              Example Data
-            </div>
-            <PerformanceBreakdown trades={trades.map(t => ({ symbol: t.symbol, pnl: t.pnlUsdc, size: t.size, won: t.won }))} />
-          </div>
-        </div>
-      ) : (
-        <>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <div className="neu-extruded-sm flex flex-col justify-center items-center gap-2 rounded-2xl bg-background p-4 card-entrance" style={{ animationDelay: "100ms" }}>
-              <div className="neu-icon-well flex h-10 w-10 items-center justify-center rounded-xl text-primary mb-1">
-                <BarChart3 className="h-5 w-5" />
-              </div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Total Trades</p>
-              <p className="text-2xl font-bold font-display tabular-nums">{totalTradesAnim.toFixed(0)}</p>
-            </div>
-            
-            <div className="neu-extruded-sm flex flex-col justify-center items-center gap-2 rounded-2xl bg-background p-4 card-entrance" style={{ animationDelay: "150ms" }}>
-              <WinRateDonut winRate={winRateAnim} size={64} />
-            </div>
-
-            <div className="neu-extruded-sm flex flex-col justify-center items-center gap-2 rounded-2xl bg-background p-4 card-entrance" style={{ animationDelay: "200ms" }}>
-              <div className="neu-icon-well flex h-10 w-10 items-center justify-center rounded-xl text-amber-500 mb-1">
-                <TrendingUp className="h-5 w-5" />
-              </div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Total PnL</p>
-              <p className={`text-2xl font-bold font-display tabular-nums ${stats.totalPnl >= 0 ? "text-success" : "text-danger"}`}>
-                {stats.totalPnl >= 0 ? "+" : ""}${totalPnlAnim.toFixed(2)}
-              </p>
-            </div>
-
-            <div className="neu-extruded-sm flex flex-col justify-center items-center gap-2 rounded-2xl bg-background p-4 card-entrance" style={{ animationDelay: "250ms" }}>
-              <div className="neu-icon-well flex h-10 w-10 items-center justify-center rounded-xl text-orange-500 mb-1">
-                <Trophy className="h-5 w-5" />
-              </div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Best Trade</p>
-              <p className="text-2xl font-bold font-display tabular-nums text-success">
-                +${bestTradeAnim.toFixed(2)}
-              </p>
-            </div>
-          </div>
-
-          <div className="neu-extruded rounded-[32px] bg-background overflow-hidden p-2 card-entrance" style={{ animationDelay: "300ms" }}>
-            <div className="px-3 py-2 mb-2">
-              <h3 className="text-sm font-semibold flex items-center gap-2">
-                <Target className="h-4 w-4 text-primary" />
-                Performance Breakdown
-              </h3>
-            </div>
-            <PerformanceBreakdown trades={trades.map(t => ({ symbol: t.symbol, pnl: t.pnlUsdc, size: t.size, won: t.won }))} />
-          </div>
-        </>
-      )}
-
-      <div className="neu-extruded rounded-[32px] bg-background overflow-hidden card-entrance" style={{ animationDelay: "350ms" }}>
-        <div className="flex items-center gap-2 px-5 py-4">
-          <Clock className="h-4 w-4 text-muted-foreground" />
-          <h3 className="text-sm font-semibold">Trade History</h3>
-        </div>
-        <div className="px-1">
-          {trades.map((trade) => (
-            <div key={trade.id} className="flex items-center gap-4 px-4 py-3 mx-1 mb-1 rounded-xl transition-colors hover:bg-background/80">
-              <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold font-display">{trade.symbol}</span>
-                  <span
-                    className={`rounded-lg px-1.5 py-0.5 text-[10px] font-semibold ${
-                      trade.direction === "long"
-                        ? "bg-success/15 text-success"
-                        : "bg-danger/15 text-danger"
-                    }`}
-                  >
-                    {trade.direction === "long" ? "LONG" : "SHORT"} {trade.leverage}x
-                  </span>
+              <div
+                className="neu-extruded rounded-[32px] bg-background overflow-hidden card-entrance"
+                style={{ animationDelay: "350ms" }}
+              >
+                <div className="flex items-center gap-2 px-5 py-4">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <h3 className="text-sm font-semibold">Trade History</h3>
+                  {displayTrades.length > 0 && (
+                    <span className="ml-auto text-[10px] text-muted-foreground font-semibold tabular-nums">
+                      {displayTrades.length} trades
+                    </span>
+                  )}
                 </div>
-                <span className="text-[10px] text-muted-foreground tabular-nums">
-                  ${trade.entryPrice.toLocaleString()} -&gt; ${trade.exitPrice.toLocaleString()}
-                </span>
+
+                <div className="px-1">
+                  {tradesLoading && dbTrades.length === 0 ? (
+                    Array.from({ length: 4 }).map((_, i) => <TradeRowSkeleton key={i} />)
+                  ) : tradesError && dbTrades.length === 0 && displayTrades.length === 0 ? (
+                    <div className="px-4 py-8 text-center flex flex-col items-center gap-2">
+                      <p className="text-sm text-danger font-medium">Failed to load trades</p>
+                      <p className="text-xs text-muted-foreground">{tradesError}</p>
+                      <button
+                        onClick={fetchTrades}
+                        className="neu-btn rounded-xl bg-primary px-4 py-1.5 text-xs font-semibold text-white btn-bounce mt-1"
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  ) : displayTrades.length === 0 ? (
+                    <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                      No trades recorded yet.
+                    </div>
+                  ) : (
+                    displayTrades.map((trade) => (
+                      <div
+                        key={trade.id}
+                        className="flex items-center gap-4 px-4 py-3 mx-1 mb-1 rounded-xl transition-colors hover:bg-background/80"
+                      >
+                        <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold font-display">{trade.symbol}</span>
+                            <span
+                              className={`rounded-lg px-1.5 py-0.5 text-[10px] font-semibold ${
+                                trade.direction === "long"
+                                  ? "bg-success/15 text-success"
+                                  : "bg-danger/15 text-danger"
+                              }`}
+                            >
+                              {trade.direction === "long" ? "LONG" : "SHORT"} {trade.leverage}x
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-muted-foreground tabular-nums">
+                            ${trade.entryPrice.toLocaleString()} &rarr; ${trade.exitPrice.toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="flex flex-col items-end shrink-0">
+                          <span
+                            className={`text-sm font-semibold tabular-nums ${
+                              trade.pnlUsdc >= 0 ? "text-success" : "text-danger"
+                            }`}
+                          >
+                            {trade.pnlUsdc >= 0 ? "+" : ""}${trade.pnlUsdc.toFixed(2)}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground tabular-nums">
+                            {trade.closedAt}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
-              <div className="flex flex-col items-end shrink-0">
-                <span
-                  className={`text-sm font-semibold tabular-nums ${
-                    trade.pnlUsdc >= 0 ? "text-success" : "text-danger"
-                  }`}
-                >
-                  {trade.pnlUsdc >= 0 ? "+" : ""}${trade.pnlUsdc.toFixed(2)}
-                </span>
-                <span className="text-[10px] text-muted-foreground tabular-nums">{trade.closedAt}</span>
-              </div>
+            </>
+          )}
+        </div>
+
+        <div
+          className="w-full lg:w-[300px] xl:w-[320px] shrink-0 flex flex-col gap-3 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-88px)] lg:overflow-y-auto card-entrance"
+          style={{ animationDelay: "calc(2 * var(--stagger-base))" }}
+        >
+          <div className="neu-extruded rounded-[32px] bg-background p-5 flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <Wallet className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold font-display">Wallet</span>
             </div>
-          ))}
+
+            {address ? (
+              <div className="flex flex-col gap-2.5">
+                <div className="neu-inset rounded-xl px-3 py-2.5 flex flex-col gap-1.5">
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+                    Address
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs text-foreground truncate flex-1">
+                      {address}
+                    </span>
+                    <button
+                      onClick={handleCopy}
+                      className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="neu-inset rounded-xl px-3 py-2 flex flex-col gap-1">
+                    <span className="text-[10px] text-muted-foreground">Provider</span>
+                    <div className="flex items-center gap-1.5">
+                      <Shield className="h-3 w-3 text-primary" />
+                      <span className="text-xs font-semibold truncate">{walletProvider}</span>
+                    </div>
+                  </div>
+                  <div className="neu-inset rounded-xl px-3 py-2 flex flex-col gap-1">
+                    <span className="text-[10px] text-muted-foreground">Type</span>
+                    <div className="flex items-center gap-1.5">
+                      <Hash className="h-3 w-3 text-primary" />
+                      <span className="text-xs font-semibold">
+                        {isEmbeddedWallet ? "Embedded" : "External"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="neu-inset rounded-2xl px-4 py-4 text-center text-sm text-muted-foreground">
+                No wallet connected
+              </div>
+            )}
+          </div>
+
+          {statsLoading && !dbStats ? (
+            <SidebarSkeleton />
+          ) : (
+            <div className="neu-extruded rounded-[32px] bg-background p-5 flex flex-col gap-4">
+              <div className="flex items-center gap-2">
+                <Trophy className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold font-display">Your Rank</span>
+              </div>
+
+              {dbStats && dbStats.rank !== null ? (
+                <>
+                  <div className="flex items-center justify-center">
+                    <div className="neu-inset flex h-14 w-14 items-center justify-center rounded-2xl text-xl font-bold text-primary">
+                      #{dbStats.rank}
+                    </div>
+                  </div>
+                  <p className="text-center text-[10px] text-muted-foreground">
+                    out of {dbStats.totalTraders} trader{dbStats.totalTraders !== 1 ? "s" : ""}
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="neu-inset rounded-xl px-3 py-2 flex flex-col">
+                      <span className="text-[10px] text-muted-foreground">Score</span>
+                      <span className="text-sm font-bold text-primary tabular-nums">
+                        {dbStats.totalScore.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="neu-inset rounded-xl px-3 py-2 flex flex-col">
+                      <span className="text-[10px] text-muted-foreground">Accuracy</span>
+                      <span className="text-sm font-bold tabular-nums">
+                        {dbStats.sentimentAccuracy.toFixed(0)}%
+                      </span>
+                    </div>
+                    <div className="neu-inset rounded-xl px-3 py-2 flex flex-col">
+                      <span className="text-[10px] text-muted-foreground">Avg Speed</span>
+                      <span className="text-sm font-bold text-primary tabular-nums">
+                        {dbStats.avgResponseTime.toFixed(1)}m
+                      </span>
+                    </div>
+                    <div className="neu-inset rounded-xl px-3 py-2 flex flex-col">
+                      <span className="text-[10px] text-muted-foreground">Win Rate</span>
+                      <span
+                        className={`text-sm font-bold tabular-nums ${dbStats.winRate >= 60 ? "text-success" : "text-foreground"}`}
+                      >
+                        {dbStats.winRate}%
+                      </span>
+                    </div>
+                  </div>
+
+                  <Link
+                    href="/leaderboard"
+                    className="neu-btn flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/5 transition-colors"
+                  >
+                    View Full Leaderboard
+                    <ArrowUpRight className="h-3 w-3" />
+                  </Link>
+                </>
+              ) : (
+                <div className="neu-inset rounded-2xl px-4 py-6 text-center flex flex-col gap-2">
+                  <p className="text-sm text-muted-foreground">
+                    {statsLoading ? "Loading..." : "Not ranked yet — close a trade to get ranked!"}
+                  </p>
+                  <Link
+                    href="/leaderboard"
+                    className="text-xs font-semibold text-primary hover:underline"
+                  >
+                    View Leaderboard →
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="neu-extruded rounded-[32px] bg-background p-5 flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Trophy className="h-4 w-4 text-amber-500" />
+                <span className="text-sm font-semibold font-display">Achievements</span>
+              </div>
+              <span className="text-[10px] font-semibold text-muted-foreground bg-muted/30 px-2 py-0.5 rounded-full tabular-nums">
+                {earnedBadges.length}/{BADGE_TIERS.length}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              {BADGE_TIERS.map((badge, idx) => {
+                const isEarned = earnedBadges.includes(badge.type);
+                return (
+                  <div
+                    key={badge.type}
+                    className="flex flex-col items-center gap-1.5 card-entrance"
+                    style={{ animationDelay: `${idx * 50}ms` }}
+                  >
+                    <div
+                      className={`transition-all duration-300 ${!isEarned ? "opacity-30 grayscale" : "hover:scale-105"}`}
+                    >
+                      <BadgeList badges={[badge.type]} size="md" max={1} />
+                    </div>
+                    {!isEarned && (
+                      <div className="w-full h-1 neu-inset rounded-full overflow-hidden">
+                        <div className="h-full bg-primary/40 rounded-full w-1/4 bar-animate" />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
     </div>

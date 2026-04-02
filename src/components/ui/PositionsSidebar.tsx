@@ -11,7 +11,12 @@ function formatPnl(value: number): string {
 }
 
 interface PositionsSidebarProps {
-  onClosePosition?: (marketId: string, side: TradeDirection, size: number) => Promise<void>;
+  onClosePosition?: (
+    marketId: string,
+    side: TradeDirection,
+    size: number,
+    positionMeta?: { entryPrice: number; markPrice: number; leverage: number; pnlUsdc: number }
+  ) => Promise<void>;
 }
 
 export function PositionsSidebar({ onClosePosition }: PositionsSidebarProps) {
@@ -24,7 +29,11 @@ export function PositionsSidebar({ onClosePosition }: PositionsSidebarProps) {
     if (!onClosePosition) return;
     setClosingId(positionId);
     try {
-      await onClosePosition(marketId, side, size);
+      const pos = positions.find((p) => p.position_id === positionId);
+      const meta = pos
+        ? { entryPrice: pos.entry_price, markPrice: pos.mark_price, leverage: pos.leverage, pnlUsdc: pos.unrealized_pnl }
+        : undefined;
+      await onClosePosition(marketId, side, size, meta);
     } finally {
       setClosingId(null);
     }

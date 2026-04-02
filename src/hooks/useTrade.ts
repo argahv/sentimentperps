@@ -102,7 +102,12 @@ export function useTrade() {
   );
 
   const closePosition = useCallback(
-    async (symbol: string, side: TradeDirection, size: number): Promise<TradeResult> => {
+    async (
+      symbol: string,
+      side: TradeDirection,
+      size: number,
+      positionMeta?: { entryPrice: number; markPrice: number; leverage: number; pnlUsdc: number }
+    ): Promise<TradeResult> => {
       if (!privyReady || !authenticated) throw new Error("Not authenticated");
 
       setIsSubmitting(true);
@@ -126,6 +131,28 @@ export function useTrade() {
           title: "Position closed",
           message: `Closed ${side} on ${symbol}`,
         });
+
+        if (positionMeta) {
+          const pnlPct = positionMeta.entryPrice > 0
+            ? ((positionMeta.markPrice - positionMeta.entryPrice) / positionMeta.entryPrice) * 100 * (side === "long" ? 1 : -1)
+            : 0;
+
+          fetch("/api/leaderboard/record-trade", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              walletAddress,
+              symbol,
+              direction: side,
+              leverage: positionMeta.leverage,
+              size,
+              entryPrice: positionMeta.entryPrice,
+              exitPrice: positionMeta.markPrice,
+              pnlUsdc: positionMeta.pnlUsdc,
+              pnlPct,
+            }),
+          }).catch(() => {});
+        }
 
         return { orderId: data.order.order_id, status: data.order.status };
       } catch (err) {

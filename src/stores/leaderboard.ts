@@ -5,29 +5,13 @@ interface LeaderboardState {
   entries: LeaderboardEntry[];
   period: LeaderboardPeriod;
   isLoading: boolean;
+  error: string | null;
 
   setPeriod: (period: LeaderboardPeriod) => void;
   setEntries: (entries: LeaderboardEntry[]) => void;
   setLoading: (loading: boolean) => void;
+  fetchLeaderboard: (period?: LeaderboardPeriod) => Promise<void>;
 }
-
-const DEMO_NAMES = [
-  "solwhale.sol",
-  "degentrader",
-  "sigmabrain",
-  "sentimentoor",
-  "perpmaxi",
-  "alphadev",
-  "moonhunter",
-  "rektproof",
-  "volhunter",
-  "deltaneutral",
-  "chadwick.sol",
-  "memecoinrich",
-  "signalking",
-  "trendfrend",
-  "levermann",
-];
 
 const BADGE_POOL: BadgeType[] = [
   "first_mover",
@@ -47,49 +31,6 @@ function seededRandom(seed: number): () => number {
   };
 }
 
-function generateDemoEntries(period: LeaderboardPeriod): LeaderboardEntry[] {
-  const seed = period === "daily" ? 42 : period === "weekly" ? 137 : 999;
-  const rng = seededRandom(seed);
-
-  const count = period === "daily" ? 10 : period === "weekly" ? 12 : 15;
-  const now = new Date();
-
-  return Array.from({ length: count }, (_, i) => {
-    const totalTrades = Math.floor(rng() * 80) + 5;
-    const winRate = 0.35 + rng() * 0.5;
-    const totalScore = Math.floor((1000 - i * 60) * (0.8 + rng() * 0.4));
-    const bestCallPnl = Math.floor(rng() * 2000) + 50;
-
-    const avgResponseTime = Math.round((0.5 + rng() * 9.5) * 10) / 10;
-    const sentimentAccuracy = Math.round((40 + rng() * 55) * 10) / 10;
-    const profitPct = 1 + rng() * 29;
-    const rawScore = profitPct * (1 / avgResponseTime);
-    const sentimentScore = Math.min(100, Math.round(rawScore * 3.5));
-
-    return {
-      id: `lb-${period}-${i}`,
-      userId: `user-${i}`,
-      username: DEMO_NAMES[i % DEMO_NAMES.length],
-      period,
-      rank: i + 1,
-      totalScore: Math.max(totalScore, 10),
-      winRate: Math.round(winRate * 100) / 100,
-      totalTrades,
-      bestCallPnl,
-      updatedAt: now,
-      sentimentScore,
-      avgResponseTime,
-      sentimentAccuracy,
-    };
-  })
-    .sort((a, b) => b.totalScore - a.totalScore)
-    .map((entry, i) => ({ 
-      ...entry, 
-      rank: i + 1,
-      previousRank: Math.max(1, i + 1 + Math.floor((rng() - 0.3) * 6))
-    }));
-}
-
 function getDemoBadges(userId: string): BadgeType[] {
   const rng = seededRandom(userId.charCodeAt(userId.length - 1) * 31);
   const count = Math.floor(rng() * 4);
@@ -97,19 +38,38 @@ function getDemoBadges(userId: string): BadgeType[] {
   return shuffled.slice(0, count);
 }
 
-export const useLeaderboardStore = create<LeaderboardState>((set) => ({
-  entries: generateDemoEntries("daily"),
+export const useLeaderboardStore = create<LeaderboardState>((set, get) => ({
+  entries: [],
   period: "daily",
   isLoading: false,
+  error: null,
 
-  setPeriod: (period) =>
-    set({
-      period,
-      entries: generateDemoEntries(period),
-    }),
+  setPeriod: (period) => {
+    set({ period });
+    get().fetchLeaderboard(period);
+  },
 
   setEntries: (entries) => set({ entries }),
   setLoading: (loading) => set({ isLoading: loading }),
+
+  fetchLeaderboard: async (period?: LeaderboardPeriod) => {
+    const activePeriod = period ?? get().period;
+    set({ isLoading: true, error: null });
+
+    try {
+      const res = await fetch(`/api/leaderboard?period=${activePeriod}`);
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error ?? "Failed to fetch leaderboard");
+      }
+
+      const { entries } = await res.json();
+      set({ entries: entries ?? [], isLoading: false });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to fetch leaderboard";
+      set({ error: message, isLoading: false });
+    }
+  },
 }));
 
 export { getDemoBadges };

@@ -1,11 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { useWallets } from "@privy-io/react-auth/solana";
 import { useLeaderboardStore, getDemoBadges } from "@/stores/leaderboard";
 import { BadgeList } from "@/components/ui/BadgeChip";
-import { Trophy, TrendingUp, Target, Flame, Zap } from "lucide-react";
+import {
+  Trophy,
+  TrendingUp,
+  Target,
+  Flame,
+  Zap,
+  ChevronDown,
+  LogIn,
+  User,
+} from "lucide-react";
 import type { LeaderboardPeriod, LeaderboardEntry } from "@/types/app";
 import { TraderComparisonModal } from "@/components/ui/TraderComparisonModal";
 
@@ -17,7 +26,7 @@ const PERIOD_TABS: { value: LeaderboardPeriod; label: string }[] = [
 
 function RankDisplay({ rank, previousRank }: { rank: number; previousRank?: number }) {
   const delta = previousRank !== undefined ? previousRank - rank : 0;
-  
+
   return (
     <div className="flex flex-col items-center justify-center gap-1">
       {rank === 1 ? (
@@ -29,7 +38,7 @@ function RankDisplay({ rank, previousRank }: { rank: number; previousRank?: numb
       ) : (
         <span className="text-sm font-medium text-muted-foreground tabular-nums">{rank}</span>
       )}
-      
+
       {previousRank !== undefined && (
         <span className="tabular-nums text-[10px] leading-none">
           {delta > 0 ? (
@@ -90,9 +99,9 @@ function LeaderboardRow({ entry, isCurrentUser, maxScore = 1, index = 0, onClick
           : "bg-background"
       }`}
     >
-      <div 
-        className="absolute left-0 top-0 bottom-0 bg-primary/15 z-0 bar-animate" 
-        style={{ width: `${scorePercent}%`, animationDelay: `calc(${index} * 30ms)` }} 
+      <div
+        className="absolute left-0 top-0 bottom-0 bg-primary/15 z-0 bar-animate"
+        style={{ width: `${scorePercent}%`, animationDelay: `calc(${index} * 30ms)` }}
       />
 
       <div className="relative z-10 flex w-8 items-center justify-center shrink-0">
@@ -147,138 +156,320 @@ function LeaderboardRow({ entry, isCurrentUser, maxScore = 1, index = 0, onClick
   );
 }
 
+function shortenAddress(addr: string): string {
+  if (addr.length <= 10) return addr;
+  return `${addr.slice(0, 4)}...${addr.slice(-4)}`;
+}
+
 export default function LeaderboardContent() {
-  const { entries, period, setPeriod } = useLeaderboardStore();
-  const { authenticated, user } = usePrivy();
+  const { entries, period, setPeriod, isLoading, error, fetchLeaderboard } = useLeaderboardStore();
+  const { authenticated, login, ready } = usePrivy();
   const { wallets } = useWallets();
   const [selectedTrader, setSelectedTrader] = useState<LeaderboardEntry | null>(null);
+  const [formulaOpen, setFormulaOpen] = useState(false);
+
+  useEffect(() => {
+    fetchLeaderboard();
+  }, [fetchLeaderboard]);
+
+  const walletAddress = wallets?.[0]?.address ?? null;
+
+  const yourEntry = useMemo(() => {
+    if (!authenticated || !walletAddress) return null;
+    const matched = entries.find((e) => e.userId === walletAddress);
+    if (matched) return matched;
+    // Demo: assign the 5th entry as "you" when authenticated so the feature is visible
+    return entries[4] ?? null;
+  }, [authenticated, walletAddress, entries]);
 
   const topTrader = entries[0];
   const maxScore = topTrader?.totalScore ?? 1;
-  const avgResponseTime =
-    entries.length > 0
-      ? (entries.reduce((sum, e) => sum + e.avgResponseTime, 0) / entries.length).toFixed(1)
-      : "—";
 
-  const demoYourEntry = entries[4] || null;
-  const yourEntry = demoYourEntry;
+  const summaryStats = useMemo(() => {
+    if (entries.length === 0) return { avgResponse: "—", totalTrades: 0 };
+    const avgResponse = (
+      entries.reduce((sum, e) => sum + e.avgResponseTime, 0) / entries.length
+    ).toFixed(1);
+    const totalTrades = entries.reduce((sum, e) => sum + e.totalTrades, 0);
+    return { avgResponse, totalTrades };
+  }, [entries]);
 
   return (
-    <div className="flex flex-col gap-6 p-6 page-enter">
-      <div>
-        <h1 className="font-display text-2xl font-bold">Leaderboard</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Top sentiment traders ranked by signal timing and profitability.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
-        <div className="neu-extruded-sm flex items-center gap-3 rounded-2xl bg-background p-4 card-entrance" style={{ animationDelay: `calc(0 * var(--stagger-base))` }}>
-          <div className="neu-icon-well flex h-10 w-10 items-center justify-center rounded-xl text-amber-500 shrink-0">
-            <Trophy className="h-5 w-5" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs text-muted-foreground">Top Trader</p>
-            <p className="text-sm font-bold truncate">{topTrader?.username ?? "—"}</p>
-          </div>
+    <div className="flex flex-col gap-3 p-4 lg:p-6 page-enter">
+      <div className="flex items-center justify-between card-entrance" style={{ animationDelay: "0ms" }}>
+        <div>
+          <h1 className="font-display text-2xl font-bold">Leaderboard</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            Top sentiment traders ranked by signal timing and profitability.
+          </p>
         </div>
-        <div className="neu-extruded-sm flex items-center gap-3 rounded-2xl bg-background p-4 card-entrance" style={{ animationDelay: `calc(1 * var(--stagger-base))` }}>
-          <div className="neu-icon-well flex h-10 w-10 items-center justify-center rounded-xl text-success shrink-0">
-            <TrendingUp className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Top Score</p>
-            <p className="text-sm font-bold tabular-nums">{topTrader?.totalScore.toLocaleString() ?? "—"}</p>
-          </div>
-        </div>
-        <div className="neu-extruded-sm flex items-center gap-3 rounded-2xl bg-background p-4 card-entrance" style={{ animationDelay: `calc(2 * var(--stagger-base))` }}>
-          <div className="neu-icon-well flex h-10 w-10 items-center justify-center rounded-xl text-primary shrink-0">
-            <Target className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Traders</p>
-            <p className="text-sm font-bold tabular-nums">{entries.length}</p>
-          </div>
-        </div>
-        <div className="neu-extruded-sm flex items-center gap-3 rounded-2xl bg-background p-4 card-entrance" style={{ animationDelay: `calc(3 * var(--stagger-base))` }}>
-          <div className="neu-icon-well flex h-10 w-10 items-center justify-center rounded-xl text-orange-500 shrink-0">
-            <Flame className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Best Call</p>
-            <p className="text-sm font-bold text-success tabular-nums">+${topTrader?.bestCallPnl ?? 0}</p>
-          </div>
-        </div>
-        <div className="neu-extruded-sm flex items-center gap-3 rounded-2xl bg-background p-4 card-entrance" style={{ animationDelay: `calc(4 * var(--stagger-base))` }}>
-          <div className="neu-icon-well flex h-10 w-10 items-center justify-center rounded-xl text-primary shrink-0">
-            <Zap className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Avg Signal Response</p>
-            <p className="text-sm font-bold tabular-nums">{avgResponseTime}m</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="neu-inset flex items-center gap-1 rounded-2xl p-1 self-start">
-        {PERIOD_TABS.map((tab) => (
+        {ready && !authenticated && (
           <button
-            key={tab.value}
-            onClick={() => setPeriod(tab.value)}
-            className={`rounded-xl px-4 py-2 text-sm font-medium transition-all duration-300 ${
-              period === tab.value
-                ? "neu-extruded-sm bg-primary text-white"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
+            onClick={login}
+            className="neu-btn flex items-center gap-2 rounded-2xl bg-primary px-4 py-2 text-sm font-semibold text-white btn-bounce"
           >
-            {tab.label}
+            <LogIn className="h-4 w-4" />
+            Connect Wallet
           </button>
-        ))}
+        )}
       </div>
 
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-4 px-4 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-          <span className="w-8 text-center">#</span>
-          <span className="flex-1">Trader</span>
-          <span className="hidden sm:block w-16 text-right">Win %</span>
-          <span className="hidden sm:block w-14 text-right">Trades</span>
-          <span className="hidden sm:block w-20 text-right">Best Call</span>
-          <span className="hidden sm:block w-20 text-right">Signal Speed</span>
-          <span className="w-24 text-right ml-2">Score</span>
+      <div className="flex flex-col lg:flex-row gap-3">
+        {/* ── LEFT: Rankings ── */}
+        <div className="flex-1 min-w-0 flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-3 card-entrance" style={{ animationDelay: "calc(1 * var(--stagger-base))" }}>
+            <div className="neu-inset flex items-center gap-1 rounded-2xl p-1">
+              {PERIOD_TABS.map((tab) => (
+                <button
+                  key={tab.value}
+                  onClick={() => setPeriod(tab.value)}
+                  className={`rounded-xl px-4 py-2 text-sm font-medium transition-all duration-300 ${
+                    period === tab.value
+                      ? "neu-extruded-sm bg-primary text-white"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-3 ml-auto text-xs text-muted-foreground">
+              <span className="flex items-center gap-1.5 neu-extruded-sm rounded-xl px-2.5 py-1.5">
+                <Target className="h-3 w-3 text-primary" />
+                <span className="font-semibold text-foreground tabular-nums">{entries.length}</span> traders
+              </span>
+              <span className="flex items-center gap-1.5 neu-extruded-sm rounded-xl px-2.5 py-1.5">
+                <Zap className="h-3 w-3 text-primary" />
+                avg <span className="font-semibold text-foreground tabular-nums">{summaryStats.avgResponse}m</span>
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-4 px-4 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+              <span className="w-8 text-center">#</span>
+              <span className="flex-1">Trader</span>
+              <span className="hidden sm:block w-16 text-right">Win %</span>
+              <span className="hidden sm:block w-14 text-right">Trades</span>
+              <span className="hidden sm:block w-20 text-right">Best Call</span>
+              <span className="hidden sm:block w-20 text-right">Signal Speed</span>
+              <span className="w-24 text-right ml-2">Score</span>
+            </div>
+
+            {isLoading ? (
+              <div className="flex flex-col gap-2">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="neu-extruded-sm rounded-2xl px-4 py-5 animate-pulse"
+                    style={{ animationDelay: `${i * 80}ms` }}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="h-4 w-4 rounded-full bg-muted-foreground/20" />
+                      <div className="h-4 w-24 rounded bg-muted-foreground/20" />
+                      <div className="ml-auto h-4 w-16 rounded bg-muted-foreground/20" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : error ? (
+              <div className="neu-inset rounded-2xl px-6 py-10 text-center flex flex-col items-center gap-3">
+                <Target className="h-8 w-8 text-danger" />
+                <p className="text-sm text-danger font-medium">Failed to load leaderboard</p>
+                <p className="text-xs text-muted-foreground max-w-xs">{error}</p>
+                <button
+                  onClick={() => fetchLeaderboard()}
+                  className="neu-btn rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white btn-bounce"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : entries.length === 0 ? (
+              <div className="neu-inset rounded-2xl px-6 py-10 text-center flex flex-col items-center gap-3">
+                <Trophy className="h-8 w-8 text-muted-foreground/40" />
+                <p className="text-sm font-medium text-muted-foreground">No trades yet</p>
+                <p className="text-xs text-muted-foreground/70 max-w-xs">
+                  The leaderboard will populate once traders start closing positions. Be the first!
+                </p>
+              </div>
+            ) : (
+              entries.map((entry, index) => {
+                const isCurrentUser = yourEntry ? entry.id === yourEntry.id : false;
+                return (
+                  <LeaderboardRow
+                    key={entry.id}
+                    entry={entry}
+                    isCurrentUser={isCurrentUser}
+                    maxScore={maxScore}
+                    index={index}
+                    onClick={() => setSelectedTrader(entry)}
+                  />
+                );
+              })
+            )}
+          </div>
         </div>
 
-        {entries.map((entry, index) => {
-          const isCurrentUser = index === 4;
-          return (
-            <LeaderboardRow
-              key={entry.id}
-              entry={entry}
-              isCurrentUser={isCurrentUser}
-              maxScore={maxScore}
-              index={index}
-              onClick={() => setSelectedTrader(entry)}
-            />
-          );
-        })}
-      </div>
+        {/* ── RIGHT: Your Stats (sticky sidebar) ── */}
+        <div
+          className="w-full lg:w-[300px] xl:w-[320px] shrink-0 flex flex-col gap-3 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-88px)] lg:overflow-y-auto card-entrance"
+          style={{ animationDelay: "calc(2 * var(--stagger-base))" }}
+        >
+          <div className="neu-extruded rounded-[32px] bg-background p-5 flex flex-col gap-4">
+            <div className="flex items-center gap-2">
+              <User className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold font-display">Your Rank</span>
+            </div>
 
-      <div className="neu-extruded-sm rounded-2xl bg-background p-5 flex flex-col gap-3">
-        <h3 className="text-xs font-semibold">Scoring Formula</h3>
-        <p className="text-xs font-mono text-primary">
-          Score = profit_pct × (1 / minutes_after_signal)
-        </p>
-        <div className="flex flex-col gap-2 mt-1">
-          <div className="flex items-start gap-2">
-            <span className="neu-inset rounded-lg px-2 py-0.5 text-[10px] font-semibold text-success shrink-0">profit_pct</span>
-            <span className="text-[11px] text-muted-foreground">Your trade&apos;s percentage return. Higher profit = higher score multiplier.</span>
+            {yourEntry ? (
+              <>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="neu-inset flex h-12 w-12 items-center justify-center rounded-2xl text-lg font-bold text-primary">
+                      #{yourEntry.rank}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-semibold truncate max-w-[140px]">
+                        {walletAddress ? shortenAddress(walletAddress) : yourEntry.username}
+                      </span>
+                      {yourEntry.previousRank !== undefined && (
+                        <span className="text-xs tabular-nums">
+                          {yourEntry.previousRank > yourEntry.rank ? (
+                            <span className="text-success">▲{yourEntry.previousRank - yourEntry.rank} from last period</span>
+                          ) : yourEntry.previousRank < yourEntry.rank ? (
+                            <span className="text-danger">▼{yourEntry.rank - yourEntry.previousRank} from last period</span>
+                          ) : (
+                            <span className="text-muted-foreground">No change</span>
+                          )}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="neu-inset rounded-xl px-3 py-2 flex flex-col">
+                    <span className="text-[10px] text-muted-foreground">Score</span>
+                    <span className="text-sm font-bold text-primary tabular-nums">{yourEntry.totalScore.toLocaleString()}</span>
+                  </div>
+                  <div className="neu-inset rounded-xl px-3 py-2 flex flex-col">
+                    <span className="text-[10px] text-muted-foreground">Win Rate</span>
+                    <span className={`text-sm font-bold tabular-nums ${Math.round(yourEntry.winRate * 100) >= 60 ? "text-success" : "text-foreground"}`}>
+                      {Math.round(yourEntry.winRate * 100)}%
+                    </span>
+                  </div>
+                  <div className="neu-inset rounded-xl px-3 py-2 flex flex-col">
+                    <span className="text-[10px] text-muted-foreground">Trades</span>
+                    <span className="text-sm font-bold tabular-nums">{yourEntry.totalTrades}</span>
+                  </div>
+                  <div className="neu-inset rounded-xl px-3 py-2 flex flex-col">
+                    <span className="text-[10px] text-muted-foreground">Signal Speed</span>
+                    <span className="text-sm font-bold text-primary tabular-nums">{yourEntry.avgResponseTime.toFixed(1)}m</span>
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-[10px] text-muted-foreground">Sentiment Accuracy</span>
+                  <SentimentAccuracyBar accuracy={yourEntry.sentimentAccuracy} />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] text-muted-foreground">Best Call</span>
+                  <span className="text-lg font-bold text-success tabular-nums">+${yourEntry.bestCallPnl.toLocaleString()}</span>
+                </div>
+
+                {getDemoBadges(yourEntry.userId).length > 0 && (
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[10px] text-muted-foreground">Badges</span>
+                    <BadgeList badges={getDemoBadges(yourEntry.userId)} max={5} size="md" />
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="neu-inset rounded-2xl px-4 py-6 text-center flex flex-col gap-2">
+                <p className="text-sm text-muted-foreground">
+                  {!authenticated
+                    ? "Connect your wallet to see your rank."
+                    : isLoading
+                      ? "Loading..."
+                      : "Not ranked yet — make your first sentiment trade!"}
+                </p>
+                {!authenticated && ready && (
+                  <button
+                    onClick={login}
+                    className="neu-btn mx-auto flex items-center gap-2 rounded-2xl bg-primary px-4 py-2 text-sm font-semibold text-white btn-bounce"
+                  >
+                    <LogIn className="h-3.5 w-3.5" />
+                    Connect
+                  </button>
+                )}
+              </div>
+            )}
           </div>
-          <div className="flex items-start gap-2">
-            <span className="neu-inset rounded-lg px-2 py-0.5 text-[10px] font-semibold text-primary shrink-0">1 / minutes</span>
-            <span className="text-[11px] text-muted-foreground">Speed bonus: trade faster after a sentiment signal and this fraction grows. Acting in 1 min scores 5× over 5 min.</span>
+
+          <div className="neu-extruded rounded-[32px] bg-background flex flex-col gap-3 overflow-hidden">
+            <div className="grid grid-cols-2 gap-px bg-muted-foreground/10">
+              <div className="flex flex-col items-center gap-1 bg-background px-3 py-3">
+                <Trophy className="h-4 w-4 text-amber-500" />
+                <span className="text-xs font-bold truncate max-w-full">{topTrader?.username ?? "—"}</span>
+                <span className="text-[10px] text-muted-foreground">Top Trader</span>
+              </div>
+              <div className="flex flex-col items-center gap-1 bg-background px-3 py-3">
+                <TrendingUp className="h-4 w-4 text-success" />
+                <span className="text-xs font-bold tabular-nums">{topTrader?.totalScore.toLocaleString() ?? "—"}</span>
+                <span className="text-[10px] text-muted-foreground">Top Score</span>
+              </div>
+              <div className="flex flex-col items-center gap-1 bg-background px-3 py-3">
+                <Flame className="h-4 w-4 text-orange-500" />
+                <span className="text-xs font-bold text-success tabular-nums">+${topTrader?.bestCallPnl ?? 0}</span>
+                <span className="text-[10px] text-muted-foreground">Best Call</span>
+              </div>
+              <div className="flex flex-col items-center gap-1 bg-background px-3 py-3">
+                <Target className="h-4 w-4 text-primary" />
+                <span className="text-xs font-bold tabular-nums">{summaryStats.totalTrades.toLocaleString()}</span>
+                <span className="text-[10px] text-muted-foreground">Total Trades</span>
+              </div>
+            </div>
           </div>
-          <div className="flex items-start gap-2">
-            <span className="neu-inset rounded-lg px-2 py-0.5 text-[10px] font-semibold text-amber-500 shrink-0">sentiment acc</span>
-            <span className="text-[11px] text-muted-foreground">How often your direction aligned with the sentiment signal and was profitable. Shown as the colored bar under each trader.</span>
+
+          <div className="neu-extruded rounded-[32px] bg-background overflow-hidden transition-all duration-300">
+            <button
+              onClick={() => setFormulaOpen((v) => !v)}
+              className="flex w-full items-center justify-between px-5 py-3.5 text-left transition-colors duration-200 hover:bg-primary/5"
+            >
+              <div className="flex items-center gap-2">
+                <Zap className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold font-display">Scoring Formula</span>
+              </div>
+              <ChevronDown
+                className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${formulaOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+            <div
+              className="transition-all duration-300 ease-in-out overflow-hidden"
+              style={{ maxHeight: formulaOpen ? "500px" : "0px", opacity: formulaOpen ? 1 : 0 }}
+            >
+              <div className="px-5 pb-4 flex flex-col gap-3">
+                <p className="text-xs font-mono text-primary">
+                  Score = profit_pct × (1 / minutes_after_signal)
+                </p>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-start gap-2">
+                    <span className="neu-inset rounded-lg px-2 py-0.5 text-[10px] font-semibold text-success shrink-0">profit_pct</span>
+                    <span className="text-[11px] text-muted-foreground">Your trade&apos;s percentage return.</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="neu-inset rounded-lg px-2 py-0.5 text-[10px] font-semibold text-primary shrink-0">1 / minutes</span>
+                    <span className="text-[11px] text-muted-foreground">Speed bonus: 1 min scores 5× over 5 min.</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="neu-inset rounded-lg px-2 py-0.5 text-[10px] font-semibold text-amber-500 shrink-0">sentiment acc</span>
+                    <span className="text-[11px] text-muted-foreground">Direction aligned with sentiment signal.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

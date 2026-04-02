@@ -65,8 +65,13 @@ export default function TradeContent() {
   );
 
   const handleClosePosition = useCallback(
-    async (posMarketId: string, side: TradeDirection, size: number) => {
-      await closePosition(posMarketId, side, size);
+    async (
+      posMarketId: string,
+      side: TradeDirection,
+      size: number,
+      positionMeta?: { entryPrice: number; markPrice: number; leverage: number; pnlUsdc: number }
+    ) => {
+      await closePosition(posMarketId, side, size, positionMeta);
       refetchPositions();
     },
     [closePosition, refetchPositions]

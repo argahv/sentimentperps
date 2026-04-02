@@ -25,8 +25,13 @@ export default function DashboardContent() {
 
   useSentimentPolling(60_000);
 
-  const handleClose = async (marketId: string, side: "long" | "short", size: number) => {
-    await closePosition(marketId, side, size);
+  const handleClose = async (
+    marketId: string,
+    side: "long" | "short",
+    size: number,
+    positionMeta?: { entryPrice: number; markPrice: number; leverage: number; pnlUsdc: number }
+  ) => {
+    await closePosition(marketId, side, size, positionMeta);
     refetch();
   };
 

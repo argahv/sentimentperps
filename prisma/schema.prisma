@@ -1,0 +1,48 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Trade {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  closedAt  DateTime @default(now())
+
+  walletAddress String
+  symbol        String
+  direction     String   // "long" | "short"
+  leverage      Float
+  size          Float    // USDC notional
+  entryPrice    Float
+  exitPrice     Float
+  pnlUsdc       Float
+  pnlPct        Float
+
+  // Sentiment-specific scoring fields
+  sentimentScoreAtEntry Float  @default(0) // 0-100
+  minutesAfterSignal    Float  @default(0) // how fast they reacted to signal
+  sentimentAligned      Boolean @default(true) // was direction aligned with sentiment?
+
+  // Computed leaderboard score: pnlPct * (1 / minutesAfterSignal)
+  score Float @default(0)
+
+  @@index([walletAddress])
+  @@index([closedAt])
+  @@index([walletAddress, closedAt])
+}
+
+model Referral {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  referrerWallet String
+  referredWallet String   @unique
+  referralCode   String
+
+  @@index([referrerWallet])
+  @@index([referralCode])
+}
