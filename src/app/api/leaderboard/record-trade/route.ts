@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { evaluateAndPersist } from "@/lib/badges";
 
 interface RecordTradeBody {
   walletAddress: string;
@@ -75,7 +76,13 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json({ trade: { id: trade.id, score: trade.score } });
+    const gamification = await evaluateAndPersist(walletAddress, score);
+
+    return NextResponse.json({
+      trade: { id: trade.id, score: trade.score },
+      badges: gamification.badges,
+      xpGained: gamification.xpGained,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to record trade";
     console.error("[record-trade] POST error:", message);

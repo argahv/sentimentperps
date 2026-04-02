@@ -9,7 +9,7 @@ interface SkeletonProps {
 export function Skeleton({ className = "" }: SkeletonProps) {
   return (
     <div
-      className={`neu-inset animate-pulse rounded-lg bg-background ${className}`}
+      className={`border border-border-muted animate-pulse bg-border-muted rounded-md ${className}`}
     />
   );
 }
@@ -29,15 +29,15 @@ export function SkeletonTransition({ loading, skeleton, children }: SkeletonTran
 
 export function CardSkeleton() {
   return (
-    <div className="neu-extruded flex flex-col gap-3 rounded-[32px] bg-background p-4">
+    <div className="swiss-card rounded-lg flex flex-col gap-3 p-4">
       <div className="flex items-center justify-between">
-        <Skeleton className="h-4 w-20" />
-        <Skeleton className="h-5 w-16 rounded-full" />
+        <Skeleton className="h-4 w-20 rounded-md" />
+        <Skeleton className="h-5 w-16 rounded-md" />
       </div>
-      <Skeleton className="h-8 w-32" />
+      <Skeleton className="h-8 w-32 rounded-md" />
       <div className="flex gap-4">
-        <Skeleton className="h-3 w-24" />
-        <Skeleton className="h-3 w-16" />
+        <Skeleton className="h-3 w-24 rounded-md" />
+        <Skeleton className="h-3 w-16 rounded-md" />
       </div>
     </div>
   );
@@ -45,8 +45,8 @@ export function CardSkeleton() {
 
 export function ChartSkeleton() {
   return (
-    <div className="neu-extruded rounded-[32px] bg-background overflow-hidden">
-      <Skeleton className="h-[400px] w-full rounded-none" />
+    <div className="swiss-card rounded-lg overflow-hidden">
+      <Skeleton className="h-[400px] w-full" />
     </div>
   );
 }

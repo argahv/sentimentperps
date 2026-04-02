@@ -32,8 +32,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
         appId={privyAppId}
         config={{
           appearance: {
-            theme: "light",
-            accentColor: "#6C63FF",
+            theme: "dark",
+            accentColor: "#3B82F6",
             logo: "/logo.svg",
             walletChainType: "solana-only",
           },

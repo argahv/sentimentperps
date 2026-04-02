@@ -18,9 +18,9 @@ export function EarningsProjection({
   const fillPathData = `${pathData} L 100 100 L 0 100 Z`;
 
   return (
-    <div className="neu-card-enhanced glass-panel p-6 rounded-[32px] flex flex-col gap-6">
+    <div className="swiss-card bg-surface p-6 rounded-lg industrial-screws flex flex-col gap-6">
       <div>
-        <h3 className="font-display text-lg font-bold">Earnings Projection</h3>
+        <h3 className="font-display text-lg font-bold uppercase tracking-widest">Earnings Projection</h3>
         <p className="text-sm text-muted-foreground mt-1">
           Estimate your potential rewards based on your current performance.
         </p>
@@ -37,12 +37,12 @@ export function EarningsProjection({
           max="50"
           value={additional}
           onChange={(e) => setAdditional(Number(e.target.value))}
-          className="w-full h-2 rounded-full appearance-none bg-primary/20 neu-inset-sm"
-          style={{ accentColor: "var(--primary, #6C63FF)" }}
+          className="w-full h-2 rounded-full appearance-none bg-primary/20 border border-border-muted"
+          style={{ accentColor: "var(--primary)" }}
         />
       </div>
 
-      <div className="neu-extruded-sm rounded-2xl bg-background p-5 relative overflow-hidden">
+      <div className="border border-border-muted bg-surface p-5 rounded-md relative overflow-hidden">
         <div className="relative z-10">
           <p className="text-sm text-muted-foreground">
             If you refer <strong className="text-foreground tabular-nums">{additional}</strong> more friends, you could earn
@@ -60,8 +60,8 @@ export function EarningsProjection({
           >
             <defs>
               <linearGradient id="earnings-gradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--success, #38B2AC)" stopOpacity="0.5" />
-                <stop offset="100%" stopColor="var(--success, #38B2AC)" stopOpacity="0" />
+                <stop offset="0%" stopColor="var(--success)" stopOpacity="0.5" />
+                <stop offset="100%" stopColor="var(--success)" stopOpacity="0" />
               </linearGradient>
             </defs>
             <path
@@ -72,7 +72,7 @@ export function EarningsProjection({
             <path
               d={pathData}
               fill="none"
-              stroke="var(--success, #38B2AC)"
+              stroke="var(--success)"
               strokeWidth="3"
               strokeLinecap="round"
               strokeDasharray="150"

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { LeaderboardEntry, LeaderboardPeriod, BadgeType } from "@/types/app";
+import type { LeaderboardEntry, LeaderboardPeriod } from "@/types/app";
 
 interface LeaderboardState {
   entries: LeaderboardEntry[];
@@ -11,31 +11,6 @@ interface LeaderboardState {
   setEntries: (entries: LeaderboardEntry[]) => void;
   setLoading: (loading: boolean) => void;
   fetchLeaderboard: (period?: LeaderboardPeriod) => Promise<void>;
-}
-
-const BADGE_POOL: BadgeType[] = [
-  "first_mover",
-  "contrarian",
-  "streak_3",
-  "streak_5",
-  "whale_hunter",
-  "sentiment_guru",
-  "speed_demon",
-];
-
-function seededRandom(seed: number): () => number {
-  let s = seed;
-  return () => {
-    s = (s * 16807 + 0) % 2147483647;
-    return s / 2147483647;
-  };
-}
-
-function getDemoBadges(userId: string): BadgeType[] {
-  const rng = seededRandom(userId.charCodeAt(userId.length - 1) * 31);
-  const count = Math.floor(rng() * 4);
-  const shuffled = [...BADGE_POOL].sort(() => rng() - 0.5);
-  return shuffled.slice(0, count);
 }
 
 export const useLeaderboardStore = create<LeaderboardState>((set, get) => ({
@@ -71,5 +46,3 @@ export const useLeaderboardStore = create<LeaderboardState>((set, get) => ({
     }
   },
 }));
-
-export { getDemoBadges };

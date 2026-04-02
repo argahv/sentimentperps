@@ -3,14 +3,14 @@
 import type { BadgeType } from "@/types/app";
 
 const BADGE_CONFIG: Record<BadgeType, { label: string; color: string; icon: string }> = {
-  first_mover: { label: "First Mover", color: "bg-amber-500/15 text-amber-600", icon: "1st" },
-  contrarian: { label: "Contrarian", color: "bg-purple-500/15 text-purple-600", icon: "~~" },
-  streak_3: { label: "3 Streak", color: "bg-blue-500/15 text-blue-600", icon: "x3" },
-  streak_5: { label: "5 Streak", color: "bg-blue-500/15 text-blue-600", icon: "x5" },
-  streak_10: { label: "10 Streak", color: "bg-indigo-500/15 text-indigo-600", icon: "10" },
-  whale_hunter: { label: "Whale Hunter", color: "bg-cyan-500/15 text-cyan-600", icon: "wh" },
+  first_mover: { label: "First Mover", color: "bg-amber-500/15 text-amber-500", icon: "1st" },
+  contrarian: { label: "Contrarian", color: "bg-primary/15 text-primary", icon: "~~" },
+  streak_3: { label: "3 Streak", color: "bg-blue-500/15 text-blue-400", icon: "x3" },
+  streak_5: { label: "5 Streak", color: "bg-blue-500/15 text-blue-400", icon: "x5" },
+  streak_10: { label: "10 Streak", color: "bg-primary/15 text-primary", icon: "10" },
+  whale_hunter: { label: "Whale Hunter", color: "bg-success/15 text-success", icon: "wh" },
   sentiment_guru: { label: "Guru", color: "bg-success/15 text-success", icon: "sg" },
-  speed_demon: { label: "Speed Demon", color: "bg-orange-500/15 text-orange-600", icon: "sd" },
+  speed_demon: { label: "Speed Demon", color: "bg-orange-500/15 text-orange-500", icon: "sd" },
 };
 
 interface BadgeChipProps {
@@ -28,7 +28,7 @@ export function BadgeChip({ badge, size = "sm" }: BadgeChipProps) {
 
   return (
     <span
-      className={`neu-extruded-sm inline-flex items-center rounded-full font-medium ${config.color} ${sizeClasses}`}
+      className={`swiss-icon-well inline-flex items-center font-medium rounded-md ${config.color} ${sizeClasses}`}
       title={config.label}
     >
       <span className="font-bold">{config.icon}</span>

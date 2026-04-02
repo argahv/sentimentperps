@@ -20,7 +20,7 @@ export function SentimentConfidenceMeter({ symbol }: { symbol: string }) {
   if (confidence >= 66) {
     colorVar = "var(--success)";
   } else if (confidence >= 33) {
-    colorVar = "var(--warning, #F59E0B)";
+    colorVar = "var(--warning, #FFD600)";
   }
 
   const radius = 60;

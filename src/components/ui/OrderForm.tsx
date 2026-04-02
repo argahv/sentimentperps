@@ -120,10 +120,10 @@ export function OrderForm({
 
   return (
     <>
-      <form onSubmit={handleSubmit} className="neu-extruded flex flex-col gap-4 rounded-[32px] bg-background p-4">
-        <h3 className="text-sm font-semibold font-display">Place Order — {symbol}</h3>
+      <form onSubmit={handleSubmit} className="swiss-card bg-surface rounded-lg industrial-screws flex flex-col gap-4 p-4">
+        <h3 className="text-sm font-semibold font-display uppercase tracking-widest">Place Order — {symbol}</h3>
 
-        <div className="neu-inset rounded-2xl p-2 flex flex-col gap-1.5">
+        <div className="border border-border-muted p-2 rounded-md flex flex-col gap-1.5">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Sentiment Velocity</span>
             <span className="text-xs font-semibold text-primary">{currentVelocity.toFixed(1)}/min</span>
@@ -132,7 +132,7 @@ export function OrderForm({
         </div>
 
         {hasSuggestion && suggestedDirection && suggestedLeverage !== null && confidence !== null && (
-          <div className="neu-inset flex flex-col gap-2 rounded-2xl p-3 transition-all duration-300">
+          <div className="border border-border-muted flex flex-col rounded-md gap-2 p-3 transition-all duration-300">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <span
@@ -168,7 +168,7 @@ export function OrderForm({
               <button
                 type="button"
                 onClick={handleApplySuggestion}
-                className="neu-btn shrink-0 rounded-2xl bg-primary px-3 py-1 text-xs font-semibold text-white transition-all duration-300"
+                className="swiss-btn-accent shrink-0 px-3 py-1 text-xs font-semibold text-white transition-all duration-300"
               >
                 Apply
               </button>
@@ -176,9 +176,9 @@ export function OrderForm({
           </div>
         )}
 
-        <div className="neu-inset relative grid grid-cols-2 gap-1 rounded-2xl p-1">
+        <div className="border border-border-muted relative grid rounded-md grid-cols-2 gap-1 p-1">
           <div
-            className="absolute bottom-1 top-1 w-[calc(50%-6px)] rounded-xl transition-transform duration-200 ease-in-out"
+            className="absolute bottom-1 top-1 w-[calc(50%-6px)] transition-transform duration-200 ease-in-out"
             style={{
               transform: direction === "long" ? "translateX(4px)" : "translateX(calc(100% + 8px))",
               backgroundColor: direction === "long" ? "var(--success)" : "var(--danger)",
@@ -189,9 +189,9 @@ export function OrderForm({
             type="button"
             onClick={() => setDirection("long")}
             disabled={isSubmitting}
-            className={`relative z-10 rounded-xl py-2 text-sm font-semibold transition-all ${
+            className={`relative z-10 py-2 text-sm font-semibold transition-all ${
               direction === "long"
-                ? "neu-extruded-sm text-white"
+                ? "border border-border-muted text-white"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -201,9 +201,9 @@ export function OrderForm({
             type="button"
             onClick={() => setDirection("short")}
             disabled={isSubmitting}
-            className={`relative z-10 rounded-xl py-2 text-sm font-semibold transition-all ${
+            className={`relative z-10 py-2 text-sm font-semibold transition-all ${
               direction === "short"
-                ? "neu-extruded-sm text-white"
+                ? "border border-border-muted text-white"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -224,7 +224,7 @@ export function OrderForm({
             onChange={(e) => setSize(e.target.value)}
             placeholder={avgSize > 0 ? `Suggested: ${avgSize.toFixed(2)}` : "0.00"}
             disabled={isSubmitting}
-            className="neu-input rounded-2xl bg-background px-3 py-2.5 text-sm placeholder:text-muted disabled:opacity-50 focus:outline-none focus:shadow-[0_0_16px_2px_rgba(108,99,255,0.35)] transition-shadow"
+            className="swiss-input bg-surface px-3 py-2.5 text-sm placeholder:text-muted disabled:opacity-50 focus:outline-none focus:border-foreground transition-colors"
           />
           {avgSize > 0 && <span className="text-[10px] text-muted-foreground">Based on your avg position</span>}
         </div>
@@ -240,10 +240,10 @@ export function OrderForm({
                 type="button"
                 onClick={() => setLeverage(lev)}
                 disabled={isSubmitting}
-                className={`btn-bounce flex-1 rounded-xl py-1.5 text-xs font-medium transition-all ${
+                className={`flex-1 py-1.5 text-xs font-medium transition-all ${
                   leverage === lev
-                    ? "neu-extruded-sm bg-primary text-white"
-                    : "neu-inset-sm text-muted-foreground hover:text-foreground"
+                    ? "border border-border-muted bg-primary text-white"
+                    : "border border-border-muted text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {lev}x
@@ -285,7 +285,7 @@ export function OrderForm({
                 onChange={(e) => setTakeProfit(e.target.value)}
                 placeholder="—"
                 disabled={isSubmitting}
-                className="neu-input rounded-2xl bg-background px-3 py-2 text-sm placeholder:text-muted disabled:opacity-50 focus:outline-none focus:shadow-[0_0_16px_2px_rgba(108,99,255,0.35)] transition-shadow"
+                className="swiss-input bg-surface px-3 py-2 text-sm placeholder:text-muted disabled:opacity-50 focus:outline-none focus:border-foreground transition-colors"
               />
             </div>
             <div className="flex flex-col gap-1.5">
@@ -301,14 +301,14 @@ export function OrderForm({
                 onChange={(e) => setStopLoss(e.target.value)}
                 placeholder="—"
                 disabled={isSubmitting}
-                className="neu-input rounded-2xl bg-background px-3 py-2 text-sm placeholder:text-muted disabled:opacity-50 focus:outline-none focus:shadow-[0_0_16px_2px_rgba(108,99,255,0.35)] transition-shadow"
+                className="swiss-input bg-surface px-3 py-2 text-sm placeholder:text-muted disabled:opacity-50 focus:outline-none focus:border-foreground transition-colors"
               />
             </div>
           </div>
         )}
 
         {!marketId && (
-          <div className="neu-inset rounded-2xl p-3 text-center text-xs text-muted-foreground">
+          <div className="border border-border-muted p-3 rounded-md text-center text-xs text-muted-foreground">
             {symbol} is not available for trading on Pacifica
           </div>
         )}
@@ -316,7 +316,7 @@ export function OrderForm({
         <button
           type="submit"
           disabled={!isValid || isSubmitting}
-          className={`neu-btn flex items-center justify-center gap-2 rounded-2xl py-3 text-sm font-semibold text-white transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:-translate-y-0.5 hover:shadow-lg ${
+          className={`swiss-btn-accent flex items-center justify-center gap-2 py-3 text-sm font-semibold text-white transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed ${
             isSubmitting ? "animate-pulse" : ""
           } ${
             direction === "long"

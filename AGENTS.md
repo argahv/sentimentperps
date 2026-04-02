@@ -12,7 +12,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ## What This Is
 
-A sentiment-driven perpetual futures trading platform on Solana. Users trade perps on Pacifica exchange based on social sentiment signals from Elfa AI. Auth via Privy embedded wallets. Neumorphic UI, Next.js 16, React 19, Zustand state, Tailwind CSS 4.
+A sentiment-driven perpetual futures trading platform on Solana. Users trade perps on Pacifica exchange based on social sentiment signals from Elfa AI. Auth via Privy embedded wallets. Dark Industrial Skeuomorphism UI (neumorphic shadows, manufacturing details, Space Grotesk + IBM Plex Sans + JetBrains Mono), Next.js 16, React 19, Zustand state, Tailwind CSS 4.
 
 ## Build & Run
 
@@ -98,17 +98,43 @@ These are **non-negotiable** for any code touching trades, positions, or wallet 
 - All state is in-memory — no persistence layer yet
 - Never mutate store state directly — always use store actions
 
-### Design System — Neumorphic
+### Design System — Dark Industrial Skeuomorphism
 
 ```
-Background: #E0E5EC    Primary: #6C63FF (purple)
-Success: #38B2AC       Danger: #EF4444
-Shadows: neu-extruded (raised), neu-inset (pressed)
-Font: Plus Jakarta Sans (display) + DM Sans (body)
-Border radius: rounded-xl / rounded-2xl / rounded-[32px]
+Background: #12151C    Surface: #181C26    Elevated: #1E2330    Muted: #0D0F14
+Text: #E8ECF1          Text-muted: #6B7A8D  Border: #2A3040     Border-bright: #3A4560
+Primary: #FF4757 (Safety Orange-Red)   Success: #22C55E   Danger: #FF4757   Warning: #FBBF24
+Fonts: Space Grotesk (display/headings) + IBM Plex Sans (body) + JetBrains Mono (mono/data)
+Border-radius: rounded-lg (8px cards), rounded-md (6px inner elements)
+Shadows: Dual neumorphic (dark + light offset) — never flat, always 3D depth
+Animations: duration-150/200 ease-out (snappy, mechanical — never bouncy)
 ```
 
-All new UI must follow the neumorphic pattern — raised cards with soft shadows, inset inputs. See `src/app/globals.css` for the full token set.
+**Shadow system** (neumorphic dual-shadow):
+- `shadow-neu` — Default card depth (6px dark + 6px light offset)
+- `shadow-neu-hover` — Elevated hover state (10px + inset highlight)
+- `shadow-neu-inset` — Recessed/pressed elements (inset 3px)
+- `shadow-neu-inset-deep` — Deep inset for active/pressed states (inset 5px)
+
+**Utility classes** (defined in `globals.css`):
+- `swiss-card` / `flat-card` / `neu-card` — Card containers with neumorphic shadows + border
+- `swiss-btn-accent` — Primary CTA (bg-primary, neumorphic shadow, active:translate-y-[1px])
+- `swiss-btn-outline` — Secondary button (border, hover inverts with shadow)
+- `swiss-btn` — Base button style with mechanical press physics
+- `swiss-input` / `swiss-input-box` / `flat-input` — Form inputs with inset neumorphic shadow
+- `swiss-icon-well` / `flat-icon-well` — Icon containers with inset shadow
+- `industrial-screws` — Corner screw decorations on major card containers (::before)
+- `industrial-vents` — Horizontal vent slot pattern on headers/dividers (::before)
+- `led-green` / `led-red` / `led-yellow` / `led-blue` — LED status indicators with glow
+- `connector-pipe` — Vertical pipe connector between sections
+- `push-pin` — Pin decoration for pinned/featured items
+- `device-bezel` / `device-screen` — Hardware device frame styling
+- `scanlines` — CRT scanline overlay (::after)
+- `carbon-fiber` — Subtle carbon fiber texture background
+
+**Industrial details**: Use `industrial-screws` on outermost card wrappers of major components. Do NOT apply screws to small elements (badges, chips, nested cards). LED indicators for status displays. Vent slots for section dividers. Scanlines sparingly for accent.
+
+All new UI must follow the Dark Industrial Skeuomorphism style — neumorphic cards with dual shadows, rounded corners, mechanical button physics, manufacturing-inspired decorations (screws, vents, LEDs), premium dark palette. See `src/app/globals.css` for the full token set and utility class definitions.
 
 ## Known Pitfalls
 
@@ -137,6 +163,9 @@ This app targets a premium trading experience. Every interaction should feel pol
 - **Animations**: Use `page-enter` transitions, smooth number count-ups (`useCountUp`), and micro-interactions on state changes.
 - **Feedback**: Every user action (trade, close, trigger) gets immediate visual + toast feedback.
 - **Loading**: Never show a blank screen. Use skeletons, shimmer effects, or optimistic UI.
-- **Typography**: Respect the Plus Jakarta Sans / DM Sans hierarchy. Monospace for prices and PnL.
-- **Color coding**: Green for profit/bullish, red for loss/bearish, purple for primary actions. Never mix.
+- **Typography**: Respect the Space Grotesk (headings) / IBM Plex Sans (body) / JetBrains Mono (data) hierarchy. Monospace for prices and PnL.
+- **Color coding**: Green (#22C55E) for profit/bullish, red (#FF4757) for loss/bearish, primary (#FF4757) for actions. Never mix.
 - **Accessibility**: Keyboard navigation for modals, sufficient contrast ratios, focus indicators.
+
+Always make sure its ready for hackathon, and that it follows the guidelines in AGENTS.md upate .agents for anything related to hackathon. MUST always remeber to use Fuul Rhinofi ,PRIVY,PACIFICA,ELFA where relevant, they should all be implemented where needed as its for hackathon, use relevant skills where needed.
+REMEMBER I need it complete by 14th of April 2026

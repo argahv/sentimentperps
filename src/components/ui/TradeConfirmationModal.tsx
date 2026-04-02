@@ -80,9 +80,9 @@ export function TradeConfirmationModal({
         if (e.target === e.currentTarget && !isSubmitting) onClose();
       }}
     >
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-background/80" />
 
-      <div className="neu-extruded relative w-full max-w-sm rounded-[32px] bg-background p-5">
+      <div className="swiss-card bg-surface rounded-lg industrial-screws relative w-full max-w-sm p-5">
         <button
           onClick={onClose}
           disabled={isSubmitting}
@@ -93,7 +93,7 @@ export function TradeConfirmationModal({
 
         <div className="flex items-center gap-2.5 mb-5">
           <div
-            className={`neu-icon-well flex h-9 w-9 items-center justify-center ${
+            className={`swiss-icon-well flex h-9 w-9 items-center justify-center ${
               isLong ? "text-success" : "text-danger"
             }`}
           >
@@ -104,14 +104,14 @@ export function TradeConfirmationModal({
             )}
           </div>
           <div>
-            <h3 className="text-sm font-semibold font-display">
+            <h3 className="text-sm font-semibold font-display uppercase tracking-widest">
               Confirm {isLong ? "Long" : "Short"}
             </h3>
             <p className="text-xs text-muted-foreground">{symbol}/USDC PERP</p>
           </div>
         </div>
 
-        <div className="neu-inset flex flex-col gap-2.5 rounded-2xl p-3 mb-4">
+        <div className="border border-border-muted flex flex-col rounded-md gap-2.5 p-3 mb-4">
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground">Entry Price</span>
             <span className="font-medium">${formattedPrice}</span>
@@ -179,7 +179,7 @@ export function TradeConfirmationModal({
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="neu-btn rounded-2xl bg-background py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground disabled:opacity-50"
+            className="swiss-btn-outline bg-surface py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground disabled:opacity-50"
           >
             Cancel
           </button>
@@ -187,7 +187,7 @@ export function TradeConfirmationModal({
             type="button"
             onClick={onConfirm}
             disabled={isSubmitting}
-            className={`neu-btn flex items-center justify-center gap-1.5 rounded-2xl py-2.5 text-sm font-semibold text-white disabled:opacity-60 ${
+            className={`swiss-btn-accent flex items-center justify-center gap-1.5 py-2.5 text-sm font-semibold text-white disabled:opacity-60 ${
               isLong
                 ? "bg-success"
                 : "bg-danger"

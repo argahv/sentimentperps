@@ -56,21 +56,21 @@ export function TraderComparisonModal({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-      <div className="glass-panel card-entrance relative w-full max-w-md p-6 m-4 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80">
+      <div className="swiss-card bg-surface rounded-lg industrial-screws card-entrance relative w-full max-w-md p-6 m-4">
         <button
           onClick={onClose}
-          className="neu-btn absolute right-4 top-4 rounded-full p-2 flex items-center justify-center text-slate-500 hover:text-slate-800"
+          className="swiss-btn-outline absolute right-4 top-4 rounded-full p-2 flex items-center justify-center text-muted-foreground hover:text-foreground"
           aria-label="Close modal"
         >
           <X className="h-5 w-5" />
         </button>
 
-        <h2 className="mb-6 text-center text-xl font-display font-bold text-slate-800">
+        <h2 className="mb-6 text-center text-xl font-display font-bold text-foreground uppercase tracking-widest">
           Trader Comparison
         </h2>
 
-        <div className="grid grid-cols-3 gap-4 mb-6 text-sm font-semibold text-slate-500 border-b border-white/20 pb-2">
+        <div className="grid grid-cols-3 gap-4 mb-6 text-sm font-semibold text-muted-foreground border-b border-border-muted pb-2">
           <div className="text-center truncate">You</div>
           <div className="text-center">Metric</div>
           <div className="text-center truncate">{theirEntry.username}</div>
@@ -100,23 +100,23 @@ export function TraderComparisonModal({
               <div key={idx} className="grid grid-cols-3 items-center gap-4">
                 <div
                   className={`text-center tabular-nums ${
-                    youHighlight ? "text-primary font-bold" : "text-slate-600"
+                    youHighlight ? "text-primary font-bold" : "text-muted-foreground"
                   }`}
                 >
                   {yourEntry && yourVal !== null ? (
                     stat.format(yourVal)
                   ) : idx === 0 ? (
-                    <span className="text-xs text-slate-400">Connect wallet</span>
+                    <span className="text-xs text-muted-foreground">Connect wallet</span>
                   ) : (
-                    <span className="text-slate-400">-</span>
+                    <span className="text-muted-foreground">-</span>
                   )}
                 </div>
-                <div className="text-center text-xs font-medium text-slate-400 uppercase tracking-wider">
+                <div className="text-center text-xs font-medium text-muted-foreground uppercase tracking-widest">
                   {stat.label}
                 </div>
                 <div
                   className={`text-center tabular-nums ${
-                    theirHighlight ? "text-primary font-bold" : "text-slate-600"
+                    theirHighlight ? "text-primary font-bold" : "text-muted-foreground"
                   }`}
                 >
                   {stat.format(theirVal)}

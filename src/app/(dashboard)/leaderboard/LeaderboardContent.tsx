@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { useWallets } from "@privy-io/react-auth/solana";
-import { useLeaderboardStore, getDemoBadges } from "@/stores/leaderboard";
+import { useLeaderboardStore } from "@/stores/leaderboard";
 import { BadgeList } from "@/components/ui/BadgeChip";
 import {
   Trophy,
@@ -15,7 +15,7 @@ import {
   LogIn,
   User,
 } from "lucide-react";
-import type { LeaderboardPeriod, LeaderboardEntry } from "@/types/app";
+import type { LeaderboardPeriod, LeaderboardEntry, BadgeType } from "@/types/app";
 import { TraderComparisonModal } from "@/components/ui/TraderComparisonModal";
 
 const PERIOD_TABS: { value: LeaderboardPeriod; label: string }[] = [
@@ -32,7 +32,7 @@ function RankDisplay({ rank, previousRank }: { rank: number; previousRank?: numb
       {rank === 1 ? (
         <span className="text-lg font-bold text-amber-500 tabular-nums">1</span>
       ) : rank === 2 ? (
-        <span className="text-lg font-bold text-gray-500 tabular-nums">2</span>
+        <span className="text-lg font-bold text-muted-foreground tabular-nums">2</span>
       ) : rank === 3 ? (
         <span className="text-lg font-bold text-orange-500 tabular-nums">3</span>
       ) : (
@@ -57,12 +57,12 @@ function RankDisplay({ rank, previousRank }: { rank: number; previousRank?: numb
 function SentimentAccuracyBar({ accuracy }: { accuracy: number }) {
   return (
     <div className="flex items-center gap-1.5 mt-1">
-      <div className="neu-inset h-1.5 flex-1 rounded-full overflow-hidden" style={{ maxWidth: 80 }}>
+      <div className="bg-surface-elevated h-1.5 flex-1 rounded-full overflow-hidden" style={{ maxWidth: 80 }}>
         <div
           className="h-full rounded-full transition-all duration-300"
           style={{
             width: `${Math.min(100, accuracy)}%`,
-            background: accuracy >= 60 ? "#38B2AC" : accuracy >= 40 ? "#6C63FF" : "#EF4444",
+            background: accuracy >= 60 ? "var(--success)" : accuracy >= 40 ? "var(--primary)" : "var(--danger)",
           }}
         />
       </div>
@@ -80,7 +80,7 @@ interface LeaderboardRowProps {
 }
 
 function LeaderboardRow({ entry, isCurrentUser, maxScore = 1, index = 0, onClick }: LeaderboardRowProps) {
-  const badges = getDemoBadges(entry.userId);
+  const entryBadges = (entry.badges ?? []) as BadgeType[];
   const winRatePct = Math.round(entry.winRate * 100);
   const pnlApprox = entry.bestCallPnl / 100;
   const formulaMinutes = entry.avgResponseTime;
@@ -89,14 +89,10 @@ function LeaderboardRow({ entry, isCurrentUser, maxScore = 1, index = 0, onClick
   return (
     <div
       onClick={onClick}
-      className={`relative flex items-center gap-4 rounded-2xl px-4 py-3 transition-all duration-300 cursor-pointer overflow-hidden ${
-        entry.rank <= 3
-          ? "neu-extruded"
-          : "neu-extruded-sm hover:shadow-neu-hover hover:translate-y-[-2px]"
-      } ${
+      className={`relative flex items-center gap-4 px-4 py-3 transition-all duration-200 cursor-pointer overflow-hidden rounded-md bg-surface hover:bg-surface-elevated ${
         isCurrentUser
-          ? "border-l-3 border-[var(--primary)] bg-[rgba(108,99,255,0.05)]"
-          : "bg-background"
+          ? "border-l-[3px] border-l-[var(--primary)] bg-primary-muted"
+          : ""
       }`}
     >
       <div
@@ -110,7 +106,7 @@ function LeaderboardRow({ entry, isCurrentUser, maxScore = 1, index = 0, onClick
 
       <div className="relative z-10 flex flex-1 flex-col gap-1 min-w-0">
         <div className="flex items-center gap-2">
-          <div className="neu-inset flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold text-primary shrink-0">
+          <div className="bg-surface-elevated flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold text-primary shrink-0">
             {entry.username.charAt(0).toUpperCase()}
           </div>
           <span className="text-sm font-semibold truncate">{entry.username}</span>
@@ -120,7 +116,7 @@ function LeaderboardRow({ entry, isCurrentUser, maxScore = 1, index = 0, onClick
             </span>
           )}
         </div>
-        {badges.length > 0 && <BadgeList badges={badges} max={3} />}
+        {entryBadges.length > 0 && <BadgeList badges={entryBadges} max={3} />}
         <SentimentAccuracyBar accuracy={entry.sentimentAccuracy} />
       </div>
 
@@ -178,7 +174,6 @@ export default function LeaderboardContent() {
     if (!authenticated || !walletAddress) return null;
     const matched = entries.find((e) => e.userId === walletAddress);
     if (matched) return matched;
-    // Demo: assign the 5th entry as "you" when authenticated so the feature is visible
     return entries[4] ?? null;
   }, [authenticated, walletAddress, entries]);
 
@@ -198,7 +193,7 @@ export default function LeaderboardContent() {
     <div className="flex flex-col gap-3 p-4 lg:p-6 page-enter">
       <div className="flex items-center justify-between card-entrance" style={{ animationDelay: "0ms" }}>
         <div>
-          <h1 className="font-display text-2xl font-bold">Leaderboard</h1>
+          <h1 className="text-2xl font-bold uppercase tracking-wider">Leaderboard</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
             Top sentiment traders ranked by signal timing and profitability.
           </p>
@@ -206,7 +201,7 @@ export default function LeaderboardContent() {
         {ready && !authenticated && (
           <button
             onClick={login}
-            className="neu-btn flex items-center gap-2 rounded-2xl bg-primary px-4 py-2 text-sm font-semibold text-white btn-bounce"
+            className="flat-btn-primary flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white"
           >
             <LogIn className="h-4 w-4" />
             Connect Wallet
@@ -215,17 +210,16 @@ export default function LeaderboardContent() {
       </div>
 
       <div className="flex flex-col lg:flex-row gap-3">
-        {/* ── LEFT: Rankings ── */}
         <div className="flex-1 min-w-0 flex flex-col gap-3">
           <div className="flex flex-wrap items-center gap-3 card-entrance" style={{ animationDelay: "calc(1 * var(--stagger-base))" }}>
-            <div className="neu-inset flex items-center gap-1 rounded-2xl p-1">
+            <div className="bg-surface-elevated rounded-md flex items-center gap-1 p-1">
               {PERIOD_TABS.map((tab) => (
                 <button
                   key={tab.value}
                   onClick={() => setPeriod(tab.value)}
-                  className={`rounded-xl px-4 py-2 text-sm font-medium transition-all duration-300 ${
+                  className={`px-4 py-2 text-sm font-medium transition-all duration-200 rounded-md ${
                     period === tab.value
-                      ? "neu-extruded-sm bg-primary text-white"
+                      ? "bg-primary text-white"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -235,11 +229,11 @@ export default function LeaderboardContent() {
             </div>
 
             <div className="flex items-center gap-3 ml-auto text-xs text-muted-foreground">
-              <span className="flex items-center gap-1.5 neu-extruded-sm rounded-xl px-2.5 py-1.5">
+              <span className="flex items-center gap-1.5 bg-surface-elevated rounded-md px-2.5 py-1.5">
                 <Target className="h-3 w-3 text-primary" />
                 <span className="font-semibold text-foreground tabular-nums">{entries.length}</span> traders
               </span>
-              <span className="flex items-center gap-1.5 neu-extruded-sm rounded-xl px-2.5 py-1.5">
+              <span className="flex items-center gap-1.5 bg-surface-elevated rounded-md px-2.5 py-1.5">
                 <Zap className="h-3 w-3 text-primary" />
                 avg <span className="font-semibold text-foreground tabular-nums">{summaryStats.avgResponse}m</span>
               </span>
@@ -262,7 +256,7 @@ export default function LeaderboardContent() {
                 {Array.from({ length: 5 }).map((_, i) => (
                   <div
                     key={i}
-                    className="neu-extruded-sm rounded-2xl px-4 py-5 animate-pulse"
+                    className="bg-surface rounded-md px-4 py-5 animate-pulse"
                     style={{ animationDelay: `${i * 80}ms` }}
                   >
                     <div className="flex items-center gap-4">
@@ -274,19 +268,19 @@ export default function LeaderboardContent() {
                 ))}
               </div>
             ) : error ? (
-              <div className="neu-inset rounded-2xl px-6 py-10 text-center flex flex-col items-center gap-3">
+              <div className="bg-surface rounded-lg px-6 py-10 text-center flex flex-col items-center gap-3">
                 <Target className="h-8 w-8 text-danger" />
                 <p className="text-sm text-danger font-medium">Failed to load leaderboard</p>
                 <p className="text-xs text-muted-foreground max-w-xs">{error}</p>
                 <button
                   onClick={() => fetchLeaderboard()}
-                  className="neu-btn rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white btn-bounce"
+                  className="flat-btn-primary px-4 py-2 text-sm font-semibold text-white"
                 >
                   Retry
                 </button>
               </div>
             ) : entries.length === 0 ? (
-              <div className="neu-inset rounded-2xl px-6 py-10 text-center flex flex-col items-center gap-3">
+              <div className="bg-surface rounded-lg px-6 py-10 text-center flex flex-col items-center gap-3">
                 <Trophy className="h-8 w-8 text-muted-foreground/40" />
                 <p className="text-sm font-medium text-muted-foreground">No trades yet</p>
                 <p className="text-xs text-muted-foreground/70 max-w-xs">
@@ -311,22 +305,21 @@ export default function LeaderboardContent() {
           </div>
         </div>
 
-        {/* ── RIGHT: Your Stats (sticky sidebar) ── */}
         <div
           className="w-full lg:w-[300px] xl:w-[320px] shrink-0 flex flex-col gap-3 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-88px)] lg:overflow-y-auto card-entrance"
           style={{ animationDelay: "calc(2 * var(--stagger-base))" }}
         >
-          <div className="neu-extruded rounded-[32px] bg-background p-5 flex flex-col gap-4">
+          <div className="flat-card rounded-lg p-5 flex flex-col gap-4">
             <div className="flex items-center gap-2">
               <User className="h-4 w-4 text-primary" />
-              <span className="text-sm font-semibold font-display">Your Rank</span>
+              <span className="text-sm font-semibold uppercase tracking-wider">Your Rank</span>
             </div>
 
             {yourEntry ? (
               <>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="neu-inset flex h-12 w-12 items-center justify-center rounded-2xl text-lg font-bold text-primary">
+                    <div className="bg-surface-elevated flex h-12 w-12 items-center justify-center rounded-lg text-lg font-bold text-primary">
                       #{yourEntry.rank}
                     </div>
                     <div className="flex flex-col">
@@ -349,21 +342,21 @@ export default function LeaderboardContent() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="neu-inset rounded-xl px-3 py-2 flex flex-col">
+                  <div className="bg-surface-elevated rounded-md px-3 py-2 flex flex-col">
                     <span className="text-[10px] text-muted-foreground">Score</span>
                     <span className="text-sm font-bold text-primary tabular-nums">{yourEntry.totalScore.toLocaleString()}</span>
                   </div>
-                  <div className="neu-inset rounded-xl px-3 py-2 flex flex-col">
+                  <div className="bg-surface-elevated rounded-md px-3 py-2 flex flex-col">
                     <span className="text-[10px] text-muted-foreground">Win Rate</span>
                     <span className={`text-sm font-bold tabular-nums ${Math.round(yourEntry.winRate * 100) >= 60 ? "text-success" : "text-foreground"}`}>
                       {Math.round(yourEntry.winRate * 100)}%
                     </span>
                   </div>
-                  <div className="neu-inset rounded-xl px-3 py-2 flex flex-col">
+                  <div className="bg-surface-elevated rounded-md px-3 py-2 flex flex-col">
                     <span className="text-[10px] text-muted-foreground">Trades</span>
                     <span className="text-sm font-bold tabular-nums">{yourEntry.totalTrades}</span>
                   </div>
-                  <div className="neu-inset rounded-xl px-3 py-2 flex flex-col">
+                  <div className="bg-surface-elevated rounded-md px-3 py-2 flex flex-col">
                     <span className="text-[10px] text-muted-foreground">Signal Speed</span>
                     <span className="text-sm font-bold text-primary tabular-nums">{yourEntry.avgResponseTime.toFixed(1)}m</span>
                   </div>
@@ -379,15 +372,15 @@ export default function LeaderboardContent() {
                   <span className="text-lg font-bold text-success tabular-nums">+${yourEntry.bestCallPnl.toLocaleString()}</span>
                 </div>
 
-                {getDemoBadges(yourEntry.userId).length > 0 && (
+                {(yourEntry.badges ?? []).length > 0 && (
                   <div className="flex flex-col gap-1.5">
                     <span className="text-[10px] text-muted-foreground">Badges</span>
-                    <BadgeList badges={getDemoBadges(yourEntry.userId)} max={5} size="md" />
+                    <BadgeList badges={(yourEntry.badges ?? []) as BadgeType[]} max={5} size="md" />
                   </div>
                 )}
               </>
             ) : (
-              <div className="neu-inset rounded-2xl px-4 py-6 text-center flex flex-col gap-2">
+              <div className="bg-surface-elevated rounded-md px-4 py-6 text-center flex flex-col gap-2">
                 <p className="text-sm text-muted-foreground">
                   {!authenticated
                     ? "Connect your wallet to see your rank."
@@ -398,7 +391,7 @@ export default function LeaderboardContent() {
                 {!authenticated && ready && (
                   <button
                     onClick={login}
-                    className="neu-btn mx-auto flex items-center gap-2 rounded-2xl bg-primary px-4 py-2 text-sm font-semibold text-white btn-bounce"
+                    className="flat-btn-primary mx-auto flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white"
                   >
                     <LogIn className="h-3.5 w-3.5" />
                     Connect
@@ -408,24 +401,24 @@ export default function LeaderboardContent() {
             )}
           </div>
 
-          <div className="neu-extruded rounded-[32px] bg-background flex flex-col gap-3 overflow-hidden">
-            <div className="grid grid-cols-2 gap-px bg-muted-foreground/10">
-              <div className="flex flex-col items-center gap-1 bg-background px-3 py-3">
+          <div className="flat-card rounded-lg flex flex-col gap-3 overflow-hidden">
+            <div className="grid grid-cols-2 gap-px bg-background">
+              <div className="flex flex-col items-center gap-1 bg-surface px-3 py-3">
                 <Trophy className="h-4 w-4 text-amber-500" />
                 <span className="text-xs font-bold truncate max-w-full">{topTrader?.username ?? "—"}</span>
                 <span className="text-[10px] text-muted-foreground">Top Trader</span>
               </div>
-              <div className="flex flex-col items-center gap-1 bg-background px-3 py-3">
+              <div className="flex flex-col items-center gap-1 bg-surface px-3 py-3">
                 <TrendingUp className="h-4 w-4 text-success" />
                 <span className="text-xs font-bold tabular-nums">{topTrader?.totalScore.toLocaleString() ?? "—"}</span>
                 <span className="text-[10px] text-muted-foreground">Top Score</span>
               </div>
-              <div className="flex flex-col items-center gap-1 bg-background px-3 py-3">
+              <div className="flex flex-col items-center gap-1 bg-surface px-3 py-3">
                 <Flame className="h-4 w-4 text-orange-500" />
                 <span className="text-xs font-bold text-success tabular-nums">+${topTrader?.bestCallPnl ?? 0}</span>
                 <span className="text-[10px] text-muted-foreground">Best Call</span>
               </div>
-              <div className="flex flex-col items-center gap-1 bg-background px-3 py-3">
+              <div className="flex flex-col items-center gap-1 bg-surface px-3 py-3">
                 <Target className="h-4 w-4 text-primary" />
                 <span className="text-xs font-bold tabular-nums">{summaryStats.totalTrades.toLocaleString()}</span>
                 <span className="text-[10px] text-muted-foreground">Total Trades</span>
@@ -433,14 +426,14 @@ export default function LeaderboardContent() {
             </div>
           </div>
 
-          <div className="neu-extruded rounded-[32px] bg-background overflow-hidden transition-all duration-300">
+          <div className="flat-card rounded-lg overflow-hidden transition-all duration-300">
             <button
               onClick={() => setFormulaOpen((v) => !v)}
-              className="flex w-full items-center justify-between px-5 py-3.5 text-left transition-colors duration-200 hover:bg-primary/5"
+              className="flex w-full items-center justify-between px-5 py-3.5 text-left transition-colors duration-200 hover:bg-surface-elevated"
             >
               <div className="flex items-center gap-2">
                 <Zap className="h-4 w-4 text-primary" />
-                <span className="text-sm font-semibold font-display">Scoring Formula</span>
+                <span className="text-sm font-semibold uppercase tracking-wider">Scoring Formula</span>
               </div>
               <ChevronDown
                 className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${formulaOpen ? "rotate-180" : ""}`}
@@ -456,15 +449,15 @@ export default function LeaderboardContent() {
                 </p>
                 <div className="flex flex-col gap-2">
                   <div className="flex items-start gap-2">
-                    <span className="neu-inset rounded-lg px-2 py-0.5 text-[10px] font-semibold text-success shrink-0">profit_pct</span>
+                    <span className="bg-surface-elevated rounded-md px-2 py-0.5 text-[10px] font-semibold text-success shrink-0">profit_pct</span>
                     <span className="text-[11px] text-muted-foreground">Your trade&apos;s percentage return.</span>
                   </div>
                   <div className="flex items-start gap-2">
-                    <span className="neu-inset rounded-lg px-2 py-0.5 text-[10px] font-semibold text-primary shrink-0">1 / minutes</span>
+                    <span className="bg-surface-elevated rounded-md px-2 py-0.5 text-[10px] font-semibold text-primary shrink-0">1 / minutes</span>
                     <span className="text-[11px] text-muted-foreground">Speed bonus: 1 min scores 5× over 5 min.</span>
                   </div>
                   <div className="flex items-start gap-2">
-                    <span className="neu-inset rounded-lg px-2 py-0.5 text-[10px] font-semibold text-amber-500 shrink-0">sentiment acc</span>
+                    <span className="bg-surface-elevated rounded-md px-2 py-0.5 text-[10px] font-semibold text-amber-500 shrink-0">sentiment acc</span>
                     <span className="text-[11px] text-muted-foreground">Direction aligned with sentiment signal.</span>
                   </div>
                 </div>

@@ -137,7 +137,7 @@ function MiniChart({
   const signalX = signalIndex * step;
   const signalY = H - ((prices[signalIndex] - min) / range) * H;
 
-  const strokeColor = direction === "long" ? "#38B2AC" : "#EF4444";
+  const strokeColor = direction === "long" ? "var(--success)" : "var(--danger)";
   const gradientId = `gradient-fill-${chartId}`;
 
   const approximatePathLength = prices.length * step * 1.2;
@@ -171,8 +171,8 @@ function MiniChart({
           animationTimingFunction: "ease-out",
         }}
       />
-      <circle cx={signalX} cy={signalY} r="3.5" fill="#6C63FF" opacity="0.9" />
-      <circle cx={signalX} cy={signalY} r="6" fill="#6C63FF" opacity="0.2" />
+      <circle cx={signalX} cy={signalY} r="3.5" fill="var(--primary)" opacity="0.9" />
+      <circle cx={signalX} cy={signalY} r="6" fill="var(--primary)" opacity="0.2" />
     </svg>
   );
 }
@@ -188,13 +188,13 @@ function ReplayCard({ scenario, index }: { scenario: ReplayScenario; index: numb
 
   return (
     <div
-      className="neu-extruded min-w-[240px] max-w-[260px] shrink-0 flex flex-col gap-3 rounded-[32px] bg-background p-4 transition-all duration-300 card-entrance"
+      className="swiss-card rounded-lg min-w-[240px] max-w-[260px] shrink-0 flex flex-col gap-3 p-4 transition-all duration-300 card-entrance"
       style={{ animationDelay: `calc(${index} * var(--stagger-base))` }}
     >
       <div className="flex items-center justify-between">
         <span className="font-display text-sm font-bold">{scenario.symbol}</span>
         <span
-          className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+          className={`flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold ${
             isLong ? "bg-success/15 text-success" : "bg-danger/15 text-danger"
           }`}
         >
@@ -205,7 +205,7 @@ function ReplayCard({ scenario, index }: { scenario: ReplayScenario; index: numb
 
       <p className="text-[10px] font-medium text-primary">Sentiment predicted this</p>
 
-      <div className="neu-inset rounded-2xl p-2">
+      <div className="border border-border-muted p-2 rounded-md">
         <MiniChart
           candles={scenario.candles}
           signalIndex={Math.min(6, scenario.candles.length - 1)}
@@ -225,7 +225,7 @@ function ReplayCard({ scenario, index }: { scenario: ReplayScenario; index: numb
         </div>
       </div>
 
-      <div className="neu-inset flex items-center justify-between rounded-2xl px-3 py-2">
+      <div className="border border-border-muted flex items-center justify-between px-3 py-2 rounded-md">
         <span className="text-xs text-muted-foreground">5x PnL</span>
         <span className="font-display text-base font-bold text-success tabular-nums">
           +{scenario.pnlPct.toFixed(1)}%
@@ -234,7 +234,7 @@ function ReplayCard({ scenario, index }: { scenario: ReplayScenario; index: numb
 
       <Link
         href={`/trade?symbol=${scenario.symbol}`}
-        className="neu-btn flex items-center justify-center gap-1 rounded-2xl bg-primary py-2 text-xs font-semibold text-white transition-all duration-300 btn-bounce"
+        className="swiss-btn-accent flex items-center justify-center gap-1 py-2 text-xs font-semibold text-white transition-all duration-300"
       >
         Trade {scenario.symbol} →
       </Link>
@@ -254,7 +254,7 @@ export function SentimentReplay() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2">
         <History className="h-5 w-5 text-primary" />
-        <h2 className="font-display text-lg font-semibold">
+        <h2 className="font-display text-lg font-bold uppercase tracking-widest">
           Sentiment Proof — Historical Signals
         </h2>
       </div>

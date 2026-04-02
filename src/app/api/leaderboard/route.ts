@@ -34,42 +34,51 @@ export async function GET(request: Request) {
 
     const walletAddresses = tradeAggregates.map((a) => a.walletAddress);
 
-    const winCounts = await prisma.trade.groupBy({
-      by: ["walletAddress"],
-      where: {
-        ...whereClause,
-        walletAddress: { in: walletAddresses },
-        pnlUsdc: { gt: 0 },
-      },
-      _count: { id: true },
-    });
+    const [winCounts, sentimentWins, sentimentTotalCounts, allBadges] = await Promise.all([
+      prisma.trade.groupBy({
+        by: ["walletAddress"],
+        where: {
+          ...whereClause,
+          walletAddress: { in: walletAddresses },
+          pnlUsdc: { gt: 0 },
+        },
+        _count: { id: true },
+      }),
+      prisma.trade.groupBy({
+        by: ["walletAddress"],
+        where: {
+          ...whereClause,
+          walletAddress: { in: walletAddresses },
+          sentimentAligned: true,
+          pnlUsdc: { gt: 0 },
+        },
+        _count: { id: true },
+      }),
+      prisma.trade.groupBy({
+        by: ["walletAddress"],
+        where: {
+          ...whereClause,
+          walletAddress: { in: walletAddresses },
+          sentimentAligned: true,
+        },
+        _count: { id: true },
+      }),
+      prisma.badge.findMany({
+        where: { walletAddress: { in: walletAddresses } },
+        select: { walletAddress: true, badgeType: true },
+      }),
+    ]);
 
     const winCountMap = new Map(winCounts.map((w) => [w.walletAddress, w._count.id]));
-
-    const sentimentWins = await prisma.trade.groupBy({
-      by: ["walletAddress"],
-      where: {
-        ...whereClause,
-        walletAddress: { in: walletAddresses },
-        sentimentAligned: true,
-        pnlUsdc: { gt: 0 },
-      },
-      _count: { id: true },
-    });
-
     const sentimentWinMap = new Map(sentimentWins.map((s) => [s.walletAddress, s._count.id]));
-
-    const sentimentTotalCounts = await prisma.trade.groupBy({
-      by: ["walletAddress"],
-      where: {
-        ...whereClause,
-        walletAddress: { in: walletAddresses },
-        sentimentAligned: true,
-      },
-      _count: { id: true },
-    });
-
     const sentimentTotalMap = new Map(sentimentTotalCounts.map((s) => [s.walletAddress, s._count.id]));
+
+    const badgesByWallet = new Map<string, string[]>();
+    for (const b of allBadges) {
+      const existing = badgesByWallet.get(b.walletAddress) ?? [];
+      existing.push(b.badgeType);
+      badgesByWallet.set(b.walletAddress, existing);
+    }
 
     const entries = tradeAggregates
       .map((agg) => {
@@ -115,6 +124,7 @@ export async function GET(request: Request) {
           sentimentScore,
           avgResponseTime,
           sentimentAccuracy,
+          badges: badgesByWallet.get(agg.walletAddress) ?? [],
         };
       })
       .sort((a, b) => b.totalScore - a.totalScore)

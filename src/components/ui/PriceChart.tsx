@@ -70,47 +70,47 @@ export function PriceChart({ data, sentimentData, markers, height = 400, symbol 
       width: containerRef.current.clientWidth,
       height,
       layout: {
-        background: { type: ColorType.Solid, color: "#E0E5EC" },
-        textColor: "#6B7280",
-        fontFamily: "DM Sans, system-ui, sans-serif",
+        background: { type: ColorType.Solid, color: "#12151C" },
+        textColor: "#6B7A8D",
+        fontFamily: "'IBM Plex Sans', system-ui, sans-serif",
         fontSize: 12,
       },
       grid: {
-        vertLines: { color: "rgba(163, 177, 198, 0.3)" },
-        horzLines: { color: "rgba(163, 177, 198, 0.3)" },
+        vertLines: { color: "rgba(42, 48, 64, 0.5)" },
+        horzLines: { color: "rgba(42, 48, 64, 0.5)" },
       },
       crosshair: {
         mode: CrosshairMode.Normal,
         vertLine: {
-          color: "rgba(108, 99, 255, 0.4)",
-          labelBackgroundColor: "#6C63FF",
+          color: "rgba(255, 71, 87, 0.4)",
+          labelBackgroundColor: "#FF4757",
         },
         horzLine: {
-          color: "rgba(108, 99, 255, 0.4)",
-          labelBackgroundColor: "#6C63FF",
+          color: "rgba(255, 71, 87, 0.4)",
+          labelBackgroundColor: "#FF4757",
         },
       },
       rightPriceScale: {
-        borderColor: "rgba(163, 177, 198, 0.4)",
+        borderColor: "rgba(42, 48, 64, 0.5)",
       },
       timeScale: {
-        borderColor: "rgba(163, 177, 198, 0.4)",
+        borderColor: "rgba(42, 48, 64, 0.5)",
         timeVisible: true,
         secondsVisible: false,
       },
     });
 
     const series = chart.addSeries(CandlestickSeries, {
-      upColor: "#38B2AC",
-      downColor: "#EF4444",
-      borderUpColor: "#38B2AC",
-      borderDownColor: "#EF4444",
-      wickUpColor: "#38B2AC",
-      wickDownColor: "#EF4444",
+      upColor: "#22C55E",
+      downColor: "#FF4757",
+      borderUpColor: "#22C55E",
+      borderDownColor: "#FF4757",
+      wickUpColor: "#22C55E",
+      wickDownColor: "#FF4757",
     });
 
     const sentimentSeries = chart.addSeries(LineSeries, {
-      color: "rgba(56, 178, 172, 0.5)",
+      color: "rgba(34, 197, 94, 0.5)",
       lineWidth: 1,
       lineStyle: LineStyle.Dashed,
       priceScaleId: "sentiment",
@@ -201,12 +201,12 @@ export function PriceChart({ data, sentimentData, markers, height = 400, symbol 
   const hasSentimentData = sentimentData && sentimentData.length > 0;
 
   return (
-    <div className="neu-extruded relative overflow-hidden rounded-[32px] bg-background">
+    <div className="flat-card rounded-lg bg-surface relative overflow-hidden">
       <div className="absolute left-4 top-3 z-10 flex items-center justify-between w-[calc(100%-2rem)]">
         {symbol ? (
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold font-display text-foreground/60">{symbol}/USDC</span>
-            <span className="neu-extruded-sm rounded-lg px-1.5 py-0.5 text-[10px] text-muted-foreground">
+            <span className="text-sm font-semibold text-foreground/60">{symbol}/USDC</span>
+            <span className="bg-surface-elevated rounded-full px-1.5 py-0.5 text-[10px] text-muted-foreground">
               PERP
             </span>
           </div>
@@ -214,7 +214,7 @@ export function PriceChart({ data, sentimentData, markers, height = 400, symbol 
         {hasSentimentData && (
           <button
             onClick={() => setShowSentiment(!showSentiment)}
-            className="neu-extruded-sm flex items-center justify-center p-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+            className="bg-surface-elevated rounded-md flex items-center justify-center p-1.5 text-muted-foreground hover:text-foreground transition-colors duration-200"
             title="Toggle Sentiment Overlay"
           >
             {showSentiment ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}

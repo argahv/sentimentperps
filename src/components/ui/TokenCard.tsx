@@ -22,13 +22,13 @@ export function TokenCard({ token, intensity }: { token: TokenCardData; intensit
   return (
     <Link
       href={`/trade?symbol=${token.symbol}`}
-      className="neu-card group flex flex-col gap-3 rounded-[32px] bg-background p-4 transition-all active:scale-[0.98]"
+      className="swiss-card bg-surface group flex flex-col gap-3 p-4 transition-all active:scale-[0.98] hover:border-border-muted/80"
       style={{
         background: intensityValue > 0
-          ? `linear-gradient(135deg, rgba(108,99,255,${intensityValue * 0.15}), transparent)`
+          ? `linear-gradient(135deg, rgba(255,71,87,${intensityValue * 0.1}), transparent)`
           : undefined,
         borderLeft: intensityValue > 0.3
-          ? `3px solid rgba(108,99,255,${intensityValue * 0.6})`
+          ? `3px solid rgba(255,71,87,${intensityValue * 0.6})`
           : undefined,
       }}
     >
@@ -37,8 +37,8 @@ export function TokenCard({ token, intensity }: { token: TokenCardData; intensit
           <div className="flex items-center gap-2">
             <span className="text-base font-semibold font-display">{token.symbol}</span>
             {heatLabel && (
-              <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${
-                heatLabel === "Hot" ? "bg-primary/20 text-primary" : "bg-warning/20 text-warning"
+              <span className={`border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest ${
+                heatLabel === "Hot" ? "border-primary/40 bg-primary/10 text-primary" : "border-warning/40 bg-warning/10 text-warning"
               }`}>
                 {heatLabel}
               </span>
@@ -72,7 +72,7 @@ export function TokenCard({ token, intensity }: { token: TokenCardData; intensit
       </div>
 
       {token.topMention && (
-        <div className="neu-inset rounded-xl px-3 py-2 text-xs text-muted-foreground">
+        <div className="border border-border-muted bg-surface px-3 py-2 text-xs text-muted-foreground">
           <span className="font-medium text-foreground">
             @{token.topMention.author}
           </span>{" "}

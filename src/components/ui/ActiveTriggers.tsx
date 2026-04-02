@@ -20,7 +20,7 @@ function TriggerRow({ trigger }: { trigger: SentimentTrigger }) {
 
   return (
     <div
-      className={`neu-extruded-sm flex flex-col gap-2 rounded-2xl bg-background p-3 transition-all duration-300 ${
+      className={`border border-border-muted rounded-md bg-surface flex flex-col gap-2 p-3 transition-all duration-300 ${
         isDim ? "opacity-40" : ""
       }`}
     >
@@ -43,7 +43,7 @@ function TriggerRow({ trigger }: { trigger: SentimentTrigger }) {
 
         <div className="flex items-center gap-2">
           {isTriggered && (
-            <span className="flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-semibold text-success">
+            <span className="flex items-center gap-1 border border-border-muted bg-success/15 px-2 py-0.5 text-[10px] font-semibold text-success">
               <CheckCircle2 className="h-3 w-3" />
               Triggered!
             </span>
@@ -51,7 +51,7 @@ function TriggerRow({ trigger }: { trigger: SentimentTrigger }) {
           {isActive && (
             <button
               onClick={() => updateTriggerStatus(trigger.id, "cancelled")}
-              className="neu-btn rounded-xl p-1 text-muted-foreground hover:text-danger transition-all duration-300"
+              className="swiss-btn-outline p-1 text-muted-foreground hover:text-danger transition-all duration-300"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -95,10 +95,10 @@ export function ActiveTriggers() {
 
   if (sorted.length === 0) {
     return (
-      <div className="neu-extruded flex flex-col gap-3 rounded-[32px] bg-background p-4">
+      <div className="swiss-card bg-surface rounded-lg flex flex-col gap-3 p-4">
         <div className="flex items-center gap-2">
           <Zap className="h-4 w-4 text-primary" />
-          <h3 className="font-display text-sm font-semibold">Active Triggers</h3>
+          <h3 className="font-display text-sm font-semibold uppercase tracking-widest">Active Triggers</h3>
         </div>
         <p className="text-center text-xs text-muted-foreground">
           No triggers set yet. Use the form above to create one.
@@ -108,13 +108,13 @@ export function ActiveTriggers() {
   }
 
   return (
-    <div className="neu-extruded flex flex-col gap-3 rounded-[32px] bg-background p-4">
+    <div className="swiss-card bg-surface rounded-lg flex flex-col gap-3 p-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Zap className="h-4 w-4 text-primary" />
-          <h3 className="font-display text-sm font-semibold">Triggers</h3>
+          <h3 className="font-display text-sm font-semibold uppercase tracking-widest">Triggers</h3>
         </div>
-        <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold text-primary">
+        <span className="border border-border-muted bg-surface-elevated px-2 py-0.5 text-[10px] font-semibold text-primary">
           {triggers.filter((t) => t.status === "active").length} active
         </span>
       </div>

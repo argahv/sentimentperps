@@ -29,7 +29,7 @@ export function PerformanceBreakdown({
   return (
     <div className="w-full overflow-x-auto pb-2">
       <div className="min-w-[500px] flex flex-col gap-2">
-        <div className="grid grid-cols-5 gap-4 px-4 py-2 text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+        <div className="grid grid-cols-5 gap-4 px-4 py-2 text-sm font-semibold text-muted-foreground uppercase tracking-widest">
           <div>Token</div>
           <div className="text-right">Trades</div>
           <div className="text-right">Win Rate</div>
@@ -46,7 +46,7 @@ export function PerformanceBreakdown({
           return (
             <div
               key={item.symbol}
-              className="grid grid-cols-5 gap-4 px-4 py-3 neu-inset-sm hover:neu-card-enhanced transition-all duration-200 card-entrance items-center"
+              className="grid grid-cols-5 gap-4 px-4 py-3 border border-border-muted bg-surface hover:bg-surface-elevated rounded-md transition-all duration-200 card-entrance items-center"
               style={{ animationDelay: `${idx * 100}ms` }}
             >
               <div className="font-bold font-display">{item.symbol}</div>

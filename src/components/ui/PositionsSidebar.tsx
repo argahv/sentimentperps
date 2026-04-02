@@ -40,13 +40,13 @@ export function PositionsSidebar({ onClosePosition }: PositionsSidebarProps) {
   };
 
   return (
-    <div className="neu-extruded flex flex-col gap-4 rounded-[32px] bg-background p-4">
+    <div className="swiss-card rounded-lg industrial-screws flex flex-col gap-4 p-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="neu-icon-well flex h-8 w-8 items-center justify-center">
+          <div className="swiss-icon-well flex h-8 w-8 items-center justify-center">
             <Wallet className="h-4 w-4 text-primary" />
           </div>
-          <h2 className="text-sm font-semibold font-display">Positions</h2>
+          <h2 className="text-sm font-bold font-display uppercase tracking-widest">Positions</h2>
         </div>
         {activeTab === 'open' && positions.length > 0 && (
           <span
@@ -59,19 +59,19 @@ export function PositionsSidebar({ onClosePosition }: PositionsSidebarProps) {
         )}
       </div>
 
-      <div className="neu-inset flex rounded-full p-1 w-full">
+      <div className="border border-border-muted flex p-1 w-full rounded-md">
         <button
           onClick={() => setActiveTab('open')}
-          className={`flex-1 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
-            activeTab === 'open' ? 'neu-extruded-sm text-primary' : 'text-muted-foreground hover:text-foreground'
+          className={`flex-1 px-3 py-1.5 text-xs font-semibold transition-all ${
+            activeTab === 'open' ? 'border border-primary bg-primary-muted text-primary' : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           Open
         </button>
         <button
           onClick={() => setActiveTab('history')}
-          className={`flex-1 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
-            activeTab === 'history' ? 'neu-extruded-sm text-primary' : 'text-muted-foreground hover:text-foreground'
+          className={`flex-1 px-3 py-1.5 text-xs font-semibold transition-all ${
+            activeTab === 'history' ? 'border border-primary bg-primary-muted text-primary' : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           History
@@ -95,7 +95,7 @@ export function PositionsSidebar({ onClosePosition }: PositionsSidebarProps) {
               return (
                 <div
                   key={pos.position_id}
-                  className="neu-inset-sm flex items-center justify-between rounded-xl px-3 py-2.5"
+                  className="border border-border-muted flex items-center justify-between px-3 py-2.5 rounded-md"
                 >
                   <div className="flex items-center gap-2">
                     <span
@@ -138,7 +138,7 @@ export function PositionsSidebar({ onClosePosition }: PositionsSidebarProps) {
                       <button
                         onClick={() => handleClose(pos.position_id, pos.symbol, pos.side, pos.size)}
                         disabled={isClosing}
-                        className="neu-extruded-sm rounded-xl p-1.5 text-muted-foreground transition-all hover:text-danger hover:shadow-neu-hover disabled:opacity-50"
+                        className="border border-border-muted p-1.5 text-muted-foreground transition-all hover:border-danger hover:text-danger disabled:opacity-50"
                         title="Close position"
                       >
                         {isClosing ? (
@@ -168,7 +168,7 @@ export function PositionsSidebar({ onClosePosition }: PositionsSidebarProps) {
               return (
                 <div
                   key={pos.position_id}
-                  className="neu-inset-sm flex flex-col gap-2 rounded-xl px-3 py-2.5 opacity-80"
+                  className="border border-border-muted flex flex-col gap-2 px-3 py-2.5 opacity-80 rounded-md"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">

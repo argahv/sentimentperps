@@ -51,6 +51,7 @@ export interface LeaderboardEntry {
   avgResponseTime: number;
   /** Percentage of sentiment-aligned trades that were profitable */
   sentimentAccuracy: number;
+  badges?: BadgeType[];
 }
 
 export type BadgeType =

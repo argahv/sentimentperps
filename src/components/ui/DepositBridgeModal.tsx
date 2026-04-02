@@ -87,9 +87,9 @@ export function DepositBridgeModal({ isOpen, onClose }: DepositBridgeModalProps)
         if (e.target === e.currentTarget && step !== "bridging") onClose();
       }}
     >
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-background/80" />
 
-      <div className="neu-extruded relative w-full max-w-sm rounded-[32px] bg-background p-5">
+      <div className="swiss-card rounded-lg industrial-screws relative w-full max-w-sm p-5">
         <button
           onClick={onClose}
           disabled={step === "bridging"}
@@ -99,11 +99,11 @@ export function DepositBridgeModal({ isOpen, onClose }: DepositBridgeModalProps)
         </button>
 
         <div className="flex items-center gap-2.5 mb-5">
-          <div className="neu-icon-well flex h-9 w-9 items-center justify-center text-primary">
+          <div className="swiss-icon-well flex h-9 w-9 items-center justify-center text-primary">
             <ArrowRightLeft className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold font-display">Cross-Chain Deposit</h3>
+            <h3 className="text-sm font-semibold font-display uppercase tracking-widest">Cross-Chain Deposit</h3>
             <p className="text-xs text-muted-foreground">Powered by Rhinofi</p>
           </div>
         </div>
@@ -112,18 +112,18 @@ export function DepositBridgeModal({ isOpen, onClose }: DepositBridgeModalProps)
           <>
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
-                <span className="text-xs text-muted-foreground">From Chain</span>
+                <span className="text-xs text-muted-foreground uppercase tracking-widest">From Chain</span>
                 <div className="relative">
                   <button
                     type="button"
                     onClick={() => { setShowChainSelect((v) => !v); setShowTokenSelect(false); }}
-                    className="neu-input flex w-full items-center justify-between rounded-2xl bg-background px-3 py-2.5 text-sm transition-all"
+                    className="swiss-input flex w-full items-center justify-between bg-surface px-3 py-2.5 text-sm transition-all"
                   >
                     <span className="font-medium">{sourceChain.name}</span>
                     <ChevronDown className="h-4 w-4 text-muted-foreground" />
                   </button>
                   {showChainSelect && (
-                    <div className="neu-extruded absolute left-0 right-0 top-full z-10 mt-1 rounded-2xl bg-background overflow-hidden">
+                    <div className="border border-border-muted bg-surface absolute left-0 right-0 top-full z-10 mt-1 overflow-hidden">
                       {CHAINS.map((chain) => (
                         <button
                           key={chain.id}
@@ -141,29 +141,29 @@ export function DepositBridgeModal({ isOpen, onClose }: DepositBridgeModalProps)
               </div>
 
               <div className="flex items-center justify-center">
-                <div className="neu-extruded-sm flex h-8 w-8 items-center justify-center rounded-full bg-background">
+                <div className="border border-border-muted bg-surface flex h-8 w-8 items-center justify-center">
                   <ArrowRightLeft className="h-3.5 w-3.5 text-muted-foreground rotate-90" />
                 </div>
               </div>
 
-              <div className="neu-inset rounded-2xl px-3 py-2.5">
-                <span className="text-xs text-muted-foreground">To</span>
+              <div className="border border-border-muted bg-surface px-3 py-2.5">
+                <span className="text-xs text-muted-foreground uppercase tracking-widest">To</span>
                 <p className="text-sm font-medium">Pacifica (Solana)</p>
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <span className="text-xs text-muted-foreground">Token</span>
+                <span className="text-xs text-muted-foreground uppercase tracking-widest">Token</span>
                 <div className="relative">
                   <button
                     type="button"
                     onClick={() => { setShowTokenSelect((v) => !v); setShowChainSelect(false); }}
-                    className="neu-input flex w-full items-center justify-between rounded-2xl bg-background px-3 py-2.5 text-sm transition-all"
+                    className="swiss-input flex w-full items-center justify-between bg-surface px-3 py-2.5 text-sm transition-all"
                   >
                     <span className="font-medium">{token.symbol} — {token.name}</span>
                     <ChevronDown className="h-4 w-4 text-muted-foreground" />
                   </button>
                   {showTokenSelect && (
-                    <div className="neu-extruded absolute left-0 right-0 top-full z-10 mt-1 rounded-2xl bg-background overflow-hidden">
+                    <div className="border border-border-muted bg-surface absolute left-0 right-0 top-full z-10 mt-1 overflow-hidden">
                       {TOKENS.map((t) => (
                         <button
                           key={t.symbol}
@@ -181,7 +181,7 @@ export function DepositBridgeModal({ isOpen, onClose }: DepositBridgeModalProps)
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="bridge-amount" className="text-xs text-muted-foreground">
+                <label htmlFor="bridge-amount" className="text-xs text-muted-foreground uppercase tracking-widest">
                   Amount
                 </label>
                 <input
@@ -192,7 +192,7 @@ export function DepositBridgeModal({ isOpen, onClose }: DepositBridgeModalProps)
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="0.00"
-                  className="neu-input rounded-2xl bg-background px-3 py-2.5 text-sm placeholder:text-muted"
+                  className="swiss-input bg-surface px-3 py-2.5 text-sm placeholder:text-muted-foreground"
                 />
               </div>
             </div>
@@ -200,7 +200,7 @@ export function DepositBridgeModal({ isOpen, onClose }: DepositBridgeModalProps)
             <button
               onClick={handleBridge}
               disabled={!isValid}
-              className="neu-btn mt-4 w-full rounded-2xl bg-primary py-3 text-sm font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed"
+              className="swiss-btn-accent mt-4 w-full bg-primary py-3 text-sm font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Bridge & Deposit
             </button>
@@ -223,12 +223,12 @@ export function DepositBridgeModal({ isOpen, onClose }: DepositBridgeModalProps)
           <div className="flex flex-col items-center gap-4 py-8">
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
             <div className="text-center">
-              <p className="text-sm font-semibold font-display">Bridging in progress...</p>
+              <p className="text-sm font-semibold font-display uppercase tracking-widest">Bridging in progress...</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 Moving {amountNum} {token.symbol} from {sourceChain.name} to Pacifica
               </p>
             </div>
-            <div className="neu-inset-sm flex items-center gap-2 rounded-xl px-3 py-2 text-[10px] text-muted-foreground">
+            <div className="border border-border-muted bg-surface flex items-center gap-2 px-3 py-2 text-[10px] text-muted-foreground">
               <span>Estimated time: ~2 min</span>
             </div>
           </div>
@@ -236,11 +236,11 @@ export function DepositBridgeModal({ isOpen, onClose }: DepositBridgeModalProps)
 
         {step === "complete" && (
           <div className="flex flex-col items-center gap-4 py-8">
-            <div className="neu-icon-well flex h-12 w-12 items-center justify-center text-success">
+            <div className="swiss-icon-well flex h-12 w-12 items-center justify-center text-success">
               <Check className="h-6 w-6" />
             </div>
             <div className="text-center">
-              <p className="text-sm font-semibold font-display">Deposit Complete</p>
+              <p className="text-sm font-semibold font-display uppercase tracking-widest">Deposit Complete</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 {amountNum} {token.symbol} is now available for trading on Pacifica
               </p>
@@ -255,7 +255,7 @@ export function DepositBridgeModal({ isOpen, onClose }: DepositBridgeModalProps)
             </a>
             <button
               onClick={onClose}
-              className="neu-btn w-full rounded-2xl bg-primary py-2.5 text-sm font-semibold text-white"
+              className="swiss-btn-accent w-full bg-primary py-2.5 text-sm font-semibold text-white"
             >
               Start Trading
             </button>

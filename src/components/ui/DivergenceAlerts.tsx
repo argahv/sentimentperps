@@ -52,31 +52,31 @@ function DivergenceCard({ item, index }: { item: DivergenceItem; index: number }
 
   return (
     <div
-      className="neu-card-enhanced card-entrance flex flex-col gap-3 p-4"
+      className="flat-card rounded-lg p-4 card-entrance flex flex-col gap-3"
       style={{ animationDelay: `calc(${index} * var(--stagger-base))` }}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
           <div
-            className={`flex h-8 w-8 items-center justify-center rounded-xl neu-inset text-xs font-bold ${
+            className={`flat-icon-well flex h-8 w-8 items-center justify-center text-xs font-bold ${
               isContrarianLong ? "text-success" : "text-danger"
             }`}
           >
             {token.symbol.slice(0, 3)}
           </div>
           <div>
-            <p className="text-sm font-semibold font-display">{token.symbol}</p>
+            <p className="text-sm font-semibold">{token.symbol}</p>
             <p className="text-xs text-muted-foreground">{token.name}</p>
           </div>
         </div>
         <SentimentBadge sentiment={token.sentiment} />
       </div>
 
-      <div className="neu-inset flex items-center justify-between rounded-xl px-3 py-2 text-xs">
+      <div className="bg-surface-elevated rounded-md flex items-center justify-between px-3 py-2 text-xs">
         <div className="flex-1">
           <svg viewBox="0 0 60 30" className="h-[30px] w-[60px]" preserveAspectRatio="none">
-            <polyline points={priceLine} fill="none" stroke="#6C63FF" strokeWidth="1.5" strokeLinejoin="round" opacity="0.8" />
-            <polyline points={sentLine} fill="none" stroke="#38B2AC" strokeWidth="1.5" strokeLinejoin="round" opacity="0.8" />
+            <polyline points={priceLine} fill="none" stroke="var(--primary)" strokeWidth="1.5" strokeLinejoin="round" opacity="0.8" />
+            <polyline points={sentLine} fill="none" stroke="var(--success)" strokeWidth="1.5" strokeLinejoin="round" opacity="0.8" />
           </svg>
         </div>
         <div className="flex flex-col items-end gap-1 ml-3">
@@ -108,7 +108,7 @@ function DivergenceCard({ item, index }: { item: DivergenceItem; index: number }
         </div>
         <Link
           href={`/trade?symbol=${token.symbol}`}
-          className="neu-btn btn-bounce flex items-center gap-1 rounded-2xl bg-primary px-3 py-1.5 text-xs font-semibold text-white transition-all duration-200"
+          className="flat-btn-primary flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white transition-all duration-200"
         >
           Trade This
           <ArrowUpRight className="h-3 w-3" />
@@ -125,11 +125,11 @@ export function DivergenceAlerts() {
   if (divergences.length === 0) return null;
 
   return (
-    <div className="neu-extruded flex flex-col gap-4 rounded-[32px] bg-background p-5 transition-all duration-300">
+    <div className="flat-card rounded-lg p-5 industrial-screws flex flex-col gap-4 transition-all duration-300">
       <div className="flex items-center gap-2">
         <Zap className="h-4 w-4 text-warning" />
-        <h2 className="font-display text-base font-bold">Sentiment Divergence Alerts</h2>
-        <span className="neu-inset rounded-full px-2 py-0.5 text-xs font-semibold text-warning">
+        <h2 className="text-base font-bold uppercase tracking-wider">Sentiment Divergence Alerts</h2>
+        <span className="bg-warning-muted text-warning rounded-full px-2 py-0.5 text-xs font-semibold">
           {divergences.length}
         </span>
       </div>

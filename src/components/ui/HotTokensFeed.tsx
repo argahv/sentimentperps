@@ -22,7 +22,7 @@ export function HotTokensFeed() {
 
   if (error) {
     return (
-      <div className="neu-extruded-sm rounded-2xl bg-danger/10 p-4 text-sm text-danger">
+      <div className="border border-border-muted bg-danger/10 p-4 rounded-lg text-sm text-danger">
         Failed to load sentiment data: {error}
       </div>
     );
@@ -34,7 +34,7 @@ export function HotTokensFeed() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Flame className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold font-display">Hot Tokens</h2>
+            <h2 className="text-lg font-bold font-display uppercase tracking-widest">Hot Tokens</h2>
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             {isLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
@@ -48,7 +48,7 @@ export function HotTokensFeed() {
         </div>
 
         {hotTokens.length === 0 && !isLoading ? (
-          <div className="neu-extruded-sm rounded-2xl bg-background p-8 text-center text-sm text-muted-foreground">
+          <div className="border border-border-muted bg-surface p-8 rounded-lg text-center text-sm text-muted-foreground">
             No sentiment data available yet. Waiting for signals...
           </div>
         ) : (
@@ -62,7 +62,7 @@ export function HotTokensFeed() {
 
       {risingTokens.length > 0 && (
         <div className="flex flex-col gap-3">
-          <h3 className="text-sm font-semibold text-primary">
+          <h3 className="text-sm font-bold uppercase tracking-widest text-primary">
             FOMO Alert — Mentions Surging
           </h3>
           <div className="flex gap-3 overflow-x-auto pb-2">

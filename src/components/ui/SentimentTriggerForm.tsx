@@ -49,20 +49,20 @@ export function SentimentTriggerForm({ symbol }: SentimentTriggerFormProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="neu-extruded flex flex-col gap-4 rounded-[32px] bg-background p-4"
+      className="swiss-card bg-surface rounded-lg industrial-screws flex flex-col gap-4 p-4"
     >
       <div className="flex items-center gap-2">
         <Zap className="h-4 w-4 text-primary" />
-        <h3 className="font-display text-sm font-semibold">Sentiment Trigger</h3>
+        <h3 className="font-display text-sm font-semibold uppercase tracking-widest">Sentiment Trigger</h3>
       </div>
 
-      <div className="neu-inset grid grid-cols-2 gap-1 rounded-2xl p-1">
+      <div className="border border-border-muted grid rounded-md grid-cols-2 gap-1 p-1">
         <button
           type="button"
           onClick={() => setCondition("above")}
-          className={`rounded-xl py-2 text-xs font-semibold transition-all ${
+          className={`py-2 text-xs font-semibold transition-all ${
             condition === "above"
-              ? "neu-extruded-sm bg-success text-white"
+              ? "border border-border-muted bg-success text-white"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -71,9 +71,9 @@ export function SentimentTriggerForm({ symbol }: SentimentTriggerFormProps) {
         <button
           type="button"
           onClick={() => setCondition("below")}
-          className={`rounded-xl py-2 text-xs font-semibold transition-all ${
+          className={`py-2 text-xs font-semibold transition-all ${
             condition === "below"
-              ? "neu-extruded-sm bg-danger text-white"
+              ? "border border-border-muted bg-danger text-white"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -100,8 +100,8 @@ export function SentimentTriggerForm({ symbol }: SentimentTriggerFormProps) {
             className="pointer-events-none absolute top-0 flex -translate-x-1/2 -translate-y-1 flex-col items-center"
             style={{ left: `${currentSentiment}%` }}
           >
-            <div className="h-4 w-0.5 rounded-full bg-warning" />
-            <span className="mt-0.5 rounded bg-warning/20 px-1 text-[10px] font-medium text-warning">
+            <div className="h-4 w-0.5 bg-warning" />
+            <span className="mt-0.5 bg-warning/20 px-1 text-[10px] font-medium text-warning">
               {Math.round(currentSentiment)}
             </span>
           </div>
@@ -111,13 +111,13 @@ export function SentimentTriggerForm({ symbol }: SentimentTriggerFormProps) {
         </p>
       </div>
 
-      <div className="neu-inset grid grid-cols-2 gap-1 rounded-2xl p-1">
+      <div className="border border-border-muted grid rounded-md grid-cols-2 gap-1 p-1">
         <button
           type="button"
           onClick={() => setDirection("long")}
-          className={`flex items-center justify-center gap-1 rounded-xl py-2 text-xs font-semibold transition-all ${
+          className={`flex items-center justify-center gap-1 py-2 text-xs font-semibold transition-all ${
             direction === "long"
-              ? "neu-extruded-sm bg-success text-white"
+              ? "border border-border-muted bg-success text-white"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -127,9 +127,9 @@ export function SentimentTriggerForm({ symbol }: SentimentTriggerFormProps) {
         <button
           type="button"
           onClick={() => setDirection("short")}
-          className={`flex items-center justify-center gap-1 rounded-xl py-2 text-xs font-semibold transition-all ${
+          className={`flex items-center justify-center gap-1 py-2 text-xs font-semibold transition-all ${
             direction === "short"
-              ? "neu-extruded-sm bg-danger text-white"
+              ? "border border-border-muted bg-danger text-white"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -150,7 +150,7 @@ export function SentimentTriggerForm({ symbol }: SentimentTriggerFormProps) {
           value={size}
           onChange={(e) => setSize(e.target.value)}
           placeholder="0.00"
-          className="neu-input rounded-2xl bg-background px-3 py-2.5 text-sm placeholder:text-muted"
+          className="swiss-input bg-surface px-3 py-2.5 text-sm placeholder:text-muted"
         />
       </div>
 
@@ -162,10 +162,10 @@ export function SentimentTriggerForm({ symbol }: SentimentTriggerFormProps) {
               key={lev}
               type="button"
               onClick={() => setLeverage(lev)}
-              className={`flex-1 rounded-xl py-1.5 text-xs font-medium transition-all ${
+              className={`flex-1 py-1.5 text-xs font-medium transition-all ${
                 leverage === lev
-                  ? "neu-extruded-sm bg-primary text-white"
-                  : "neu-inset-sm text-muted-foreground hover:text-foreground"
+                  ? "border border-border-muted bg-primary text-white"
+                  : "border border-border-muted text-muted-foreground hover:text-foreground"
               }`}
             >
               {lev}x
@@ -177,7 +177,7 @@ export function SentimentTriggerForm({ symbol }: SentimentTriggerFormProps) {
       <button
         type="submit"
         disabled={!isValid}
-        className="neu-btn flex items-center justify-center gap-2 rounded-2xl bg-primary py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40 transition-all duration-300"
+        className="swiss-btn-accent flex items-center justify-center gap-2 bg-primary py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40 transition-all duration-300"
       >
         {submitted ? (
           "Trigger Set!"

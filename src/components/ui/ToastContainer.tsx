@@ -17,6 +17,13 @@ const colorMap = {
   info: "text-primary",
 } as const;
 
+const borderMap = {
+  success: "border-success/40",
+  warning: "border-warning/40",
+  error: "border-danger/40",
+  info: "border-primary/40",
+} as const;
+
 export function ToastContainer() {
   const { notifications, removeNotification } = useNotificationStore();
 
@@ -29,7 +36,7 @@ export function ToastContainer() {
         return (
           <div
             key={notif.id}
-            className={`neu-extruded flex items-start gap-3 rounded-2xl bg-background px-4 py-3 animate-in slide-in-from-right-5 ${colorMap[notif.type]}`}
+            className={`border ${borderMap[notif.type]} bg-surface flex items-start gap-3 px-4 py-3 animate-in slide-in-from-right-5 rounded-lg shadow-neu ${colorMap[notif.type]}`}
           >
             <Icon className="h-5 w-5 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">

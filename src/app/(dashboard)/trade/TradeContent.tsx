@@ -92,8 +92,8 @@ export default function TradeContent() {
         <div className="flex items-center gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="font-display text-xl font-bold lg:text-2xl">{symbol}/USDC</h1>
-              <span className="neu-inset-sm rounded-lg px-2 py-0.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+              <h1 className="text-xl font-bold lg:text-2xl">{symbol}/USDC</h1>
+              <span className="bg-surface-elevated rounded-full px-2 py-0.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                 Perp
               </span>
             </div>
@@ -122,7 +122,7 @@ export default function TradeContent() {
         {privyReady && !authenticated && (
           <button
             onClick={login}
-            className="neu-btn flex items-center gap-2 rounded-2xl bg-primary px-4 py-2 text-sm font-semibold text-white"
+            className="flat-btn-primary flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white"
           >
             <LogIn className="h-4 w-4" />
             Connect Wallet
@@ -185,11 +185,11 @@ export default function TradeContent() {
             <button
               type="button"
               onClick={() => setShowTriggers((prev) => !prev)}
-              className="neu-extruded flex w-full items-center justify-between rounded-[32px] bg-background px-4 py-3 text-left transition-all duration-200 hover:shadow-[var(--neu-extruded-hover)]"
+              className="flat-card rounded-lg flex w-full items-center justify-between px-4 py-3 text-left transition-all duration-200 hover:bg-surface-elevated"
             >
               <div className="flex items-center gap-2">
                 <Zap className="h-4 w-4 text-primary" />
-                <span className="font-display text-sm font-semibold">Auto-Trade Triggers</span>
+                <span className="text-sm font-semibold">Auto-Trade Triggers</span>
               </div>
               <ChevronDown
                 className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${

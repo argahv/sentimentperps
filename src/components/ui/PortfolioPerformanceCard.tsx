@@ -79,23 +79,22 @@ export function PortfolioPerformanceCard() {
 
   if (positions.length === 0) {
     return (
-      <div className="neu-card-enhanced card-entrance col-span-full p-6 flex items-center justify-center min-h-[160px]">
-        <p className="text-gray-500 font-display">No positions yet</p>
+      <div className="flat-card rounded-lg p-6 card-entrance col-span-full industrial-screws flex items-center justify-center min-h-[160px]">
+        <p className="text-muted-foreground">No positions yet</p>
       </div>
     );
   }
 
   return (
-    <div className="neu-card-enhanced card-entrance col-span-full p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 overflow-hidden relative glass-panel">
-      <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--primary)] opacity-5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none" />
+    <div className="flat-card rounded-lg p-6 sm:p-8 card-entrance col-span-full industrial-screws flex flex-col md:flex-row items-start md:items-center justify-between gap-6 overflow-hidden relative">
 
       <div className="flex flex-col z-10">
-        <span className="text-sm font-medium text-gray-500 mb-1">Total Portfolio Value</span>
+        <span className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-1">Total Portfolio Value</span>
         <div className="flex items-baseline gap-3">
-          <h2 className="text-3xl sm:text-4xl font-bold tabular-nums font-display tracking-tight text-slate-800">
+          <h2 className="text-3xl sm:text-4xl font-bold tabular-nums tracking-tight text-foreground">
             ${currentTotalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </h2>
-          <span className={`flex items-center text-sm font-semibold tabular-nums px-2 py-1 rounded-full neu-inset ${isPositive ? 'text-[var(--success)]' : 'text-[var(--danger)]'}`}>
+          <span className={`flex items-center text-sm font-semibold tabular-nums px-2 py-1 rounded-full ${isPositive ? 'bg-success-muted text-[var(--success)]' : 'bg-danger-muted text-[var(--danger)]'}`}>
             {isPositive ? <TrendingUp size={14} className="mr-1" /> : <TrendingDown size={14} className="mr-1" />}
             {Math.abs(pnlDiff).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({Math.abs(pnlPercent).toFixed(2)}%)
           </span>
@@ -103,15 +102,15 @@ export function PortfolioPerformanceCard() {
       </div>
 
       <div className="flex flex-col items-end gap-4 w-full md:w-auto z-10">
-        <div className="flex gap-2 bg-gray-200/50 p-1 rounded-full neu-inset">
+        <div className="flex gap-2 bg-surface-elevated rounded-md p-1">
           {(["1D", "1W", "1M"] as TimeRange[]).map(range => (
             <button
               key={range}
               onClick={() => setTimeRange(range)}
-              className={`neu-btn text-xs px-3 py-1 font-semibold rounded-full transition-all duration-200 ${
+              className={`text-xs px-3 py-1 font-semibold rounded-md transition-all duration-200 ${
                 timeRange === range 
-                  ? "bg-white text-[var(--primary)] shadow-sm" 
-                  : "bg-transparent shadow-none text-gray-500 hover:text-gray-700"
+                  ? "flat-btn-primary" 
+                  : "bg-transparent text-muted-foreground hover:bg-surface hover:text-foreground"
               }`}
             >
               {range}
@@ -140,7 +139,7 @@ export function PortfolioPerformanceCard() {
                 strokeWidth="2.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="svg-draw drop-shadow-sm glow-primary"
+                className="svg-draw glow-primary"
                 style={{
                   strokeDasharray: "200",
                   strokeDashoffset: "200",
@@ -152,8 +151,8 @@ export function PortfolioPerformanceCard() {
             </svg>
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <div className="w-full h-1 bg-gray-200 rounded-full neu-inset overflow-hidden">
-                <div className="h-full w-1/3 bg-[var(--primary)] rounded-full bar-animate" />
+              <div className="w-full h-1 bg-surface-elevated rounded-full overflow-hidden">
+                <div className="h-full w-1/3 bg-[var(--primary)] bar-animate" />
               </div>
             </div>
           )}

@@ -46,3 +46,33 @@ model Referral {
   @@index([referrerWallet])
   @@index([referralCode])
 }
+
+model Badge {
+  id            String   @id @default(cuid())
+  createdAt     DateTime @default(now())
+  walletAddress String
+  badgeType     String
+
+  @@unique([walletAddress, badgeType])
+  @@index([walletAddress])
+}
+
+model UserProgress {
+  id            String   @id @default(cuid())
+  walletAddress String   @unique
+  xp            Int      @default(0)
+  level         Int      @default(0)
+  updatedAt     DateTime @updatedAt
+
+  @@index([walletAddress])
+}
+
+model ReferralClaim {
+  id            String   @id @default(cuid())
+  createdAt     DateTime @default(now())
+  walletAddress String
+  amount        Float
+  status        String   @default("pending")
+
+  @@index([walletAddress])
+}

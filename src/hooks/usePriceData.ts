@@ -21,7 +21,6 @@ function getBasePrice(symbol: string): number {
   return BASE_PRICES[symbol.toUpperCase()] ?? 100;
 }
 
-// Seeded PRNG for deterministic candle history per symbol
 function mulberry32(seed: number) {
   return () => {
     let t = (seed += 0x6d2b79f5);
@@ -90,15 +89,42 @@ function generateNewCandle(prev: CandleData, symbol: string): CandleData {
   };
 }
 
+async function fetchOhlcCandles(symbol: string): Promise<CandleData[] | null> {
+  try {
+    const res = await fetch(`/api/ohlc?symbol=${encodeURIComponent(symbol)}&days=7`);
+    if (!res.ok) return null;
+    const { candles } = await res.json();
+    if (!Array.isArray(candles) || candles.length < 10) return null;
+    return candles as CandleData[];
+  } catch {
+    return null;
+  }
+}
+
 export function usePriceData(symbol: string) {
   const [candles, setCandles] = useState<CandleData[]>([]);
   const [markers, setMarkers] = useState<ChartMarker[]>([]);
+  const [isLive, setIsLive] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const signals = useSentimentStore((s) => s.signals);
 
   useEffect(() => {
-    const historical = generateHistoricalCandles(symbol);
-    setCandles(historical);
+    let cancelled = false;
+
+    async function init() {
+      const liveCandles = await fetchOhlcCandles(symbol);
+      if (cancelled) return;
+
+      if (liveCandles) {
+        setCandles(liveCandles);
+        setIsLive(true);
+      } else {
+        setCandles(generateHistoricalCandles(symbol));
+        setIsLive(false);
+      }
+    }
+
+    init();
 
     intervalRef.current = setInterval(() => {
       setCandles((prev) => {
@@ -109,6 +135,7 @@ export function usePriceData(symbol: string) {
     }, 10_000);
 
     return () => {
+      cancelled = true;
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [symbol]);
@@ -155,5 +182,6 @@ export function usePriceData(symbol: string) {
     currentPrice,
     priceChange,
     priceChangePct,
+    isLive,
   };
 }

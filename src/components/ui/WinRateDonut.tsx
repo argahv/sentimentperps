@@ -50,7 +50,6 @@ export function WinRateDonut({
             strokeDasharray={circumference}
             strokeDashoffset={offset}
             strokeLinecap="round"
-            className="drop-shadow-sm"
             style={{
               transition: "stroke-dashoffset 0.8s ease-out",
             }}
@@ -62,7 +61,7 @@ export function WinRateDonut({
           </span>
         </div>
       </div>
-      <span className="mt-2 text-xs text-muted-foreground uppercase tracking-wider font-semibold">
+      <span className="mt-2 text-xs text-muted-foreground uppercase tracking-widest font-semibold">
         Win Rate
       </span>
     </div>

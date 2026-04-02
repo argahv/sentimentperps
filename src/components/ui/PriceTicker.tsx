@@ -19,7 +19,7 @@ function TickerItem({ symbol }: { symbol: string }) {
   }, [currentPrice]);
 
   return (
-    <div className="neu-extruded-sm flex items-center gap-2 rounded-2xl bg-background px-3 py-2">
+    <div className="border border-border-muted bg-surface flex items-center gap-2 px-3 py-2 rounded-md">
       <span className="text-xs font-semibold">{symbol}</span>
       <span className="text-xs text-muted-foreground">${formattedPrice}</span>
       <span

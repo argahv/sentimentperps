@@ -29,23 +29,21 @@ export function YourEdgeCard() {
   const radius = 40;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference * (1 - accuracy / 100);
-  const isHighAccuracy = accuracy > 70;
 
   return (
-    <div className="neu-card-enhanced card-entrance p-6 flex flex-col items-center justify-center gap-4 glass-panel">
+    <div className="swiss-card bg-surface card-entrance p-6 rounded-lg flex flex-col items-center justify-center gap-4">
       <div className="relative w-[100px] h-[100px] flex items-center justify-center">
         <svg
           viewBox="0 0 100 100"
-          className={`w-full h-full -rotate-90 ${isHighAccuracy ? "pulse-ring" : ""}`}
+          className="w-full h-full -rotate-90"
         >
           <circle
             cx="50"
             cy="50"
             r={radius}
             fill="none"
-            stroke="rgba(0,0,0,0.05)"
+            stroke="var(--border-muted)"
             strokeWidth="8"
-            className="neu-inset"
           />
           
           <circle
@@ -63,16 +61,16 @@ export function YourEdgeCard() {
         </svg>
         
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-xl font-bold font-display tabular-nums text-slate-800">
+          <span className="text-xl font-bold font-display tabular-nums text-foreground">
             {Math.round(accuracy)}%
           </span>
         </div>
       </div>
 
       <div className="text-center">
-        <h3 className="text-lg font-bold font-display text-slate-800 mb-1">Your Edge</h3>
-        <p className="text-sm font-medium text-gray-500 flex items-center justify-center gap-1">
-          Avg Response: <span className="tabular-nums text-slate-700">{avgResponseTime}s</span>
+        <h3 className="text-lg font-bold font-display uppercase tracking-widest text-foreground mb-1">Your Edge</h3>
+        <p className="text-sm font-medium text-muted-foreground flex items-center justify-center gap-1">
+          Avg Response: <span className="tabular-nums text-foreground">{avgResponseTime}s</span>
         </p>
       </div>
     </div>

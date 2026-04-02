@@ -32,67 +32,83 @@ export default function DashboardLayout({
   useMarkets();
 
   return (
-    <div className="flex h-full min-h-dvh flex-col md:flex-row">
-      <nav className="hidden md:flex md:w-64 md:flex-col neu-extruded bg-background m-3 rounded-[32px]">
-        <div className="flex h-16 items-center gap-2 px-6">
-          <div className="neu-icon-well flex h-9 w-9 items-center justify-center rounded-xl">
-            <TrendingUp className="h-5 w-5 text-primary" />
-          </div>
-          <span className="font-display text-lg font-semibold">SentimentPerps</span>
+    <div className="flex h-full min-h-dvh flex-col md:flex-row bg-background text-foreground">
+      <nav className="hidden md:flex md:w-64 md:flex-col bg-surface border-r border-border relative z-10 shadow-[var(--shadow-neu)]">
+        <div className="flex h-8 items-center gap-2 px-4 bg-surface-muted border-b border-border shadow-[var(--shadow-neu-inset-sm)]">
+          <span className="led-indicator led-green"></span>
+          <span className="font-mono text-[10px] font-bold text-success uppercase tracking-widest">
+            SYSTEM ONLINE
+          </span>
         </div>
 
-        <div className="flex flex-1 flex-col gap-1 p-3">
+        <div className="flex items-center justify-between h-16 px-4 border-b border-border shadow-[var(--shadow-neu-sm)]">
+          <div className="flex items-center gap-2">
+            <div className="flat-icon-well w-8 h-8">
+              <TrendingUp className="h-4 w-4 text-primary" />
+            </div>
+            <span className="text-sm font-bold uppercase tracking-widest font-mono text-foreground">
+              SentimentPerps
+            </span>
+          </div>
+          <div className="industrial-vents">
+            <div className="industrial-vent-slot"></div>
+            <div className="industrial-vent-slot"></div>
+            <div className="industrial-vent-slot"></div>
+          </div>
+        </div>
+
+        <div className="flex flex-1 flex-col gap-3 px-4 pt-6 overflow-y-auto">
           {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
             const active = pathname === href;
             return (
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium transition-all duration-300 ${
+                className={`group flex items-center gap-3 rounded-lg px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-widest transition-all duration-200 ${
                   active
-                    ? "neu-inset text-primary"
-                    : "text-muted-foreground hover:text-foreground neu-flat hover:shadow-neu-sm"
+                    ? "bg-primary text-white shadow-[var(--shadow-neu-inset)] shadow-[var(--shadow-neu-glow)]"
+                    : "text-muted-foreground shadow-[var(--shadow-neu-sm)] hover:bg-surface-elevated hover:shadow-[var(--shadow-neu)] hover:text-foreground"
                 }`}
               >
-                <Icon className="h-5 w-5" />
+                <Icon className="h-4 w-4" strokeWidth={2} />
                 {label}
               </Link>
             );
           })}
         </div>
 
-        <div className="p-3">
+        <div className="p-4 border-t border-border shadow-[var(--shadow-neu-inset-sm)]">
           <button
             onClick={() => setShowDeposit(true)}
-            className="neu-btn flex w-full items-center gap-3 rounded-2xl bg-primary/10 px-3 py-2.5 text-sm font-medium text-primary"
+            className="flat-btn-primary flex w-full items-center justify-center gap-2 px-4 py-3 text-[10px]"
           >
-            <ArrowRightLeft className="h-5 w-5" />
+            <ArrowRightLeft className="h-4 w-4" />
             Deposit
           </button>
         </div>
       </nav>
 
-      <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
-        <div className="page-enter" key={pathname}>
+      <main className="flex-1 overflow-y-auto pb-24 md:pb-0 relative">
+        <div className="page-enter h-full" key={pathname}>
           {children}
         </div>
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-50 flex bg-background md:hidden" style={{ boxShadow: "0 -4px 12px rgb(163,177,198,0.3)" }}>
+      <nav className="fixed bottom-0 left-0 right-0 z-50 flex bg-surface border-t border-border shadow-[var(--shadow-neu-inset-sm)] md:hidden p-2 gap-2">
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
           const active = pathname === href;
           return (
             <Link
               key={href}
               href={href}
-              className={`flex flex-1 flex-col items-center gap-1 py-2.5 text-xs transition-colors ${
+              className={`flex flex-1 flex-col items-center justify-center gap-1 rounded-lg py-2 font-mono text-[10px] font-bold uppercase tracking-widest transition-all duration-200 ${
                 active
-                  ? "text-primary"
-                  : "text-muted-foreground"
+                  ? "bg-primary text-white shadow-[var(--shadow-neu-glow)]"
+                  : "text-muted-foreground shadow-[var(--shadow-neu-sm)] hover:bg-surface-elevated hover:shadow-[var(--shadow-neu)]"
               }`}
             >
-              <Icon className="h-5 w-5" />
-              {label}
+              <Icon className="h-4 w-4" strokeWidth={2} />
+              <span className="text-[8px] sm:text-[10px] hidden sm:block">{label}</span>
             </Link>
           );
         })}

@@ -13,6 +13,8 @@ import { MissedMoves } from "@/components/ui/MissedMoves";
 import { PriceTicker } from "@/components/ui/PriceTicker";
 import { DivergenceAlerts } from "@/components/ui/DivergenceAlerts";
 import { SentimentReplay } from "@/components/ui/SentimentReplay";
+import { DashboardHeroStats } from "@/components/ui/DashboardHeroStats";
+import { RecentWinsFeed } from "@/components/ui/RecentWinsFeed";
 import { LogIn, ChevronDown, Crosshair } from "lucide-react";
 
 const TICKER_SYMBOLS = ["BTC", "ETH", "SOL", "DOGE", "ARB", "AVAX"];
@@ -40,7 +42,7 @@ export default function DashboardContent() {
       {/* ── Header ── */}
       <div className="flex items-center justify-between card-entrance" style={{ animationDelay: "0ms" }}>
         <div>
-          <h1 className="font-display text-2xl font-bold">Dashboard</h1>
+          <h1 className="text-2xl font-bold">Dashboard</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
             Real-time sentiment signals and your open positions.
           </p>
@@ -48,7 +50,7 @@ export default function DashboardContent() {
         {ready && !authenticated && (
           <button
             onClick={login}
-            className="neu-btn flex items-center gap-2 rounded-2xl bg-primary px-4 py-2 text-sm font-semibold text-white btn-bounce"
+            className="flat-btn-primary flex items-center gap-2 px-4 py-2 text-sm font-bold text-white"
           >
             <LogIn className="h-4 w-4" />
             Connect Wallet
@@ -59,6 +61,11 @@ export default function DashboardContent() {
       {/* ── Price Ticker (ambient market context) ── */}
       <div className="card-entrance" style={{ animationDelay: "calc(1 * var(--stagger-base))" }}>
         <PriceTicker symbols={TICKER_SYMBOLS} />
+      </div>
+
+      {/* ── Hero Stats — platform-wide P&L, sentiment accuracy, wins, traders ── */}
+      <div className="card-entrance" style={{ animationDelay: "calc(1.5 * var(--stagger-base))" }}>
+        <DashboardHeroStats />
       </div>
 
       {/* ── Two-column terminal layout ── */}
@@ -73,6 +80,11 @@ export default function DashboardContent() {
           {/* Divergence Alerts — primary action driver */}
           <div className="card-entrance" style={{ animationDelay: "calc(3 * var(--stagger-base))" }}>
             <DivergenceAlerts />
+          </div>
+
+          {/* Recent Wins — proof of edge, social proof */}
+          <div className="card-entrance" style={{ animationDelay: "calc(3.5 * var(--stagger-base))" }}>
+            <RecentWinsFeed />
           </div>
 
           {/* Missed Moves — FOMO / urgency strip */}
@@ -100,14 +112,14 @@ export default function DashboardContent() {
           <PositionsSidebar onClosePosition={authenticated ? handleClose : undefined} />
 
           {/* Your Edge — collapsible progressive disclosure */}
-          <div className="neu-extruded rounded-[32px] bg-background overflow-hidden transition-all duration-300">
+          <span className="flat-card rounded-lg overflow-hidden transition-all duration-300">
             <button
               onClick={() => setEdgeOpen((v) => !v)}
-              className="flex w-full items-center justify-between px-5 py-3.5 text-left transition-colors duration-200 hover:bg-primary/5"
+              className="flex w-full items-center justify-between px-5 py-3.5 text-left transition-colors duration-200 hover:bg-surface-elevated"
             >
               <div className="flex items-center gap-2">
                 <Crosshair className="h-4 w-4 text-primary" />
-                <span className="text-sm font-semibold font-display">Your Edge</span>
+                <span className="text-sm font-semibold">Your Edge</span>
               </div>
               <ChevronDown
                 className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${edgeOpen ? "rotate-180" : ""}`}
@@ -121,7 +133,7 @@ export default function DashboardContent() {
                 <YourEdgeCard />
               </div>
             </div>
-          </div>
+          </span>
         </div>
       </div>
     </div>

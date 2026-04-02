@@ -11,10 +11,10 @@ export function MissedMoves() {
 
   if (isLoading) {
     return (
-      <div className="neu-extruded flex flex-col gap-3 rounded-[32px] bg-warning/10 p-4">
+      <div className="swiss-card border-warning/40 bg-warning-muted rounded-lg flex flex-col gap-3 p-4">
         <div className="flex items-center gap-2">
           <AlertTriangle className="h-4 w-4 text-warning" />
-          <h3 className="text-sm font-semibold font-display text-warning">
+          <h3 className="text-sm font-bold font-display uppercase tracking-widest text-warning">
             Missed Moves
           </h3>
         </div>
@@ -22,7 +22,7 @@ export function MissedMoves() {
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="neu-extruded-sm min-w-[180px] shrink-0 rounded-2xl bg-background px-3 py-2.5 animate-pulse h-[60px]"
+              className="border border-border-muted bg-surface min-w-[180px] rounded-md shrink-0 px-3 py-2.5 animate-pulse h-[60px]"
             />
           ))}
         </div>
@@ -63,10 +63,10 @@ export function MissedMoves() {
   if (missedTokens.length === 0) return null;
 
   return (
-    <div className="neu-extruded flex flex-col gap-3 rounded-[32px] bg-warning/10 p-4 card-entrance">
+    <div className="swiss-card border-warning/40 bg-warning-muted rounded-lg industrial-screws flex flex-col gap-3 p-4 card-entrance">
       <div className="flex items-center gap-2">
         <AlertTriangle className="h-4 w-4 text-warning" />
-        <h3 className="text-sm font-semibold font-display text-warning">
+        <h3 className="text-sm font-bold font-display uppercase tracking-widest text-warning">
           Missed Moves
         </h3>
         <span className="text-xs text-muted-foreground">
@@ -86,7 +86,7 @@ export function MissedMoves() {
             <Link
               key={token.symbol}
               href={`/trade?symbol=${token.symbol}`}
-              className="neu-extruded-sm flex min-w-[180px] shrink-0 items-center justify-between gap-3 rounded-2xl bg-background px-3 py-2.5 transition-all hover:shadow-neu-hover hover:-translate-y-0.5 card-entrance"
+              className="border border-border-muted bg-surface flex min-w-[180px] shrink-0 items-center justify-between gap-3 px-3 py-2.5 transition-all hover:shadow-neu-hover rounded-md card-entrance"
               style={{
                 animationDelay: `calc(${idx} * var(--stagger-base))`,
               }}
