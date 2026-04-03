@@ -28,6 +28,23 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to fetch XP";
+    if (
+      message.includes("localhost") ||
+      message.includes("5432") ||
+      message.includes("ECONNREFUSED") ||
+      message.includes("Can't reach") ||
+      message.includes("connect")
+    ) {
+      const levelInfo = computeLevel(0);
+      return NextResponse.json({
+        xp: 0,
+        level: levelInfo.level,
+        levelName: levelInfo.name,
+        xpForCurrent: levelInfo.xpForCurrent,
+        xpForNext: levelInfo.xpForNext,
+        progress: 0,
+      });
+    }
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

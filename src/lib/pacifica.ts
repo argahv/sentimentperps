@@ -246,34 +246,55 @@ export async function createMarketOrder(
 }
 
 export async function getPositions(
-  auth: AuthHeaders & { timestamp: number; expiry_window: number; type: string },
+  account: string,
 ): Promise<PacificaPositionsResponse> {
-  const res = await fetch(`${PACIFICA_BASE_URL}/positions`, {
-    headers: authHeaders(auth),
-  });
+  const res = await fetch(
+    `${PACIFICA_BASE_URL}/positions?account=${encodeURIComponent(account)}`,
+    { next: { revalidate: 0 } },
+  );
   if (!res.ok) throw new Error(`Pacifica positions failed: ${res.status}`);
-  return res.json();
+  const json = await res.json();
+  const positions = Array.isArray(json.data)
+    ? json.data
+    : Array.isArray(json.positions)
+      ? json.positions
+      : [];
+  return { positions };
 }
 
 export async function getOpenOrders(
-  auth: AuthHeaders & { timestamp: number; expiry_window: number; type: string },
+  account: string,
 ): Promise<PacificaOrdersResponse> {
-  const res = await fetch(`${PACIFICA_BASE_URL}/orders?status=open`, {
-    headers: authHeaders(auth),
-  });
+  const res = await fetch(
+    `${PACIFICA_BASE_URL}/orders?account=${encodeURIComponent(account)}`,
+    { next: { revalidate: 0 } },
+  );
   if (!res.ok) throw new Error(`Pacifica orders failed: ${res.status}`);
-  return res.json();
+  const json = await res.json();
+  const orders = Array.isArray(json.data) ? json.data : json.orders ?? [];
+  return { orders };
 }
 
 export async function cancelOrder(
   orderId: string,
   auth: AuthHeaders & { timestamp: number; expiry_window: number; type: string },
 ): Promise<void> {
-  const res = await fetch(`${PACIFICA_BASE_URL}/orders/${orderId}`, {
-    method: "DELETE",
-    headers: authHeaders(auth),
+  const body = {
+    account: auth.walletAddress,
+    signature: auth.signature,
+    timestamp: auth.timestamp,
+    expiry_window: auth.expiry_window,
+    order_id: orderId,
+  };
+  const res = await fetch(`${PACIFICA_BASE_URL}/orders/cancel`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error(`Pacifica cancel failed: ${res.status}`);
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Pacifica cancel failed: ${res.status} — ${err}`);
+  }
 }
 
 export async function setPositionTpSl(

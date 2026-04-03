@@ -80,9 +80,12 @@ function SidebarWalletInner({
   if (authenticated && address) {
     return (
       <div className="relative">
-        <button
+        <div
+          role="button"
+          tabIndex={0}
           onClick={() => setShowWallets(!showWallets)}
-          className="flex w-full items-center gap-2 px-3 py-2 bg-surface-muted border border-border rounded-lg hover:bg-surface-elevated transition-colors"
+          onKeyDown={(e) => e.key === "Enter" && setShowWallets(!showWallets)}
+          className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 bg-surface-muted border border-border rounded-lg hover:bg-surface-elevated transition-colors"
         >
           <Wallet className="h-3.5 w-3.5 text-primary shrink-0" />
           <span className="font-mono text-[10px] text-foreground truncate">
@@ -102,7 +105,7 @@ function SidebarWalletInner({
           >
             <LogOut className="h-3.5 w-3.5" />
           </button>
-        </button>
+        </div>
         {showWallets && (
           <>
             <div

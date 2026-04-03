@@ -114,17 +114,19 @@ export interface PacificaMarketOrderRequest {
 
 export interface PacificaOrder {
   order_id: string;
+  client_order_id?: string;
   symbol: string;
   side: PacificaOrderSide;
-  type: string;
-  amount: string;
+  order_type: string;
   price: string;
+  initial_amount: string;
   filled_amount: string;
-  average_fill_price: string;
-  status: OrderStatus;
-  leverage: number;
-  created_at: string;
-  updated_at: string;
+  cancelled_amount: string;
+  stop_price?: string;
+  stop_parent_order_id?: string;
+  reduce_only: boolean;
+  created_at: number;
+  updated_at: number;
 }
 
 export interface PacificaPosition {

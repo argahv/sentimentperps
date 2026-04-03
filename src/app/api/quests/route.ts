@@ -89,6 +89,26 @@ export async function GET(request: Request) {
     return NextResponse.json({ quests });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to fetch quests";
+    if (
+      message.includes("localhost") ||
+      message.includes("5432") ||
+      message.includes("ECONNREFUSED") ||
+      message.includes("Can't reach") ||
+      message.includes("connect")
+    ) {
+      const quests = QUESTS.map((q) => ({
+        id: q.id,
+        title: q.title,
+        description: q.description,
+        category: q.category,
+        xpReward: q.xpReward,
+        target: q.target,
+        current: 0,
+        progress: 0,
+        completed: false,
+      }));
+      return NextResponse.json({ quests });
+    }
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

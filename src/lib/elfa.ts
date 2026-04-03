@@ -57,6 +57,7 @@ export async function getTopMentions(
 
   const res = await fetch(`${ELFA_BASE_URL}/data/top-mentions?${params}`, {
     headers: headers(),
+    next: { revalidate: 120 },
   });
 
   if (!res.ok) throw new Error(`Elfa top mentions failed: ${res.status}`);

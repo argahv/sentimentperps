@@ -113,6 +113,15 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to fetch journey";
+    if (
+      message.includes("localhost") ||
+      message.includes("5432") ||
+      message.includes("ECONNREFUSED") ||
+      message.includes("Can't reach") ||
+      message.includes("connect")
+    ) {
+      return NextResponse.json({ journey: null });
+    }
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

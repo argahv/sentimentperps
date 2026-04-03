@@ -55,7 +55,7 @@ function signalsToTokenCards(signals: SentimentSignal[]): TokenCardData[] {
   }));
 }
 
-export function useSentimentPolling(intervalMs: number = 60_000) {
+export function useSentimentPolling(intervalMs: number = 180_000) {
   const { setSignals, setTokenCards, setLoading, setError } = useSentimentStore();
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 

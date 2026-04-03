@@ -21,7 +21,7 @@ const TICKER_SYMBOLS = ["BTC", "ETH", "SOL", "DOGE", "ARB", "AVAX"];
 
 export default function DashboardContent() {
   const { login, authenticated, ready } = usePrivy();
-  const { walletAddress, closePosition } = useTrade();
+  const { walletAddress, closePosition, cancelOrder } = useTrade();
   const { refetch } = usePositions(walletAddress, null, 30_000);
   const [edgeOpen, setEdgeOpen] = useState(false);
 
@@ -34,6 +34,11 @@ export default function DashboardContent() {
     positionMeta?: { entryPrice: number; markPrice: number; leverage: number; pnlUsdc: number }
   ) => {
     await closePosition(marketId, side, size, positionMeta);
+    refetch();
+  };
+
+  const handleCancelOrder = async (orderId: string) => {
+    await cancelOrder(orderId);
     refetch();
   };
 
@@ -94,7 +99,7 @@ export default function DashboardContent() {
             <HotTokensFeed />
           </div>
           <div className="card-entrance" style={{ animationDelay: "calc(4 * var(--stagger-base))" }}>
-            <PositionsSidebar onClosePosition={authenticated ? handleClose : undefined} />
+            <PositionsSidebar onClosePosition={authenticated ? handleClose : undefined} onCancelOrder={authenticated ? handleCancelOrder : undefined} />
           </div>
           <div className="card-entrance" style={{ animationDelay: "calc(4.5 * var(--stagger-base))" }}>
             {/* Your Edge — collapsible progressive disclosure */}

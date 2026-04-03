@@ -5,6 +5,7 @@ import { usePrivy } from "@privy-io/react-auth";
 import { useWallets, useSignMessage } from "@privy-io/react-auth/solana";
 import bs58 from "bs58";
 import { useNotificationStore } from "@/stores/notifications";
+import { useMarketsStore } from "@/stores/markets";
 import {
   createSignatureHeader,
   prepareSignatureMessage,
@@ -32,6 +33,7 @@ export function useTrade() {
   const { ready: walletsReady, wallets } = useWallets();
   const { signMessage } = useSignMessage();
   const addNotification = useNotificationStore((s) => s.addNotification);
+  const getMarketBySymbol = useMarketsStore((s) => s.getMarketBySymbol);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
@@ -86,6 +88,22 @@ export function useTrade() {
           params.direction === "long" ? "bid" : "ask";
         const isMarket = !params.price;
 
+        const market = getMarketBySymbol(params.marketId);
+        if (!market) throw new Error(`Market not found for ${params.marketId}`);
+        if (market.mark_price <= 0) throw new Error(`No price available for ${params.marketId}`);
+
+        const minUsdc = market.min_order_size > 0 ? market.min_order_size : 10;
+        if (params.size < minUsdc) {
+          throw new Error(`Minimum order size is $${minUsdc} USDC for ${params.marketId}`);
+        }
+
+        const lotSize = market.lot_size > 0 ? market.lot_size : 1;
+        const lotDecimals = lotSize < 1 ? Math.round(-Math.log10(lotSize)) : 0;
+        const tokenAmount = params.size / market.mark_price;
+        const roundedAmount = Math.ceil(tokenAmount / lotSize) * lotSize;
+        if (roundedAmount <= 0) throw new Error(`Order size too small for ${params.marketId} (min lot size: ${lotSize})`);
+        const amountStr = roundedAmount.toFixed(lotDecimals);
+
         let orderFields: Record<string, unknown>;
         let signType: string;
 
@@ -94,7 +112,7 @@ export function useTrade() {
           orderFields = {
             symbol: params.marketId,
             side: pacificaSide,
-            amount: String(params.size),
+            amount: amountStr,
             slippage_percent: "0.5",
             reduce_only: false,
           };
@@ -104,7 +122,7 @@ export function useTrade() {
             symbol: params.marketId,
             side: pacificaSide,
             price: String(params.price),
-            amount: String(params.size),
+            amount: amountStr,
             tif: "GTC" as TimeInForce,
             reduce_only: false,
           };
@@ -292,6 +310,38 @@ export function useTrade() {
     [signPayload, addNotification],
   );
 
+  const cancelOrder = useCallback(
+    async (orderId: string): Promise<void> => {
+      if (!privyReady || !authenticated) throw new Error("Not authenticated");
+
+      const { walletAddress: addr, signature, timestamp, expiry_window } =
+        await signPayload("cancel_order", { order_id: orderId });
+
+      const res = await fetch("/api/orders/cancel", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId,
+          walletAddress: addr,
+          signature,
+          timestamp,
+          expiry_window,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Cancel failed");
+
+      addNotification({
+        type: "success",
+        title: "Order cancelled",
+        message: `Order ${orderId.slice(0, 8)}… cancelled`,
+        duration: 4000,
+      });
+    },
+    [privyReady, authenticated, signPayload, addNotification],
+  );
+
   return {
     ready: privyReady && walletsReady,
     authenticated,
@@ -300,6 +350,7 @@ export function useTrade() {
     lastError,
     submitTrade,
     closePosition,
+    cancelOrder,
     signPayload,
     setTpSl,
   };

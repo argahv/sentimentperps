@@ -12,12 +12,10 @@ import { useSentimentStore } from "@/stores/sentiment";
 import { PriceChart } from "@/components/ui/PriceChart";
 import { SentimentPanel } from "@/components/ui/SentimentPanel";
 import { OrderForm } from "@/components/ui/OrderForm";
-import { SentimentTriggerForm } from "@/components/ui/SentimentTriggerForm";
-import { ActiveTriggers } from "@/components/ui/ActiveTriggers";
 import { PositionsSidebar } from "@/components/ui/PositionsSidebar";
 import { useSentimentTriggerEngine } from "@/hooks/useSentimentTriggerEngine";
 import { SentimentConfidenceMeter } from "@/components/ui/SentimentConfidenceMeter";
-import { LogIn, ArrowUpRight, ArrowDownRight, Zap, ChevronDown } from "lucide-react";
+import { LogIn, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import type { TradeDirection } from "@/types/app";
 
 export default function TradeContent() {
@@ -31,7 +29,7 @@ export default function TradeContent() {
   const tokenCards = useSentimentStore((s) => s.tokenCards);
   const tokenCard = tokenCards.find((t) => t.symbol === symbol);
 
-  const { isSubmitting, submitTrade, closePosition, walletAddress, setTpSl } = useTrade();
+  const { isSubmitting, submitTrade, closePosition, cancelOrder, walletAddress, setTpSl, signPayload } = useTrade();
   const { refetch: refetchPositions } = usePositions(walletAddress, null, 15_000);
   const { candles, markers, currentPrice, priceChange, priceChangePct } = usePriceData(symbol);
 
@@ -66,7 +64,6 @@ export default function TradeContent() {
   useSentimentTriggerEngine(triggerOptions);
 
   const isPositive = priceChange >= 0;
-  const [showTriggers, setShowTriggers] = useState(false);
 
   const handleSubmit = useCallback(
     async (data: {
@@ -106,6 +103,14 @@ export default function TradeContent() {
       refetchPositions();
     },
     [closePosition, refetchPositions]
+  );
+
+  const handleCancelOrder = useCallback(
+    async (orderId: string) => {
+      await cancelOrder(orderId);
+      refetchPositions();
+    },
+    [cancelOrder, refetchPositions]
   );
 
   const formattedPrice = currentPrice >= 1000
@@ -199,6 +204,9 @@ export default function TradeContent() {
               sentimentScore={tokenCard?.sentimentScore}
               sentimentLabel={tokenCard?.sentiment}
               sentimentVelocity={tokenCard?.velocity}
+              authenticated={authenticated}
+              autoTradeEnabled={autoTradeEnabled}
+              onAutoTradeToggle={setAutoTradeEnabled}
             />
           </div>
 
@@ -206,57 +214,7 @@ export default function TradeContent() {
             className="card-entrance"
             style={{ animationDelay: `calc(5 * var(--stagger-base))` }}
           >
-            <PositionsSidebar onClosePosition={handleClosePosition} />
-          </div>
-
-          <div
-            className="card-entrance"
-            style={{ animationDelay: `calc(6 * var(--stagger-base))` }}
-          >
-            <button
-              type="button"
-              onClick={() => setShowTriggers((prev) => !prev)}
-              className="flat-card rounded-lg flex w-full items-center justify-between px-4 py-3 text-left transition-all duration-200 hover:bg-surface-elevated"
-            >
-              <div className="flex items-center gap-2">
-                <Zap className="h-4 w-4 text-primary" />
-                <span className="text-sm font-semibold">Auto-Trade Triggers</span>
-                {autoTradeEnabled && authenticated && (
-                  <span className="led-indicator led-green h-2 w-2 rounded-full" />
-                )}
-              </div>
-              <ChevronDown
-                className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
-                  showTriggers ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-
-            {showTriggers && (
-              <div className="mt-3 flex flex-col gap-3">
-                {authenticated && (
-                  <div className="flex items-center justify-between px-4 py-2 rounded-md bg-surface-elevated">
-                    <div className="flex items-center gap-2">
-                      <span className={`h-2 w-2 rounded-full ${autoTradeEnabled ? "led-indicator led-green" : "bg-muted-foreground/30"}`} />
-                      <span className="text-xs font-medium text-muted-foreground">
-                        {autoTradeEnabled ? "Auto-execute ON" : "Auto-execute OFF"}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setAutoTradeEnabled((v) => !v)}
-                      className={`relative h-5 w-9 rounded-full transition-colors duration-200 ${autoTradeEnabled ? "bg-success" : "bg-muted-foreground/30"}`}
-                    >
-                      <span
-                        className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform duration-200 ${autoTradeEnabled ? "translate-x-4" : ""}`}
-                      />
-                    </button>
-                  </div>
-                )}
-                <SentimentTriggerForm symbol={symbol} />
-                <ActiveTriggers />
-              </div>
-            )}
+            <PositionsSidebar onClosePosition={handleClosePosition} onCancelOrder={handleCancelOrder} />
           </div>
         </div>
       </div>
