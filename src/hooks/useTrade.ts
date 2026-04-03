@@ -7,7 +7,7 @@ import bs58 from "bs58";
 import { useNotificationStore } from "@/stores/notifications";
 import {
   createSignatureHeader,
-  prepareSignatureMessage,
+  prepareSignatureMessageFlattened,
   BUILDER_CODE,
   DEFAULT_BUILDER_FEE_RATE,
 } from "@/lib/pacifica";
@@ -59,7 +59,7 @@ export function useTrade() {
       if (!wallet) throw new Error("No wallet connected");
 
       const header = createSignatureHeader(type);
-      const messageBytes = prepareSignatureMessage(header, data);
+      const messageBytes = prepareSignatureMessageFlattened(header, data);
 
       const result = await signMessage({ message: messageBytes, wallet });
       const signatureBase58 = bs58.encode(result.signature);

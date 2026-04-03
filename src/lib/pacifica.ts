@@ -74,6 +74,24 @@ export function prepareSignatureMessage(
   return new TextEncoder().encode(JSON.stringify(sorted));
 }
 
+/**
+ * Prepare a flattened message to be signed (for Pacifica order/trade operations).
+ * Signature is over: { type, timestamp, expiry_window, ...orderFields }
+ * This matches what gets sent to Pacifica in the request body.
+ */
+export function prepareSignatureMessageFlattened(
+  header: { type: string; timestamp: number; expiry_window: number },
+  data: Record<string, unknown> = {},
+): Uint8Array {
+  const message = {
+    ...header,
+    ...data,
+  };
+  const sorted = sortPayload(message);
+  // Compact JSON — no spaces (matches Python json.dumps(separators=(",",":")))
+  return new TextEncoder().encode(JSON.stringify(sorted));
+}
+
 /** @deprecated Use createSignatureHeader + prepareSignatureMessage(header, data) instead */
 export function createAuthPayload(
   data: Record<string, unknown> = {},
@@ -179,19 +197,17 @@ export async function createOrder(
 ): Promise<PacificaOrder> {
   const body = {
     type: "create_order",
-    timestamp: auth.timestamp,
-    expiry_window: auth.expiry_window,
-    data: {
-      symbol: order.symbol,
-      side: order.side,
-      price: order.price,
-      amount: order.amount,
-      tif: order.tif,
-      reduce_only: order.reduce_only,
-      ...(order.leverage !== undefined && { leverage: order.leverage }),
-    },
     account: auth.walletAddress,
     signature: auth.signature,
+    timestamp: auth.timestamp,
+    expiry_window: auth.expiry_window,
+    symbol: order.symbol,
+    side: order.side,
+    price: order.price,
+    amount: order.amount,
+    tif: order.tif,
+    reduce_only: order.reduce_only,
+    ...(order.leverage !== undefined && { leverage: order.leverage }),
   };
 
   const res = await fetch(`${PACIFICA_BASE_URL}/orders/create`, {
@@ -213,18 +229,16 @@ export async function createMarketOrder(
 ): Promise<PacificaOrder> {
   const body = {
     type: "create_market_order",
-    timestamp: auth.timestamp,
-    expiry_window: auth.expiry_window,
-    data: {
-      symbol: order.symbol,
-      side: order.side,
-      amount: order.amount,
-      slippage_percent: order.slippage_percent,
-      reduce_only: order.reduce_only,
-      ...(order.leverage !== undefined && { leverage: order.leverage }),
-    },
     account: auth.walletAddress,
     signature: auth.signature,
+    timestamp: auth.timestamp,
+    expiry_window: auth.expiry_window,
+    symbol: order.symbol,
+    side: order.side,
+    amount: order.amount,
+    slippage_percent: order.slippage_percent,
+    reduce_only: order.reduce_only,
+    ...(order.leverage !== undefined && { leverage: order.leverage }),
   };
 
   const res = await fetch(`${PACIFICA_BASE_URL}/orders/create_market`, {
@@ -275,21 +289,17 @@ export async function setPositionTpSl(
   params: { symbol: string; takeProfit?: number; stopLoss?: number },
   auth: AuthHeaders & { timestamp: number; expiry_window: number },
 ): Promise<void> {
-  const data: Record<string, unknown> = {
+  const body: Record<string, unknown> = {
+    type: "set_position_tpsl",
+    account: auth.walletAddress,
+    signature: auth.signature,
+    timestamp: auth.timestamp,
+    expiry_window: auth.expiry_window,
     symbol: params.symbol,
   };
   if (params.takeProfit !== undefined)
-    data.take_profit = String(params.takeProfit);
-  if (params.stopLoss !== undefined) data.stop_loss = String(params.stopLoss);
-
-  const body: Record<string, unknown> = {
-    type: "set_position_tpsl",
-    timestamp: auth.timestamp,
-    expiry_window: auth.expiry_window,
-    data,
-    account: auth.walletAddress,
-    signature: auth.signature,
-  };
+    body.take_profit = String(params.takeProfit);
+  if (params.stopLoss !== undefined) body.stop_loss = String(params.stopLoss);
 
   const res = await fetch(`${PACIFICA_BASE_URL}/positions/tpsl`, {
     method: "POST",
