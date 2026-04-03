@@ -188,19 +188,19 @@ function authHeaders(auth: AuthHeaders): HeadersInit {
 
 export async function createOrder(
   order: PacificaOrderRequest,
-  auth: AuthHeaders & { timestamp: number },
+  auth: AuthHeaders & { timestamp: number; expiry_window: number },
 ): Promise<PacificaOrder> {
   const body = {
     account: auth.walletAddress,
     signature: auth.signature,
     timestamp: auth.timestamp,
+    expiry_window: auth.expiry_window,
     symbol: order.symbol,
     side: order.side,
     price: order.price,
     amount: order.amount,
     tif: order.tif,
     reduce_only: order.reduce_only,
-    ...(order.leverage !== undefined && { leverage: order.leverage }),
   };
 
   const res = await fetch(`${PACIFICA_BASE_URL}/orders/create`, {
@@ -218,18 +218,18 @@ export async function createOrder(
 
 export async function createMarketOrder(
   order: PacificaMarketOrderRequest,
-  auth: AuthHeaders & { timestamp: number },
+  auth: AuthHeaders & { timestamp: number; expiry_window: number },
 ): Promise<PacificaOrder> {
   const body = {
     account: auth.walletAddress,
     signature: auth.signature,
     timestamp: auth.timestamp,
+    expiry_window: auth.expiry_window,
     symbol: order.symbol,
     side: order.side,
     amount: order.amount,
     slippage_percent: order.slippage_percent,
     reduce_only: order.reduce_only,
-    ...(order.leverage !== undefined && { leverage: order.leverage }),
   };
 
   const res = await fetch(`${PACIFICA_BASE_URL}/orders/create_market`, {
@@ -278,12 +278,13 @@ export async function cancelOrder(
 
 export async function setPositionTpSl(
   params: { symbol: string; takeProfit?: number; stopLoss?: number },
-  auth: AuthHeaders & { timestamp: number },
+  auth: AuthHeaders & { timestamp: number; expiry_window: number },
 ): Promise<void> {
   const body: Record<string, unknown> = {
     account: auth.walletAddress,
     signature: auth.signature,
     timestamp: auth.timestamp,
+    expiry_window: auth.expiry_window,
     symbol: params.symbol,
   };
   if (params.takeProfit !== undefined)

@@ -4,7 +4,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    const { symbol, side, amount, walletAddress, signature, timestamp, isMarket } = body;
+    const { symbol, side, amount, walletAddress, signature, timestamp, expiry_window, isMarket } = body;
     if (!symbol || !side || !amount) {
       return NextResponse.json(
         { error: "Missing required fields: symbol, side, amount" },
@@ -17,14 +17,14 @@ export async function POST(request: Request) {
         { status: 401 }
       );
     }
-    if (!timestamp) {
+    if (!timestamp || !expiry_window) {
       return NextResponse.json(
-        { error: "Missing required field: timestamp" },
+        { error: "Missing required fields: timestamp, expiry_window" },
         { status: 400 }
       );
     }
 
-    const auth = { walletAddress, signature, timestamp };
+    const auth = { walletAddress, signature, timestamp, expiry_window };
 
     if (isMarket) {
       const { createMarketOrder } = await import("@/lib/pacifica");
@@ -35,7 +35,6 @@ export async function POST(request: Request) {
           amount: String(amount),
           slippage_percent: body.slippage_percent ?? "0.5",
           reduce_only: body.reduce_only ?? false,
-          leverage: body.leverage,
         },
         auth
       );
@@ -51,7 +50,6 @@ export async function POST(request: Request) {
         amount: String(amount),
         tif: body.tif ?? "GTC",
         reduce_only: body.reduce_only ?? false,
-        leverage: body.leverage,
       },
       auth
     );

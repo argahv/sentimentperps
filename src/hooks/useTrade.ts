@@ -6,7 +6,8 @@ import { useWallets, useSignMessage } from "@privy-io/react-auth/solana";
 import bs58 from "bs58";
 import { useNotificationStore } from "@/stores/notifications";
 import {
-  prepareSignatureMessageForOrder,
+  createSignatureHeader,
+  prepareSignatureMessage,
 } from "@/lib/pacifica";
 import type { TradeDirection } from "@/types/app";
 import type { PacificaOrderSide, TimeInForce } from "@/types/pacifica";
@@ -50,20 +51,15 @@ export function useTrade() {
       walletAddress: string;
       signature: string;
       timestamp: number;
+      expiry_window: number;
     }> => {
       if (!wallet) throw new Error("No wallet connected");
 
-      const timestamp = Date.now();
-
-      // Per Pacifica docs: sign { type, account, timestamp, ...orderFields } — flat, sorted, compact JSON.
-      // Pacifica adds 'type' from the endpoint on its end to reconstruct the same message for verification.
-      const messageToSign = {
-        type,
-        account: wallet.address,
-        timestamp,
-        ...data,
-      };
-      const messageBytes = prepareSignatureMessageForOrder(messageToSign);
+      // Per Pacifica Python SDK (common/utils.py prepare_message):
+      // Signed message is { type, timestamp, expiry_window, data: { ...orderFields } } — sorted, compact JSON.
+      // account is NOT in the signed message; it goes only in the request body.
+      const header = createSignatureHeader(type); // { type, timestamp, expiry_window: 60_000 }
+      const messageBytes = prepareSignatureMessage(header, data);
 
       const result = await signMessage({ message: messageBytes, wallet });
       const signatureBase58 = bs58.encode(result.signature);
@@ -71,7 +67,8 @@ export function useTrade() {
       return {
         walletAddress: wallet.address,
         signature: signatureBase58,
-        timestamp,
+        timestamp: header.timestamp,
+        expiry_window: header.expiry_window,
       };
     },
     [wallet, signMessage],
@@ -100,7 +97,6 @@ export function useTrade() {
             amount: String(params.size),
             slippage_percent: "0.5",
             reduce_only: false,
-            ...(params.leverage !== undefined && { leverage: params.leverage }),
           };
         } else {
           signType = "create_order";
@@ -111,11 +107,10 @@ export function useTrade() {
             amount: String(params.size),
             tif: "GTC" as TimeInForce,
             reduce_only: false,
-            ...(params.leverage !== undefined && { leverage: params.leverage }),
           };
         }
 
-        const { walletAddress, signature, timestamp } =
+        const { walletAddress, signature, timestamp, expiry_window } =
           await signPayload(signType, orderFields);
 
         const res = await fetch("/api/trade", {
@@ -127,6 +122,7 @@ export function useTrade() {
             walletAddress,
             signature,
             timestamp,
+            expiry_window,
           }),
         });
 
@@ -180,7 +176,7 @@ export function useTrade() {
           reduce_only: true,
         };
 
-        const { walletAddress, signature, timestamp } =
+        const { walletAddress, signature, timestamp, expiry_window } =
           await signPayload("create_market_order", closeFields);
 
         const res = await fetch("/api/positions/close", {
@@ -191,6 +187,7 @@ export function useTrade() {
             walletAddress,
             signature,
             timestamp,
+            expiry_window,
           }),
         });
 
@@ -257,7 +254,7 @@ export function useTrade() {
         if (params.stopLoss !== undefined)
           tpslData.stop_loss = String(params.stopLoss);
 
-        const { walletAddress: addr, signature, timestamp } =
+        const { walletAddress: addr, signature, timestamp, expiry_window } =
           await signPayload("set_position_tpsl", tpslData);
 
         const res = await fetch("/api/positions/tpsl", {
@@ -270,6 +267,7 @@ export function useTrade() {
             walletAddress: addr,
             signature,
             timestamp,
+            expiry_window,
           }),
         });
         if (!res.ok) {
