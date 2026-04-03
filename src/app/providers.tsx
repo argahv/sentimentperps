@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, useMemo } from "react";
 import { PrivyProvider } from "@privy-io/react-auth";
 import { toSolanaWalletConnectors } from "@privy-io/react-auth/solana";
+import { initFuul } from "@/lib/fuul";
 
 const PrivyConfiguredContext = createContext(false);
 export const usePrivyConfigured = () => useContext(PrivyConfiguredContext);
@@ -15,6 +16,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
     () => (mounted ? toSolanaWalletConnectors() : undefined),
     [mounted],
   );
+
+  useEffect(() => {
+    if (mounted) {
+      initFuul();
+    }
+  }, [mounted]);
 
   const privyAppId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
 

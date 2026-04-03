@@ -32,6 +32,8 @@ export async function POST(request: Request) {
         amount: String(amount),
         slippage_percent: body.slippage_percent ?? "0.5",
         reduce_only: true,
+        builder_code: body.builder_code,
+        max_builder_fee_rate: body.max_builder_fee_rate,
       },
       { walletAddress, signature, timestamp, expiry_window }
     );

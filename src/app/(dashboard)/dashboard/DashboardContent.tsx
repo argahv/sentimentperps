@@ -12,6 +12,7 @@ import { PositionsSidebar } from "@/components/ui/PositionsSidebar";
 import { MissedMoves } from "@/components/ui/MissedMoves";
 import { PriceTicker } from "@/components/ui/PriceTicker";
 import { DivergenceAlerts } from "@/components/ui/DivergenceAlerts";
+import { TrendingNarratives } from "@/components/ui/TrendingNarratives";
 import { SentimentReplay } from "@/components/ui/SentimentReplay";
 import { DashboardHeroStats } from "@/components/ui/DashboardHeroStats";
 import { RecentWinsFeed } from "@/components/ui/RecentWinsFeed";
@@ -82,10 +83,13 @@ export default function DashboardContent() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {/* Left column */}
         <div className="flex flex-col gap-3 min-w-0">
-          <div className="card-entrance" style={{ animationDelay: "calc(2.5 * var(--stagger-base))" }}>
+          <div className="card-entrance" style={{ animationDelay: "calc(2.3 * var(--stagger-base))" }}>
+            <TrendingNarratives />
+          </div>
+          <div className="card-entrance" style={{ animationDelay: "calc(2.8 * var(--stagger-base))" }}>
             <DivergenceAlerts />
           </div>
-          <div className="card-entrance" style={{ animationDelay: "calc(3.5 * var(--stagger-base))" }}>
+          <div className="card-entrance" style={{ animationDelay: "calc(3.8 * var(--stagger-base))" }}>
             <RecentWinsFeed />
           </div>
         </div>

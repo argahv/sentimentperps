@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   LayoutDashboard,
   TrendingUp,
@@ -16,11 +16,13 @@ import {
   Check,
 } from "lucide-react";
 import { DepositBridgeModal } from "@/components/ui/DepositBridgeModal";
+import { AIChatPanel } from "@/components/ui/AIChatPanel";
 import { useMarkets } from "@/hooks/useMarkets";
 import { usePrivyConfigured } from "@/app/providers";
 import { usePrivy } from "@privy-io/react-auth";
 import { useWallets } from "@privy-io/react-auth/solana";
 import { WalletsDialog } from "@privy-io/react-auth/ui";
+import { sendPageview } from "@/lib/fuul";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -141,7 +143,12 @@ export default function DashboardLayout({
   const [showDeposit, setShowDeposit] = useState(false);
   useMarkets();
 
+  useEffect(() => {
+    sendPageview();
+  }, [pathname]);
+
   return (
+    <>
     <div className="flex h-full min-h-dvh flex-col md:flex-row bg-background text-foreground">
       <nav className="hidden md:flex md:w-64 md:flex-col md:h-dvh md:sticky md:top-0 bg-surface border-r border-border relative z-10 shadow-[var(--shadow-neu)]">
         <div className="flex h-8 items-center gap-2 px-4 bg-surface-muted border-b border-border shadow-[var(--shadow-neu-inset-sm)]">
@@ -227,5 +234,7 @@ export default function DashboardLayout({
 
       <DepositBridgeModal isOpen={showDeposit} onClose={() => setShowDeposit(false)} />
     </div>
+    <AIChatPanel />
+    </>
   );
 }

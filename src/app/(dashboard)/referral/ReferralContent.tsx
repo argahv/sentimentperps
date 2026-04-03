@@ -20,6 +20,7 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { EarningsProjection } from "@/components/ui/EarningsProjection";
 import { ReferralLeaderboard } from "@/components/ui/ReferralLeaderboard";
 import { ShareCardPreview } from "@/components/ui/ShareCardPreview";
+import { generateTrackingLink, identifyUser } from "@/lib/fuul";
 
 interface ReferralStats {
   totalReferred: number;
@@ -83,6 +84,18 @@ export default function ReferralContent() {
   const referralCode = address ? address.slice(0, 8).toUpperCase() : "SENTPERPS";
   const referralLink = `https://sentimentperps.xyz/ref/${referralCode}`;
 
+  const [fuulLink, setFuulLink] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!address) return;
+    identifyUser(address);
+    generateTrackingLink(address).then((link) => {
+      if (link) setFuulLink(link);
+    });
+  }, [address]);
+
+  const activeCopyLink = fuulLink ?? referralLink;
+
   const fetchData = useCallback(async () => {
     if (!address) return;
     setLoading(true);
@@ -132,7 +145,7 @@ export default function ReferralContent() {
   };
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(referralLink);
+    navigator.clipboard.writeText(activeCopyLink);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);
   };
@@ -236,7 +249,7 @@ export default function ReferralContent() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-widest">Your Referral Link</p>
-            <p className="text-sm font-mono text-foreground break-all">{referralLink}</p>
+            <p className="text-sm font-mono text-foreground break-all">{activeCopyLink}</p>
           </div>
           <div className="flex gap-2 shrink-0">
             <button

@@ -201,6 +201,8 @@ export async function createOrder(
     amount: order.amount,
     tif: order.tif,
     reduce_only: order.reduce_only,
+    builder_code: order.builder_code ?? BUILDER_CODE,
+    max_builder_fee_rate: order.max_builder_fee_rate ?? DEFAULT_BUILDER_FEE_RATE,
   };
 
   const res = await fetch(`${PACIFICA_BASE_URL}/orders/create`, {
@@ -230,6 +232,8 @@ export async function createMarketOrder(
     amount: order.amount,
     slippage_percent: order.slippage_percent,
     reduce_only: order.reduce_only,
+    builder_code: order.builder_code ?? BUILDER_CODE,
+    max_builder_fee_rate: order.max_builder_fee_rate ?? DEFAULT_BUILDER_FEE_RATE,
   };
 
   const res = await fetch(`${PACIFICA_BASE_URL}/orders/create_market`, {

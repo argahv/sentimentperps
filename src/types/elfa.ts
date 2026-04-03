@@ -85,3 +85,21 @@ export interface SentimentSignal {
   topMentions: ElfaMention[];
   updatedAt: Date;
 }
+
+export interface ElfaNarrative {
+  title: string;
+  summary: string;
+  sentiment: "positive" | "negative" | "neutral";
+  confidence: number; // 0-1
+  tokens: string[]; // related token symbols
+  mention_count: number;
+  source_count: number;
+  time_period: string;
+}
+
+export interface ElfaTrendingNarrativesResponse {
+  success: boolean;
+  data: {
+    narratives: ElfaNarrative[];
+  };
+}

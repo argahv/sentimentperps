@@ -35,6 +35,8 @@ export async function POST(request: Request) {
           amount: String(amount),
           slippage_percent: body.slippage_percent ?? "0.5",
           reduce_only: body.reduce_only ?? false,
+          builder_code: body.builder_code,
+          max_builder_fee_rate: body.max_builder_fee_rate,
         },
         auth
       );
@@ -50,6 +52,8 @@ export async function POST(request: Request) {
         amount: String(amount),
         tif: body.tif ?? "GTC",
         reduce_only: body.reduce_only ?? false,
+        builder_code: body.builder_code,
+        max_builder_fee_rate: body.max_builder_fee_rate,
       },
       auth
     );

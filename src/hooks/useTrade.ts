@@ -9,6 +9,8 @@ import { useMarketsStore } from "@/stores/markets";
 import {
   createSignatureHeader,
   prepareSignatureMessage,
+  BUILDER_CODE,
+  DEFAULT_BUILDER_FEE_RATE,
 } from "@/lib/pacifica";
 import type { TradeDirection } from "@/types/app";
 import type { PacificaOrderSide, TimeInForce } from "@/types/pacifica";
@@ -115,6 +117,8 @@ export function useTrade() {
             amount: amountStr,
             slippage_percent: "0.5",
             reduce_only: false,
+            builder_code: BUILDER_CODE,
+            max_builder_fee_rate: DEFAULT_BUILDER_FEE_RATE,
           };
         } else {
           signType = "create_order";
@@ -125,6 +129,8 @@ export function useTrade() {
             amount: amountStr,
             tif: "GTC" as TimeInForce,
             reduce_only: false,
+            builder_code: BUILDER_CODE,
+            max_builder_fee_rate: DEFAULT_BUILDER_FEE_RATE,
           };
         }
 
@@ -192,6 +198,8 @@ export function useTrade() {
           amount: String(size),
           slippage_percent: "0.5",
           reduce_only: true,
+          builder_code: BUILDER_CODE,
+          max_builder_fee_rate: DEFAULT_BUILDER_FEE_RATE,
         };
 
         const { walletAddress, signature, timestamp, expiry_window } =

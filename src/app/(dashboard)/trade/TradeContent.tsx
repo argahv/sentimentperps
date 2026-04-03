@@ -15,6 +15,7 @@ import { OrderForm } from "@/components/ui/OrderForm";
 import { PositionsSidebar } from "@/components/ui/PositionsSidebar";
 import { useSentimentTriggerEngine } from "@/hooks/useSentimentTriggerEngine";
 import { SentimentConfidenceMeter } from "@/components/ui/SentimentConfidenceMeter";
+
 import { LogIn, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import type { TradeDirection } from "@/types/app";
 

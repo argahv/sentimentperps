@@ -16,6 +16,9 @@ interface DashboardStats {
   sentimentAccuracy: number;
   avgPnlPct: number;
   totalTraders: number;
+  source?: "database" | "live";
+  signalsCounted?: number;
+  signalsCorrect?: number;
 }
 
 const useCountUp = (target: number, duration = 1200) => {
@@ -107,18 +110,8 @@ export function DashboardHeroStats() {
     fetchStats();
   }, []);
 
-  const demoStats: DashboardStats = {
-    totalPnl: 47832.50,
-    totalTrades: 1247,
-    totalWins: 891,
-    winRate: 71.4,
-    sentimentAccuracy: 73.2,
-    avgPnlPct: 12.8,
-    totalTraders: 156,
-  };
-
-  const displayStats = stats || (isLoading ? null : demoStats);
-  const isUsingFallback = !stats && !isLoading;
+  const displayStats = stats;
+  const isLiveOnly = stats?.source === "live";
 
   const animatedPnl = useCountUp(displayStats ? Math.abs(displayStats.totalPnl) : 0, 2000);
   const animatedAccuracy = useCountUp(displayStats ? displayStats.sentimentAccuracy : 0, 2000);
@@ -177,9 +170,9 @@ export function DashboardHeroStats() {
             LIVE INTELLIGENCE
           </span>
         </div>
-        {isUsingFallback && (
+        {isLiveOnly && (
           <span className="flat-tag flat-tag-warning px-2 py-0.5">
-            DEMO MODE
+            LIVE SIGNALS
           </span>
         )}
       </div>
@@ -195,24 +188,37 @@ export function DashboardHeroStats() {
               Total Platform P&L
             </h2>
           </div>
-          <div className="flex items-baseline gap-1 mt-2">
-            <span className={`text-6xl lg:text-7xl font-bold tabular-nums tracking-tighter ${pnlColor} font-mono drop-shadow-md`}>
-              {isPositivePnl ? "+$" : "-$"}
-              {animatedPnl.toLocaleString(undefined, {
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0,
-              })}
-            </span>
-          </div>
-          <div className="mt-4 flex gap-3">
-            <span className="flat-tag flat-tag-success px-3 py-1 flex items-center gap-1.5">
-              <TrendingUp className="w-3 h-3" />
-              {displayStats.avgPnlPct >= 0 ? "+" : ""}{displayStats.avgPnlPct.toFixed(1)}% AVG RETURN
-            </span>
-            <span className="flat-tag px-3 py-1 bg-surface-elevated text-muted-foreground">
-              ALL-TIME
-            </span>
-          </div>
+          {displayStats.totalTrades > 0 ? (
+            <>
+              <div className="flex items-baseline gap-1 mt-2">
+                <span className={`text-6xl lg:text-7xl font-bold tabular-nums tracking-tighter ${pnlColor} font-mono drop-shadow-md`}>
+                  {isPositivePnl ? "+$" : "-$"}
+                  {animatedPnl.toLocaleString(undefined, {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0,
+                  })}
+                </span>
+              </div>
+              <div className="mt-4 flex gap-3">
+                <span className="flat-tag flat-tag-success px-3 py-1 flex items-center gap-1.5">
+                  <TrendingUp className="w-3 h-3" />
+                  {displayStats.avgPnlPct >= 0 ? "+" : ""}{displayStats.avgPnlPct.toFixed(1)}% AVG RETURN
+                </span>
+                <span className="flat-tag px-3 py-1 bg-surface-elevated text-muted-foreground">
+                  {displayStats.totalTrades} TRADES
+                </span>
+              </div>
+            </>
+          ) : (
+            <div className="mt-2">
+              <span className="text-4xl lg:text-5xl font-bold tabular-nums tracking-tighter text-muted-foreground font-mono">
+                $0
+              </span>
+              <p className="text-xs text-muted-foreground mt-3 font-mono uppercase tracking-wider">
+                No trades recorded yet — start trading to see real P&L
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="lg:col-span-3 flex flex-col items-center justify-center bg-surface rounded-xl border border-border-muted p-6 shadow-neu-inset card-entrance" style={{ animationDelay: "200ms" }}>
@@ -252,8 +258,8 @@ export function DashboardHeroStats() {
         <div className="lg:col-span-3 flex flex-col justify-between gap-4 card-entrance" style={{ animationDelay: "300ms" }}>
           <StatItem
             label="Win Rate"
-            value={displayStats.winRate}
-            suffix="%"
+            value={displayStats.totalTrades > 0 ? displayStats.winRate : "--"}
+            suffix={displayStats.totalTrades > 0 ? "%" : ""}
             color="text-success"
             Icon={Target}
             delay={350}
