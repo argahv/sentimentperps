@@ -179,17 +179,19 @@ export async function createOrder(
 ): Promise<PacificaOrder> {
   const body = {
     type: "create_order",
-    account: auth.walletAddress,
-    signature: auth.signature,
     timestamp: auth.timestamp,
     expiry_window: auth.expiry_window,
-    symbol: order.symbol,
-    side: order.side,
-    price: order.price,
-    amount: order.amount,
-    tif: order.tif,
-    reduce_only: order.reduce_only,
-    ...(order.leverage !== undefined && { leverage: order.leverage }),
+    data: {
+      symbol: order.symbol,
+      side: order.side,
+      price: order.price,
+      amount: order.amount,
+      tif: order.tif,
+      reduce_only: order.reduce_only,
+      ...(order.leverage !== undefined && { leverage: order.leverage }),
+    },
+    account: auth.walletAddress,
+    signature: auth.signature,
   };
 
   const res = await fetch(`${PACIFICA_BASE_URL}/orders/create`, {
@@ -211,16 +213,18 @@ export async function createMarketOrder(
 ): Promise<PacificaOrder> {
   const body = {
     type: "create_market_order",
-    account: auth.walletAddress,
-    signature: auth.signature,
     timestamp: auth.timestamp,
     expiry_window: auth.expiry_window,
-    symbol: order.symbol,
-    side: order.side,
-    amount: order.amount,
-    slippage_percent: order.slippage_percent,
-    reduce_only: order.reduce_only,
-    ...(order.leverage !== undefined && { leverage: order.leverage }),
+    data: {
+      symbol: order.symbol,
+      side: order.side,
+      amount: order.amount,
+      slippage_percent: order.slippage_percent,
+      reduce_only: order.reduce_only,
+      ...(order.leverage !== undefined && { leverage: order.leverage }),
+    },
+    account: auth.walletAddress,
+    signature: auth.signature,
   };
 
   const res = await fetch(`${PACIFICA_BASE_URL}/orders/create_market`, {
@@ -271,17 +275,21 @@ export async function setPositionTpSl(
   params: { symbol: string; takeProfit?: number; stopLoss?: number },
   auth: AuthHeaders & { timestamp: number; expiry_window: number },
 ): Promise<void> {
-  const body: Record<string, unknown> = {
-    type: "set_position_tpsl",
+  const data: Record<string, unknown> = {
     symbol: params.symbol,
-    account: auth.walletAddress,
-    signature: auth.signature,
-    timestamp: auth.timestamp,
-    expiry_window: auth.expiry_window,
   };
   if (params.takeProfit !== undefined)
-    body.take_profit = String(params.takeProfit);
-  if (params.stopLoss !== undefined) body.stop_loss = String(params.stopLoss);
+    data.take_profit = String(params.takeProfit);
+  if (params.stopLoss !== undefined) data.stop_loss = String(params.stopLoss);
+
+  const body: Record<string, unknown> = {
+    type: "set_position_tpsl",
+    timestamp: auth.timestamp,
+    expiry_window: auth.expiry_window,
+    data,
+    account: auth.walletAddress,
+    signature: auth.signature,
+  };
 
   const res = await fetch(`${PACIFICA_BASE_URL}/positions/tpsl`, {
     method: "POST",

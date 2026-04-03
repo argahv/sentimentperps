@@ -113,7 +113,7 @@ export function useTrade() {
           };
         }
 
-        const { walletAddress, signature, timestamp, expiry_window, type: signType } =
+        const { walletAddress, signature, timestamp, expiry_window, type: returnedType } =
           await signPayload(signType, orderFields);
 
         const res = await fetch("/api/trade", {
@@ -126,7 +126,7 @@ export function useTrade() {
             signature,
             timestamp,
             expiry_window,
-            type: signType,
+            type: returnedType,
           }),
         });
 
@@ -180,7 +180,7 @@ export function useTrade() {
           reduce_only: true,
         };
 
-        const { walletAddress, signature, timestamp, expiry_window, type: closeType } =
+        const { walletAddress, signature, timestamp, expiry_window, type: returnedType } =
           await signPayload("create_market_order", closeFields);
 
         const res = await fetch("/api/positions/close", {
@@ -192,7 +192,7 @@ export function useTrade() {
             signature,
             timestamp,
             expiry_window,
-            type: closeType,
+            type: returnedType,
           }),
         });
 
@@ -260,7 +260,7 @@ export function useTrade() {
           signature,
           timestamp,
           expiry_window,
-          type: tpslType,
+          type: returnedType,
         } = await signPayload("set_position_tpsl", tpslData);
         const res = await fetch("/api/positions/tpsl", {
           method: "POST",
@@ -273,7 +273,7 @@ export function useTrade() {
             signature,
             timestamp,
             expiry_window,
-            type: tpslType,
+            type: returnedType,
           }),
         });
         if (!res.ok) {
