@@ -75,19 +75,14 @@ export function prepareSignatureMessage(
 }
 
 /**
- * Prepare a flattened message to be signed (for Pacifica order/trade operations).
- * Signature is over: { type, timestamp, expiry_window, ...orderFields }
- * This matches what gets sent to Pacifica in the request body.
+ * Prepare a message to be signed for order operations.
+ * Signature is computed ONLY over the order data fields (no auth metadata).
+ * This allows Pacifica to reconstruct the message for verification.
  */
-export function prepareSignatureMessageFlattened(
-  header: { type: string; timestamp: number; expiry_window: number },
+export function prepareSignatureMessageForOrder(
   data: Record<string, unknown> = {},
 ): Uint8Array {
-  const message = {
-    ...header,
-    ...data,
-  };
-  const sorted = sortPayload(message);
+  const sorted = sortPayload(data);
   // Compact JSON — no spaces (matches Python json.dumps(separators=(",",":")))
   return new TextEncoder().encode(JSON.stringify(sorted));
 }
