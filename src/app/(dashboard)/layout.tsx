@@ -140,7 +140,7 @@ export default function DashboardLayout({
 
   return (
     <div className="flex h-full min-h-dvh flex-col md:flex-row bg-background text-foreground">
-      <nav className="hidden md:flex md:w-64 md:flex-col bg-surface border-r border-border relative z-10 shadow-[var(--shadow-neu)]">
+      <nav className="hidden md:flex md:w-64 md:flex-col md:h-dvh md:sticky md:top-0 bg-surface border-r border-border relative z-10 shadow-[var(--shadow-neu)]">
         <div className="flex h-8 items-center gap-2 px-4 bg-surface-muted border-b border-border shadow-[var(--shadow-neu-inset-sm)]">
           <span className="led-indicator led-green"></span>
           <span className="font-mono text-[10px] font-bold text-success uppercase tracking-widest">

@@ -54,6 +54,7 @@ export function useTrade() {
       signature: string;
       timestamp: number;
       expiry_window: number;
+      type: string;
     }> => {
       if (!wallet) throw new Error("No wallet connected");
 
@@ -68,6 +69,7 @@ export function useTrade() {
         signature: signatureBase58,
         timestamp: header.timestamp,
         expiry_window: header.expiry_window,
+        type,
       };
     },
     [wallet, signMessage],
@@ -111,7 +113,7 @@ export function useTrade() {
           };
         }
 
-        const { walletAddress, signature, timestamp, expiry_window } =
+        const { walletAddress, signature, timestamp, expiry_window, type: signType } =
           await signPayload(signType, orderFields);
 
         const res = await fetch("/api/trade", {
@@ -124,6 +126,7 @@ export function useTrade() {
             signature,
             timestamp,
             expiry_window,
+            type: signType,
           }),
         });
 
@@ -177,7 +180,7 @@ export function useTrade() {
           reduce_only: true,
         };
 
-        const { walletAddress, signature, timestamp, expiry_window } =
+        const { walletAddress, signature, timestamp, expiry_window, type: closeType } =
           await signPayload("create_market_order", closeFields);
 
         const res = await fetch("/api/positions/close", {
@@ -189,6 +192,7 @@ export function useTrade() {
             signature,
             timestamp,
             expiry_window,
+            type: closeType,
           }),
         });
 
@@ -256,6 +260,7 @@ export function useTrade() {
           signature,
           timestamp,
           expiry_window,
+          type: tpslType,
         } = await signPayload("set_position_tpsl", tpslData);
         const res = await fetch("/api/positions/tpsl", {
           method: "POST",
@@ -268,6 +273,7 @@ export function useTrade() {
             signature,
             timestamp,
             expiry_window,
+            type: tpslType,
           }),
         });
         if (!res.ok) {

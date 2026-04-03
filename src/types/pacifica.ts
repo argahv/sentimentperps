@@ -87,13 +87,25 @@ export type OrderStatus =
   | "rejected";
 export type PositionSide = "long" | "short";
 
-/** Request body for POST /api/v1/orders/create — matches Pacifica exactly */
+/** Request body for POST /api/v1/orders/create (limit) — matches Pacifica exactly */
 export interface PacificaOrderRequest {
   symbol: string;
   side: PacificaOrderSide;
   price: string;
   amount: string;
   tif: TimeInForce;
+  reduce_only: boolean;
+  leverage?: number;
+  builder_code?: string;
+  max_builder_fee_rate?: number;
+}
+
+/** Request body for POST /api/v1/orders/create_market — matches Pacifica exactly */
+export interface PacificaMarketOrderRequest {
+  symbol: string;
+  side: PacificaOrderSide;
+  amount: string;
+  slippage_percent: string;
   reduce_only: boolean;
   leverage?: number;
   builder_code?: string;

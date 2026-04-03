@@ -13,7 +13,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   const solanaConnectors = useMemo(
     () => (mounted ? toSolanaWalletConnectors() : undefined),
-    [mounted]
+    [mounted],
   );
 
   const privyAppId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
@@ -48,8 +48,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
               connectors: solanaConnectors,
             },
           },
-        }}
-      >
+        }}>
         {children}
       </PrivyProvider>
     </PrivyConfiguredContext.Provider>

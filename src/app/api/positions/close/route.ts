@@ -4,7 +4,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    const { symbol, side, amount, walletAddress, signature, timestamp, expiry_window } = body;
+    const { symbol, side, amount, walletAddress, signature, timestamp, expiry_window, type } = body;
     if (!symbol || !side || !amount) {
       return NextResponse.json(
         { error: "Missing required fields: symbol, side, amount" },
@@ -23,6 +23,12 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+    if (!type) {
+      return NextResponse.json(
+        { error: "Missing type field (should be create_market_order)" },
+        { status: 400 }
+      );
+    }
 
     const { createMarketOrder } = await import("@/lib/pacifica");
     const order = await createMarketOrder(
@@ -33,7 +39,7 @@ export async function POST(request: Request) {
         slippage_percent: body.slippage_percent ?? "0.5",
         reduce_only: true,
       },
-      { walletAddress, signature, timestamp, expiry_window }
+      { walletAddress, signature, timestamp, expiry_window, type }
     );
 
     return NextResponse.json({ order });

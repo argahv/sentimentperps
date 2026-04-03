@@ -10,6 +10,7 @@ import type {
   PacificaMarket,
   PacificaMarketsResponse,
   PacificaOrderRequest,
+  PacificaMarketOrderRequest,
   PacificaOrder,
   PacificaPositionsResponse,
   PacificaOrdersResponse,
@@ -22,8 +23,9 @@ const PACIFICA_BASE_URL =
     ? "https://api.pacifica.fi/api/v1"
     : "https://test-api.pacifica.fi/api/v1");
 
-export const BUILDER_CODE = "SENTPERPS";
-export const DEFAULT_BUILDER_FEE_RATE = 0.0005;
+export const BUILDER_CODE =
+  process.env.NEXT_PUBLIC_PACIFICA_BUILDER_CODE || "SentimentPerps";
+export const DEFAULT_BUILDER_FEE_RATE = 0.01;
 
 function sortPayload(obj: unknown): unknown {
   if (obj === null || typeof obj !== "object") return obj;
@@ -35,13 +37,47 @@ function sortPayload(obj: unknown): unknown {
         sorted[key] = sortPayload((obj as Record<string, unknown>)[key]);
         return sorted;
       },
-      {} as Record<string, unknown>
+      {} as Record<string, unknown>,
     );
 }
 
+/**
+ * Create the signature header (type + timestamp + expiry_window).
+ * Matches Pacifica SDK: { type, timestamp, expiry_window }
+ */
+export function createSignatureHeader(
+  type: string,
+  expiryWindow: number = 60_000,
+): { type: string; timestamp: number; expiry_window: number } {
+  return {
+    type,
+    timestamp: Date.now(),
+    expiry_window: expiryWindow,
+  };
+}
+
+/**
+ * Prepare the message to be signed by the wallet.
+ * Pacifica SDK format: compact JSON of sorted { ...header, data: payload }
+ * Uses JSON.stringify with no whitespace (compact separators).
+ */
+export function prepareSignatureMessage(
+  header: { type: string; timestamp: number; expiry_window: number },
+  data: Record<string, unknown> = {},
+): Uint8Array {
+  const message = {
+    ...header,
+    data,
+  };
+  const sorted = sortPayload(message);
+  // Compact JSON — no spaces (matches Python json.dumps(separators=(",",":")))
+  return new TextEncoder().encode(JSON.stringify(sorted));
+}
+
+/** @deprecated Use createSignatureHeader + prepareSignatureMessage(header, data) instead */
 export function createAuthPayload(
   data: Record<string, unknown> = {},
-  expiryWindow: number = 60000
+  expiryWindow: number = 60000,
 ): PacificaAuthPayload {
   return {
     ...data,
@@ -50,16 +86,9 @@ export function createAuthPayload(
   };
 }
 
-export function prepareSignatureMessage(
-  payload: PacificaAuthPayload
-): Uint8Array {
-  const sorted = sortPayload(payload);
-  return new TextEncoder().encode(JSON.stringify(sorted));
-}
-
 function normalizeMarket(
   raw: PacificaInfoMarket,
-  price?: PacificaPriceEntry
+  price?: PacificaPriceEntry,
 ): PacificaMarket {
   return {
     symbol: raw.symbol,
@@ -82,9 +111,9 @@ function normalizeMarket(
 export async function getMarkets(): Promise<PacificaMarketsResponse> {
   const [infoRes, pricesRes] = await Promise.all([
     fetch(`${PACIFICA_BASE_URL}/info`, { next: { revalidate: 30 } }),
-    fetch(`${PACIFICA_BASE_URL}/info/prices`, { next: { revalidate: 10 } }).catch(
-      () => null
-    ),
+    fetch(`${PACIFICA_BASE_URL}/info/prices`, {
+      next: { revalidate: 10 },
+    }).catch(() => null),
   ]);
 
   if (!infoRes.ok) throw new Error(`Pacifica /info failed: ${infoRes.status}`);
@@ -103,7 +132,7 @@ export async function getMarkets(): Promise<PacificaMarketsResponse> {
   }
 
   const markets = info.data.map((raw) =>
-    normalizeMarket(raw, priceMap.get(raw.symbol))
+    normalizeMarket(raw, priceMap.get(raw.symbol)),
   );
 
   return { markets };
@@ -112,28 +141,55 @@ export async function getMarkets(): Promise<PacificaMarketsResponse> {
 interface AuthHeaders {
   walletAddress: string;
   signature: string;
+  timestamp?: number;
+  expiry_window?: number;
+  type?: string;
 }
 
+/**
+ * Build canonical auth headers for authenticated requests.
+ * Includes all fields needed for signature verification.
+ * Per Pacifica docs: signature is constructed over { type, timestamp, expiry_window, data }
+ * So the request must include all these fields for Pacifica to verify.
+ */
 function authHeaders(auth: AuthHeaders): HeadersInit {
-  return {
+  const headers: HeadersInit = {
     "Content-Type": "application/json",
     "X-Wallet-Address": auth.walletAddress,
     "X-Signature": auth.signature,
   };
+
+  // Include signature metadata for verification
+  if (auth.timestamp !== undefined) {
+    headers["X-Signature-Timestamp"] = String(auth.timestamp);
+  }
+  if (auth.expiry_window !== undefined) {
+    headers["X-Signature-Expiry"] = String(auth.expiry_window);
+  }
+  if (auth.type !== undefined) {
+    headers["X-Signature-Type"] = auth.type;
+  }
+
+  return headers;
 }
 
 export async function createOrder(
   order: PacificaOrderRequest,
-  auth: AuthHeaders
+  auth: AuthHeaders & { timestamp: number; expiry_window: number },
 ): Promise<PacificaOrder> {
   const body = {
-    ...order,
+    type: "create_order",
     account: auth.walletAddress,
     signature: auth.signature,
-    timestamp: Date.now(),
-    builder_code: order.builder_code || BUILDER_CODE,
-    max_builder_fee_rate:
-      order.max_builder_fee_rate || DEFAULT_BUILDER_FEE_RATE,
+    timestamp: auth.timestamp,
+    expiry_window: auth.expiry_window,
+    symbol: order.symbol,
+    side: order.side,
+    price: order.price,
+    amount: order.amount,
+    tif: order.tif,
+    reduce_only: order.reduce_only,
+    ...(order.leverage !== undefined && { leverage: order.leverage }),
   };
 
   const res = await fetch(`${PACIFICA_BASE_URL}/orders/create`, {
@@ -149,8 +205,39 @@ export async function createOrder(
   return res.json();
 }
 
+export async function createMarketOrder(
+  order: PacificaMarketOrderRequest,
+  auth: AuthHeaders & { timestamp: number; expiry_window: number },
+): Promise<PacificaOrder> {
+  const body = {
+    type: "create_market_order",
+    account: auth.walletAddress,
+    signature: auth.signature,
+    timestamp: auth.timestamp,
+    expiry_window: auth.expiry_window,
+    symbol: order.symbol,
+    side: order.side,
+    amount: order.amount,
+    slippage_percent: order.slippage_percent,
+    reduce_only: order.reduce_only,
+    ...(order.leverage !== undefined && { leverage: order.leverage }),
+  };
+
+  const res = await fetch(`${PACIFICA_BASE_URL}/orders/create_market`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Pacifica market order failed: ${res.status} — ${err}`);
+  }
+  return res.json();
+}
+
 export async function getPositions(
-  auth: AuthHeaders
+  auth: AuthHeaders & { timestamp: number; expiry_window: number; type: string },
 ): Promise<PacificaPositionsResponse> {
   const res = await fetch(`${PACIFICA_BASE_URL}/positions`, {
     headers: authHeaders(auth),
@@ -160,7 +247,7 @@ export async function getPositions(
 }
 
 export async function getOpenOrders(
-  auth: AuthHeaders
+  auth: AuthHeaders & { timestamp: number; expiry_window: number; type: string },
 ): Promise<PacificaOrdersResponse> {
   const res = await fetch(`${PACIFICA_BASE_URL}/orders?status=open`, {
     headers: authHeaders(auth),
@@ -171,7 +258,7 @@ export async function getOpenOrders(
 
 export async function cancelOrder(
   orderId: string,
-  auth: AuthHeaders
+  auth: AuthHeaders & { timestamp: number; expiry_window: number; type: string },
 ): Promise<void> {
   const res = await fetch(`${PACIFICA_BASE_URL}/orders/${orderId}`, {
     method: "DELETE",
@@ -182,15 +269,18 @@ export async function cancelOrder(
 
 export async function setPositionTpSl(
   params: { symbol: string; takeProfit?: number; stopLoss?: number },
-  auth: AuthHeaders
+  auth: AuthHeaders & { timestamp: number; expiry_window: number },
 ): Promise<void> {
   const body: Record<string, unknown> = {
+    type: "set_position_tpsl",
     symbol: params.symbol,
     account: auth.walletAddress,
     signature: auth.signature,
-    timestamp: Date.now(),
+    timestamp: auth.timestamp,
+    expiry_window: auth.expiry_window,
   };
-  if (params.takeProfit !== undefined) body.take_profit = String(params.takeProfit);
+  if (params.takeProfit !== undefined)
+    body.take_profit = String(params.takeProfit);
   if (params.stopLoss !== undefined) body.stop_loss = String(params.stopLoss);
 
   const res = await fetch(`${PACIFICA_BASE_URL}/positions/tpsl`, {
@@ -206,23 +296,23 @@ export async function setPositionTpSl(
 }
 
 export interface PacificaKline {
-  t: number;   // open time (ms)
-  T: number;   // close time (ms)
-  s: string;   // symbol
-  i: string;   // interval
-  o: string;   // open
-  c: string;   // close
-  h: string;   // high
-  l: string;   // low
-  v: string;   // volume
-  n: number;   // number of trades
+  t: number; // open time (ms)
+  T: number; // close time (ms)
+  s: string; // symbol
+  i: string; // interval
+  o: string; // open
+  c: string; // close
+  h: string; // high
+  l: string; // low
+  v: string; // volume
+  n: number; // number of trades
 }
 
 export async function getKlines(
   symbol: string,
   interval: string = "15m",
   startTime: number,
-  endTime?: number
+  endTime?: number,
 ): Promise<PacificaKline[]> {
   const params = new URLSearchParams({
     symbol,
