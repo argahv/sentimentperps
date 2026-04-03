@@ -6,10 +6,7 @@ import { useWallets, useSignMessage } from "@privy-io/react-auth/solana";
 import bs58 from "bs58";
 import { useNotificationStore } from "@/stores/notifications";
 import {
-  createSignatureHeader,
   prepareSignatureMessageForOrder,
-  BUILDER_CODE,
-  DEFAULT_BUILDER_FEE_RATE,
 } from "@/lib/pacifica";
 import type { TradeDirection } from "@/types/app";
 import type { PacificaOrderSide, TimeInForce } from "@/types/pacifica";
@@ -53,13 +50,20 @@ export function useTrade() {
       walletAddress: string;
       signature: string;
       timestamp: number;
-      expiry_window: number;
-      type: string;
     }> => {
       if (!wallet) throw new Error("No wallet connected");
 
-      const header = createSignatureHeader(type);
-      const messageBytes = prepareSignatureMessageForOrder(data);
+      const timestamp = Date.now();
+
+      // Per Pacifica docs: sign { type, account, timestamp, ...orderFields } — flat, sorted, compact JSON.
+      // Pacifica adds 'type' from the endpoint on its end to reconstruct the same message for verification.
+      const messageToSign = {
+        type,
+        account: wallet.address,
+        timestamp,
+        ...data,
+      };
+      const messageBytes = prepareSignatureMessageForOrder(messageToSign);
 
       const result = await signMessage({ message: messageBytes, wallet });
       const signatureBase58 = bs58.encode(result.signature);
@@ -67,9 +71,7 @@ export function useTrade() {
       return {
         walletAddress: wallet.address,
         signature: signatureBase58,
-        timestamp: header.timestamp,
-        expiry_window: header.expiry_window,
-        type,
+        timestamp,
       };
     },
     [wallet, signMessage],
@@ -113,7 +115,7 @@ export function useTrade() {
           };
         }
 
-        const { walletAddress, signature, timestamp, expiry_window, type: returnedType } =
+        const { walletAddress, signature, timestamp } =
           await signPayload(signType, orderFields);
 
         const res = await fetch("/api/trade", {
@@ -125,8 +127,6 @@ export function useTrade() {
             walletAddress,
             signature,
             timestamp,
-            expiry_window,
-            type: returnedType,
           }),
         });
 
@@ -180,7 +180,7 @@ export function useTrade() {
           reduce_only: true,
         };
 
-        const { walletAddress, signature, timestamp, expiry_window, type: returnedType } =
+        const { walletAddress, signature, timestamp } =
           await signPayload("create_market_order", closeFields);
 
         const res = await fetch("/api/positions/close", {
@@ -191,8 +191,6 @@ export function useTrade() {
             walletAddress,
             signature,
             timestamp,
-            expiry_window,
-            type: returnedType,
           }),
         });
 
@@ -253,15 +251,15 @@ export function useTrade() {
       try {
         const tpslData: Record<string, unknown> = {
           symbol: params.symbol,
-          action: "set_tpsl",
         };
-        const {
-          walletAddress: addr,
-          signature,
-          timestamp,
-          expiry_window,
-          type: returnedType,
-        } = await signPayload("set_position_tpsl", tpslData);
+        if (params.takeProfit !== undefined)
+          tpslData.take_profit = String(params.takeProfit);
+        if (params.stopLoss !== undefined)
+          tpslData.stop_loss = String(params.stopLoss);
+
+        const { walletAddress: addr, signature, timestamp } =
+          await signPayload("set_position_tpsl", tpslData);
+
         const res = await fetch("/api/positions/tpsl", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -272,8 +270,6 @@ export function useTrade() {
             walletAddress: addr,
             signature,
             timestamp,
-            expiry_window,
-            type: returnedType,
           }),
         });
         if (!res.ok) {

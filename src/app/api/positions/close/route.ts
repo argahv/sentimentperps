@@ -4,7 +4,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    const { symbol, side, amount, walletAddress, signature, timestamp, expiry_window, type } = body;
+    const { symbol, side, amount, walletAddress, signature, timestamp } = body;
     if (!symbol || !side || !amount) {
       return NextResponse.json(
         { error: "Missing required fields: symbol, side, amount" },
@@ -17,15 +17,9 @@ export async function POST(request: Request) {
         { status: 401 }
       );
     }
-    if (!timestamp || !expiry_window) {
+    if (!timestamp) {
       return NextResponse.json(
-        { error: "Missing signing fields: timestamp, expiry_window" },
-        { status: 400 }
-      );
-    }
-    if (!type) {
-      return NextResponse.json(
-        { error: "Missing type field (should be create_market_order)" },
+        { error: "Missing required field: timestamp" },
         { status: 400 }
       );
     }
@@ -39,7 +33,7 @@ export async function POST(request: Request) {
         slippage_percent: body.slippage_percent ?? "0.5",
         reduce_only: true,
       },
-      { walletAddress, signature, timestamp, expiry_window, type }
+      { walletAddress, signature, timestamp }
     );
 
     return NextResponse.json({ order });

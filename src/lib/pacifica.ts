@@ -188,14 +188,12 @@ function authHeaders(auth: AuthHeaders): HeadersInit {
 
 export async function createOrder(
   order: PacificaOrderRequest,
-  auth: AuthHeaders & { timestamp: number; expiry_window: number },
+  auth: AuthHeaders & { timestamp: number },
 ): Promise<PacificaOrder> {
   const body = {
-    type: "create_order",
     account: auth.walletAddress,
     signature: auth.signature,
     timestamp: auth.timestamp,
-    expiry_window: auth.expiry_window,
     symbol: order.symbol,
     side: order.side,
     price: order.price,
@@ -220,14 +218,12 @@ export async function createOrder(
 
 export async function createMarketOrder(
   order: PacificaMarketOrderRequest,
-  auth: AuthHeaders & { timestamp: number; expiry_window: number },
+  auth: AuthHeaders & { timestamp: number },
 ): Promise<PacificaOrder> {
   const body = {
-    type: "create_market_order",
     account: auth.walletAddress,
     signature: auth.signature,
     timestamp: auth.timestamp,
-    expiry_window: auth.expiry_window,
     symbol: order.symbol,
     side: order.side,
     amount: order.amount,
@@ -282,14 +278,12 @@ export async function cancelOrder(
 
 export async function setPositionTpSl(
   params: { symbol: string; takeProfit?: number; stopLoss?: number },
-  auth: AuthHeaders & { timestamp: number; expiry_window: number },
+  auth: AuthHeaders & { timestamp: number },
 ): Promise<void> {
   const body: Record<string, unknown> = {
-    type: "set_position_tpsl",
     account: auth.walletAddress,
     signature: auth.signature,
     timestamp: auth.timestamp,
-    expiry_window: auth.expiry_window,
     symbol: params.symbol,
   };
   if (params.takeProfit !== undefined)
