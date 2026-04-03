@@ -28,6 +28,7 @@ export async function GET(request: Request) {
         pnlUsdc: true,
         pnlPct: true,
         sentimentAligned: true,
+        minutesAfterSignal: true,
         score: true,
         closedAt: true,
       },

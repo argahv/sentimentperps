@@ -5,8 +5,14 @@ import { usePrivy } from "@privy-io/react-auth";
 import { useWallets, useSignMessage } from "@privy-io/react-auth/solana";
 import bs58 from "bs58";
 import { useNotificationStore } from "@/stores/notifications";
-import { createAuthPayload, prepareSignatureMessage } from "@/lib/pacifica";
+import {
+  createSignatureHeader,
+  prepareSignatureMessage,
+  BUILDER_CODE,
+  DEFAULT_BUILDER_FEE_RATE,
+} from "@/lib/pacifica";
 import type { TradeDirection } from "@/types/app";
+import type { PacificaOrderSide, TimeInForce } from "@/types/pacifica";
 
 interface TradeParams {
   symbol: string;
@@ -32,24 +38,39 @@ export function useTrade() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
 
+  // Use the first available wallet — don't deprioritize Privy embedded wallets,
+  // since the user's beta access is tied to whichever wallet redeemed the code.
   const wallet = useMemo(() => {
     if (!wallets.length) return null;
-    return wallets.find((w) => w.standardWallet.name === "Privy") ?? wallets[0];
+    return wallets.find((w) => w.standardWallet.name !== "Privy") ?? wallets[0];
   }, [wallets]);
 
   const signPayload = useCallback(
-    async (payload: Record<string, unknown>): Promise<{ walletAddress: string; signature: string }> => {
+    async (
+      type: string,
+      data: Record<string, unknown>,
+    ): Promise<{
+      walletAddress: string;
+      signature: string;
+      timestamp: number;
+      expiry_window: number;
+    }> => {
       if (!wallet) throw new Error("No wallet connected");
 
-      const authPayload = createAuthPayload(payload);
-      const messageBytes = prepareSignatureMessage(authPayload);
+      const header = createSignatureHeader(type);
+      const messageBytes = prepareSignatureMessage(header, data);
 
       const result = await signMessage({ message: messageBytes, wallet });
       const signatureBase58 = bs58.encode(result.signature);
 
-      return { walletAddress: wallet.address, signature: signatureBase58 };
+      return {
+        walletAddress: wallet.address,
+        signature: signatureBase58,
+        timestamp: header.timestamp,
+        expiry_window: header.expiry_window,
+      };
     },
-    [wallet, signMessage]
+    [wallet, signMessage],
   );
 
   const submitTrade = useCallback(
@@ -60,23 +81,50 @@ export function useTrade() {
       setLastError(null);
 
       try {
-        const side = params.direction === "long" ? "buy" : "sell";
+        const pacificaSide: PacificaOrderSide =
+          params.direction === "long" ? "bid" : "ask";
+        const isMarket = !params.price;
 
-        const orderPayload = {
-          symbol: params.marketId,
-          side,
-          size: params.size,
-          leverage: params.leverage,
-          ...(params.price && { price: params.price }),
-          ...(params.stopPrice && { stop_price: params.stopPrice }),
-        };
+        let orderFields: Record<string, unknown>;
+        let signType: string;
 
-        const { walletAddress, signature } = await signPayload(orderPayload);
+        if (isMarket) {
+          signType = "create_market_order";
+          orderFields = {
+            symbol: params.marketId,
+            side: pacificaSide,
+            amount: String(params.size),
+            slippage_percent: "0.5",
+            reduce_only: false,
+            ...(params.leverage !== undefined && { leverage: params.leverage }),
+          };
+        } else {
+          signType = "create_order";
+          orderFields = {
+            symbol: params.marketId,
+            side: pacificaSide,
+            price: String(params.price),
+            amount: String(params.size),
+            tif: "GTC" as TimeInForce,
+            reduce_only: false,
+            ...(params.leverage !== undefined && { leverage: params.leverage }),
+          };
+        }
+
+        const { walletAddress, signature, timestamp, expiry_window } =
+          await signPayload(signType, orderFields);
 
         const res = await fetch("/api/trade", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...orderPayload, walletAddress, signature }),
+          body: JSON.stringify({
+            ...orderFields,
+            isMarket,
+            walletAddress,
+            signature,
+            timestamp,
+            expiry_window,
+          }),
         });
 
         const data = await res.json();
@@ -98,7 +146,7 @@ export function useTrade() {
         setIsSubmitting(false);
       }
     },
-    [privyReady, authenticated, signPayload, addNotification]
+    [privyReady, authenticated, signPayload, addNotification],
   );
 
   const closePosition = useCallback(
@@ -106,7 +154,12 @@ export function useTrade() {
       symbol: string,
       side: TradeDirection,
       size: number,
-      positionMeta?: { entryPrice: number; markPrice: number; leverage: number; pnlUsdc: number }
+      positionMeta?: {
+        entryPrice: number;
+        markPrice: number;
+        leverage: number;
+        pnlUsdc: number;
+      },
     ): Promise<TradeResult> => {
       if (!privyReady || !authenticated) throw new Error("Not authenticated");
 
@@ -114,13 +167,29 @@ export function useTrade() {
       setLastError(null);
 
       try {
-        const closePayload = { symbol, side, size };
-        const { walletAddress, signature } = await signPayload(closePayload);
+        const closeSide: PacificaOrderSide = side === "long" ? "ask" : "bid";
+
+        const closeFields: Record<string, unknown> = {
+          symbol,
+          side: closeSide,
+          amount: String(size),
+          slippage_percent: "0.5",
+          reduce_only: true,
+        };
+
+        const { walletAddress, signature, timestamp, expiry_window } =
+          await signPayload("create_market_order", closeFields);
 
         const res = await fetch("/api/positions/close", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...closePayload, walletAddress, signature }),
+          body: JSON.stringify({
+            ...closeFields,
+            walletAddress,
+            signature,
+            timestamp,
+            expiry_window,
+          }),
         });
 
         const data = await res.json();
@@ -133,9 +202,13 @@ export function useTrade() {
         });
 
         if (positionMeta) {
-          const pnlPct = positionMeta.entryPrice > 0
-            ? ((positionMeta.markPrice - positionMeta.entryPrice) / positionMeta.entryPrice) * 100 * (side === "long" ? 1 : -1)
-            : 0;
+          const pnlPct =
+            positionMeta.entryPrice > 0
+              ? ((positionMeta.markPrice - positionMeta.entryPrice) /
+                  positionMeta.entryPrice) *
+                100 *
+                (side === "long" ? 1 : -1)
+              : 0;
 
           fetch("/api/leaderboard/record-trade", {
             method: "POST",
@@ -164,36 +237,60 @@ export function useTrade() {
         setIsSubmitting(false);
       }
     },
-    [privyReady, authenticated, signPayload, addNotification]
+    [privyReady, authenticated, signPayload, addNotification],
   );
 
-  const setTpSl = useCallback(async (params: {
-    symbol: string;
-    takeProfit?: number;
-    stopLoss?: number;
-  }) => {
-    try {
-      const { walletAddress: addr, signature } = await signPayload({ symbol: params.symbol, action: "set_tpsl" });
-      const res = await fetch("/api/positions/tpsl", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+  const setTpSl = useCallback(
+    async (params: {
+      symbol: string;
+      takeProfit?: number;
+      stopLoss?: number;
+    }) => {
+      try {
+        const tpslData: Record<string, unknown> = {
           symbol: params.symbol,
-          takeProfit: params.takeProfit,
-          stopLoss: params.stopLoss,
+          action: "set_tpsl",
+        };
+        const {
           walletAddress: addr,
           signature,
-        }),
-      });
-      if (!res.ok) {
-        const { error } = await res.json();
-        throw new Error(error || "TP/SL update failed");
+          timestamp,
+          expiry_window,
+        } = await signPayload("set_position_tpsl", tpslData);
+        const res = await fetch("/api/positions/tpsl", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            symbol: params.symbol,
+            takeProfit: params.takeProfit,
+            stopLoss: params.stopLoss,
+            walletAddress: addr,
+            signature,
+            timestamp,
+            expiry_window,
+          }),
+        });
+        if (!res.ok) {
+          const { error } = await res.json();
+          throw new Error(error || "TP/SL update failed");
+        }
+        addNotification({
+          type: "success",
+          title: "TP/SL Set",
+          message: `Updated for ${params.symbol}`,
+          duration: 4000,
+        });
+      } catch (err) {
+        addNotification({
+          type: "error",
+          title: "TP/SL Failed",
+          message: err instanceof Error ? err.message : "Unknown error",
+          duration: 6000,
+        });
       }
-      addNotification({ type: "success", title: "TP/SL Set", message: `Updated for ${params.symbol}`, duration: 4000 });
-    } catch (err) {
-      addNotification({ type: "error", title: "TP/SL Failed", message: err instanceof Error ? err.message : "Unknown error", duration: 6000 });
-    }
-  }, [signPayload, addNotification]);
+    },
+    [signPayload, addNotification],
+  );
 
   return {
     ready: privyReady && walletsReady,

@@ -26,6 +26,9 @@ import {
   Star,
   Zap,
   Swords,
+  Calendar,
+  Flame,
+  Crosshair,
 } from "lucide-react";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import type { BadgeType } from "@/types/app";
@@ -40,6 +43,81 @@ const BADGE_TIERS = [
   { type: "speed_demon" as BadgeType, label: "Speed Demon", threshold: 1, metric: "speed" },
   { type: "contrarian" as BadgeType, label: "Contrarian", threshold: 1, metric: "contrarian" },
 ];
+
+function getBadgeProgress(
+  badge: (typeof BADGE_TIERS)[number],
+  progressMap: Record<string, number>,
+  trades: DbTrade[]
+): number {
+  switch (badge.metric) {
+    case "trades":
+      return trades.length >= 1 ? 100 : 0;
+    case "streak": {
+      const streakVal = progressMap["streak"] ?? 0;
+      return Math.round((streakVal / badge.threshold) * 100);
+    }
+    case "bestPnl": {
+      const best = trades.reduce((max, t) => Math.max(max, t.pnlUsdc), 0);
+      return Math.round((best / badge.threshold) * 100);
+    }
+    case "winRate": {
+      const aligned = trades.filter((t) => t.sentimentAligned);
+      if (aligned.length < 10) return Math.round((aligned.length / 10) * 50);
+      const wins = aligned.filter((t) => t.pnlUsdc > 0).length;
+      const rate = (wins / aligned.length) * 100;
+      return Math.round((rate / badge.threshold) * 100);
+    }
+    case "speed": {
+      if (trades.length === 0) return 0;
+      const fastest = trades.reduce(
+        (min, t) => Math.min(min, t.minutesAfterSignal),
+        Infinity
+      );
+      return fastest <= 1 ? 100 : Math.round((1 / fastest) * 100);
+    }
+    case "contrarian": {
+      const hasContrarian = trades.some((t) => !t.sentimentAligned && t.pnlUsdc > 0);
+      return hasContrarian ? 100 : 0;
+    }
+    default:
+      return 0;
+  }
+}
+
+function getProgressLabel(
+  badge: (typeof BADGE_TIERS)[number],
+  progressMap: Record<string, number>,
+  trades: DbTrade[]
+): string {
+  switch (badge.metric) {
+    case "trades":
+      return `${Math.min(trades.length, 1)}/1 trade`;
+    case "streak": {
+      const streakVal = progressMap["streak"] ?? 0;
+      return `${streakVal}/${badge.threshold} wins`;
+    }
+    case "bestPnl": {
+      const best = Math.round(trades.reduce((max, t) => Math.max(max, t.pnlUsdc), 0));
+      return `$${best}/$${badge.threshold}`;
+    }
+    case "winRate": {
+      const aligned = trades.filter((t) => t.sentimentAligned);
+      if (aligned.length < 10) return `${aligned.length}/10 aligned`;
+      const wins = aligned.filter((t) => t.pnlUsdc > 0).length;
+      const rate = Math.round((wins / aligned.length) * 100);
+      return `${rate}%/${badge.threshold}%`;
+    }
+    case "speed": {
+      if (trades.length === 0) return "no trades";
+      const fastest = trades.reduce((min, t) => Math.min(min, t.minutesAfterSignal), Infinity);
+      return fastest <= 1 ? "≤1m achieved" : `best: ${fastest.toFixed(1)}m`;
+    }
+    case "contrarian":
+      return trades.some((t) => !t.sentimentAligned && t.pnlUsdc > 0) ? "earned" : "need contrarian win";
+    default:
+      return "";
+  }
+}
 
 interface ProfileStats {
   totalTrades: number;
@@ -64,6 +142,7 @@ interface DbTrade {
   pnlUsdc: number;
   pnlPct: number;
   sentimentAligned: boolean;
+  minutesAfterSignal: number;
   score: number;
   closedAt: string;
 }
@@ -142,9 +221,34 @@ export default function ProfileContent() {
     progress: number;
     completed: boolean;
   }[]>([]);
+  const [journey, setJourney] = useState<{
+    firstTradeDate: string;
+    daysSinceFirst: number;
+    totalTrades: number;
+    profitableTrades: number;
+    totalProfitFromWins: number;
+    bestTrade: {
+      symbol: string;
+      direction: string;
+      pnlUsdc: number;
+      pnlPct: number;
+      leverage: number;
+      date: string;
+    };
+    worstTrade: { symbol: string; pnlUsdc: number; date: string };
+    longestStreak: number;
+    longestStreakPeriod: { start: string; end: string } | null;
+    currentStreak: number;
+    fastestSignalResponse: number;
+    sentimentAlignedCount: number;
+    sentimentAlignmentRate: number;
+    favoriteSymbol: string | null;
+    favoriteSymbolCount: number;
+  } | null>(null);
+  const [badgeProgress, setBadgeProgress] = useState<Record<string, number>>({});
 
   const wallet = useMemo(
-    () => wallets.find((w) => w.standardWallet.name === "Privy") ?? wallets[0] ?? null,
+    () => wallets.find((w) => w.standardWallet.name !== "Privy") ?? wallets[0] ?? null,
     [wallets]
   );
 
@@ -218,6 +322,25 @@ export default function ProfileContent() {
       if (!res.ok) return;
       const { quests: data } = await res.json();
       setQuests(data);
+
+      const progressMap: Record<string, number> = {};
+      for (const q of data) {
+        if (q.id === "win_streak_3") progressMap["streak"] = q.current;
+        if (q.id === "first_trade") progressMap["trades"] = q.current >= 1 ? 1 : 0;
+        if (q.id === "profit_1000") progressMap["bestPnl"] = q.current;
+        if (q.id === "sentiment_ace") progressMap["winRate"] = q.current;
+      }
+      setBadgeProgress(progressMap);
+    } catch {}
+  }, [address]);
+
+  const fetchJourney = useCallback(async () => {
+    if (!address) return;
+    try {
+      const res = await fetch(`/api/profile/journey?wallet=${address}`);
+      if (!res.ok) return;
+      const { journey: data } = await res.json();
+      setJourney(data);
     } catch {}
   }, [address]);
 
@@ -228,8 +351,9 @@ export default function ProfileContent() {
       fetchBadges();
       fetchXp();
       fetchQuests();
+      fetchJourney();
     }
-  }, [address, fetchTrades, fetchStats, fetchBadges, fetchXp, fetchQuests]);
+  }, [address, fetchTrades, fetchStats, fetchBadges, fetchXp, fetchQuests, fetchJourney]);
 
   const livePositionTrades = useMemo(() => {
     return [...closedPositions, ...positions].map((p) => {
@@ -359,6 +483,7 @@ export default function ProfileContent() {
               fetchBadges();
               fetchXp();
               fetchQuests();
+              fetchJourney();
             }}
             className="swiss-btn-outline flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
@@ -489,6 +614,94 @@ export default function ProfileContent() {
                 )}
               </div>
 
+              {journey && (
+                <div
+                  className="swiss-card bg-surface overflow-hidden card-entrance"
+                  style={{ animationDelay: "320ms" }}
+                >
+                  <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
+                    <Calendar className="h-4 w-4 text-primary" />
+                    <h3 className="text-sm font-semibold uppercase tracking-widest">Trading Journey</h3>
+                    <span className="ml-auto text-[10px] text-muted-foreground font-medium">
+                      since {new Date(journey.firstTradeDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    </span>
+                  </div>
+
+                  <div className="p-4 flex flex-col gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      <div className="border border-border-muted bg-surface px-3 py-2.5 flex flex-col gap-1">
+                        <span className="text-[10px] text-muted-foreground">Trading Days</span>
+                        <span className="text-sm font-bold tabular-nums">{journey.daysSinceFirst}</span>
+                      </div>
+                      <div className="border border-border-muted bg-surface px-3 py-2.5 flex flex-col gap-1">
+                        <span className="text-[10px] text-muted-foreground">Win / Total</span>
+                        <span className="text-sm font-bold tabular-nums">
+                          <span className="text-success">{journey.profitableTrades}</span>
+                          <span className="text-muted-foreground"> / {journey.totalTrades}</span>
+                        </span>
+                      </div>
+                      <div className="border border-border-muted bg-surface px-3 py-2.5 flex flex-col gap-1">
+                        <span className="text-[10px] text-muted-foreground">Sentiment Aligned</span>
+                        <span className="text-sm font-bold tabular-nums text-primary">
+                          {journey.sentimentAlignmentRate}%
+                        </span>
+                      </div>
+                      <div className="border border-border-muted bg-surface px-3 py-2.5 flex flex-col gap-1">
+                        <span className="text-[10px] text-muted-foreground">Favorite Pair</span>
+                        <span className="text-sm font-bold">{journey.favoriteSymbol ?? "—"}</span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <div className="border border-border-muted bg-surface px-3 py-3 flex items-center gap-3">
+                        <div className="swiss-icon-well flex h-9 w-9 items-center justify-center text-success shrink-0">
+                          <Trophy className="h-4 w-4" />
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-[10px] text-muted-foreground">Biggest Win</span>
+                          <span className="text-sm font-bold text-success tabular-nums">
+                            +${journey.bestTrade.pnlUsdc.toLocaleString()}
+                          </span>
+                          <span className="text-[9px] text-muted-foreground truncate">
+                            {journey.bestTrade.symbol} {journey.bestTrade.direction.toUpperCase()} {journey.bestTrade.leverage}x
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="border border-border-muted bg-surface px-3 py-3 flex items-center gap-3">
+                        <div className="swiss-icon-well flex h-9 w-9 items-center justify-center text-amber-500 shrink-0">
+                          <Flame className="h-4 w-4" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[10px] text-muted-foreground">Longest Streak</span>
+                          <span className="text-sm font-bold tabular-nums">
+                            {journey.longestStreak} wins
+                          </span>
+                          {journey.currentStreak > 0 && (
+                            <span className="text-[9px] text-success font-medium">
+                              {journey.currentStreak} active now
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="border border-border-muted bg-surface px-3 py-3 flex items-center gap-3">
+                        <div className="swiss-icon-well flex h-9 w-9 items-center justify-center text-primary shrink-0">
+                          <Crosshair className="h-4 w-4" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[10px] text-muted-foreground">Fastest Signal</span>
+                          <span className="text-sm font-bold text-primary tabular-nums">
+                            {journey.fastestSignalResponse}m
+                          </span>
+                          <span className="text-[9px] text-muted-foreground">after sentiment shift</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div
                 className="swiss-card bg-surface overflow-hidden card-entrance"
                 style={{ animationDelay: "350ms" }}
@@ -566,62 +779,61 @@ export default function ProfileContent() {
         </div>
 
         <div
-          className="w-full lg:w-[300px] xl:w-[320px] shrink-0 flex flex-col gap-3 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-88px)] lg:overflow-y-auto card-entrance"
+          className="w-full lg:w-[300px] xl:w-[320px] shrink-0 flex flex-col gap-2 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-40px)] lg:overflow-y-auto card-entrance"
           style={{ animationDelay: "calc(2 * var(--stagger-base))" }}
         >
-          <div className="swiss-card bg-surface p-5 flex flex-col gap-3">
+          <div className="swiss-card bg-surface p-4 flex flex-col gap-2">
             <div className="flex items-center gap-2">
               <Wallet className="h-4 w-4 text-primary" />
               <span className="text-sm font-semibold font-display uppercase tracking-widest">Wallet</span>
+              {isEmbeddedWallet && (
+                <span className="ml-auto text-[10px] font-mono px-2 py-0.5 rounded bg-warning/10 text-warning border border-warning/20">
+                  EMBEDDED
+                </span>
+              )}
+              {!isEmbeddedWallet && walletProvider && (
+                <span className="ml-auto text-[10px] font-mono px-2 py-0.5 rounded bg-success/10 text-success border border-success/20">
+                  {walletProvider.toUpperCase()}
+                </span>
+              )}
             </div>
-
             {address ? (
-              <div className="flex flex-col gap-2.5">
-                <div className="border border-border-muted bg-surface px-3 py-2.5 flex flex-col gap-1.5">
-                  <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">
-                    Address
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs text-foreground truncate flex-1">
-                      {address}
-                    </span>
-                    <button
-                      onClick={handleCopy}
-                      className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
-                    </button>
-                  </div>
+              <div className="flex flex-col gap-2">
+                <div className="border border-border-muted bg-surface-muted px-3 py-2 flex items-center gap-2">
+                  <span className="font-mono text-xs text-foreground truncate flex-1">{address}</span>
+                  <button
+                    onClick={handleCopy}
+                    className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
+                  </button>
                 </div>
-
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="border border-border-muted bg-surface px-3 py-2 flex flex-col gap-1">
+                  <div className="border border-border-muted bg-surface-muted px-3 py-1.5 flex flex-col">
                     <span className="text-[10px] text-muted-foreground">Provider</span>
-                    <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-semibold flex items-center gap-1">
                       <Shield className="h-3 w-3 text-primary" />
-                      <span className="text-xs font-semibold truncate">{walletProvider}</span>
-                    </div>
+                      {walletProvider}
+                    </span>
                   </div>
-                  <div className="border border-border-muted bg-surface px-3 py-2 flex flex-col gap-1">
+                  <div className="border border-border-muted bg-surface-muted px-3 py-1.5 flex flex-col">
                     <span className="text-[10px] text-muted-foreground">Type</span>
-                    <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-semibold flex items-center gap-1">
                       <Hash className="h-3 w-3 text-primary" />
-                      <span className="text-xs font-semibold">
-                        {isEmbeddedWallet ? "Embedded" : "External"}
-                      </span>
-                    </div>
+                      {isEmbeddedWallet ? "Embedded" : "External"}
+                    </span>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="border border-border-muted bg-surface px-4 py-4 text-center text-sm text-muted-foreground">
+              <div className="border border-border-muted bg-surface-muted px-4 py-3 text-center text-sm text-muted-foreground">
                 No wallet connected
               </div>
             )}
           </div>
 
           {xpData && (
-            <div className="swiss-card bg-surface p-5 flex flex-col gap-3">
+            <div className="swiss-card bg-surface p-4 flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Star className="h-4 w-4 text-amber-500" />
@@ -655,7 +867,7 @@ export default function ProfileContent() {
           {statsLoading && !dbStats ? (
             <SidebarSkeleton />
           ) : (
-            <div className="swiss-card bg-surface p-5 flex flex-col gap-4">
+            <div className="swiss-card bg-surface p-4 flex flex-col gap-2">
               <div className="flex items-center gap-2">
                 <Trophy className="h-4 w-4 text-primary" />
                 <span className="text-sm font-semibold font-display uppercase tracking-widest">Your Rank</span>
@@ -725,7 +937,7 @@ export default function ProfileContent() {
             </div>
           )}
 
-          <div className="swiss-card bg-surface p-5 flex flex-col gap-3">
+          <div className="swiss-card bg-surface p-4 flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Trophy className="h-4 w-4 text-amber-500" />
@@ -739,6 +951,8 @@ export default function ProfileContent() {
             <div className="grid grid-cols-2 gap-3">
               {BADGE_TIERS.map((badge, idx) => {
                 const isEarned = badges.includes(badge.type);
+                const rawProgress = getBadgeProgress(badge, badgeProgress, dbTrades);
+                const progressPct = isEarned ? 100 : Math.min(99, Math.max(0, rawProgress));
                 return (
                   <div
                     key={badge.type}
@@ -751,8 +965,16 @@ export default function ProfileContent() {
                       <BadgeList badges={[badge.type]} size="md" max={1} />
                     </div>
                     {!isEarned && (
-                      <div className="w-full h-1 border border-border-muted bg-surface rounded-full overflow-hidden">
-                        <div className="h-full bg-primary/40 rounded-full w-1/4 bar-animate" />
+                      <div className="w-full flex flex-col gap-0.5">
+                        <div className="h-1 border border-border-muted bg-surface rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-primary/40 rounded-full bar-animate"
+                            style={{ width: `${progressPct}%` }}
+                          />
+                        </div>
+                        <span className="text-[8px] text-muted-foreground text-center tabular-nums">
+                          {getProgressLabel(badge, badgeProgress, dbTrades)}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -762,7 +984,7 @@ export default function ProfileContent() {
           </div>
 
           {quests.length > 0 && (
-            <div className="swiss-card bg-surface p-5 flex flex-col gap-3">
+            <div className="swiss-card bg-surface p-4 flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Swords className="h-4 w-4 text-primary" />

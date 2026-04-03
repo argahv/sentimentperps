@@ -75,7 +75,7 @@ export default function ReferralContent() {
   const [claimSuccess, setClaimSuccess] = useState<string | null>(null);
 
   const wallet = useMemo(
-    () => wallets.find((w) => w.standardWallet.name === "Privy") ?? wallets[0] ?? null,
+    () => wallets.find((w) => w.standardWallet.name !== "Privy") ?? wallets[0] ?? null,
     [wallets]
   );
 

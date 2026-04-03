@@ -169,7 +169,7 @@ export default function LeaderboardContent() {
     fetchLeaderboard();
   }, [fetchLeaderboard]);
 
-  const walletAddress = wallets?.[0]?.address ?? null;
+  const walletAddress = (wallets?.find((w) => w.standardWallet.name !== "Privy") ?? wallets?.[0])?.address ?? null;
 
   const yourEntry = useMemo(() => {
     if (!authenticated || !walletAddress) return null;

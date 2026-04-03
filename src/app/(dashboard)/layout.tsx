@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   LayoutDashboard,
   TrendingUp,
@@ -10,9 +10,17 @@ import {
   User,
   Gift,
   ArrowRightLeft,
+  Wallet,
+  LogOut,
+  Copy,
+  Check,
 } from "lucide-react";
 import { DepositBridgeModal } from "@/components/ui/DepositBridgeModal";
 import { useMarkets } from "@/hooks/useMarkets";
+import { usePrivyConfigured } from "@/app/providers";
+import { usePrivy } from "@privy-io/react-auth";
+import { useWallets } from "@privy-io/react-auth/solana";
+import { WalletsDialog } from "@privy-io/react-auth/ui";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -21,6 +29,105 @@ const NAV_ITEMS = [
   { href: "/profile", label: "Profile", icon: User },
   { href: "/referral", label: "Referral", icon: Gift },
 ] as const;
+
+function SidebarWallet() {
+  const configured = usePrivyConfigured();
+  const [copied, setCopied] = useState(false);
+  const [showWallets, setShowWallets] = useState(false);
+
+  if (!configured) return null;
+
+  return (
+    <SidebarWalletInner
+      copied={copied}
+      setCopied={setCopied}
+      showWallets={showWallets}
+      setShowWallets={setShowWallets}
+    />
+  );
+}
+
+function SidebarWalletInner({
+  copied,
+  setCopied,
+  showWallets,
+  setShowWallets,
+}: {
+  copied: boolean;
+  setCopied: (v: boolean) => void;
+  showWallets: boolean;
+  setShowWallets: (v: boolean) => void;
+}) {
+  const { login, logout, authenticated, ready } = usePrivy();
+  const { wallets } = useWallets();
+  const wallet = useMemo(
+    () => wallets.find((w) => w.standardWallet.name !== "Privy") ?? wallets[0] ?? null,
+    [wallets]
+  );
+  const address = wallet?.address ?? null;
+  const shortAddress = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : null;
+
+  const handleCopy = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!address) return;
+    navigator.clipboard.writeText(address);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  if (!ready) return null;
+
+  if (authenticated && address) {
+    return (
+      <div className="relative">
+        <button
+          onClick={() => setShowWallets(!showWallets)}
+          className="flex w-full items-center gap-2 px-3 py-2 bg-surface-muted border border-border rounded-lg hover:bg-surface-elevated transition-colors"
+        >
+          <Wallet className="h-3.5 w-3.5 text-primary shrink-0" />
+          <span className="font-mono text-[10px] text-foreground truncate">
+            {shortAddress}
+          </span>
+          <button
+            onClick={handleCopy}
+            className="shrink-0 text-muted-foreground hover:text-primary transition-colors"
+            title="Copy address"
+          >
+            {copied ? <Check className="h-3 w-3 text-success" /> : <Copy className="h-3 w-3" />}
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); logout(); }}
+            className="ml-auto shrink-0 text-muted-foreground hover:text-danger transition-colors"
+            title="Disconnect"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+          </button>
+        </button>
+        {showWallets && (
+          <>
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => setShowWallets(false)}
+            />
+            <div className="absolute bottom-full left-0 right-0 mb-2 z-50 rounded-lg border border-border bg-surface shadow-[var(--shadow-neu)] overflow-hidden">
+              <WalletsDialog />
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={login}
+      className="flex w-full items-center justify-center gap-2 px-4 py-2.5 bg-surface-muted border border-border rounded-lg text-[10px] font-mono font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-surface-elevated transition-all"
+    >
+      <Wallet className="h-3.5 w-3.5" />
+      Connect Wallet
+    </button>
+  );
+}
 
 export default function DashboardLayout({
   children,
@@ -77,7 +184,8 @@ export default function DashboardLayout({
           })}
         </div>
 
-        <div className="p-4 border-t border-border shadow-[var(--shadow-neu-inset-sm)]">
+        <div className="p-4 border-t border-border shadow-[var(--shadow-neu-inset-sm)] flex flex-col gap-2">
+          <SidebarWallet />
           <button
             onClick={() => setShowDeposit(true)}
             className="flat-btn-primary flex w-full items-center justify-center gap-2 px-4 py-3 text-[10px]"
