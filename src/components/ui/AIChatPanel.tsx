@@ -215,7 +215,7 @@ export function AIChatPanel() {
 
       {isOpen && (
         <div
-          className="chat-panel-open fixed z-[9999] flex flex-col rounded-xl overflow-hidden industrial-screws"
+          className="chat-panel-open fixed z-[9999] flex flex-col rounded-xl overflow-hidden"
           style={{
             bottom: "88px",
             right: "24px",
