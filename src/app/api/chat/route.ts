@@ -5,7 +5,7 @@ const ELFA_CHAT_URL = "https://api.elfa.ai/v2/chat";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { message } = body;
+    const { message, sessionId } = body;
 
     if (!message || typeof message !== "string" || message.trim().length === 0) {
       return NextResponse.json(
@@ -22,13 +22,22 @@ export async function POST(request: Request) {
       );
     }
 
+    const payload: Record<string, unknown> = {
+      message: message.trim(),
+      analysisType: "chat",
+    };
+
+    if (sessionId && typeof sessionId === "string") {
+      payload.sessionId = sessionId;
+    }
+
     const elfaResponse = await fetch(ELFA_CHAT_URL, {
       method: "POST",
       headers: {
         "x-elfa-api-key": apiKey,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ message: message.trim() }),
+      body: JSON.stringify(payload),
     });
 
     if (!elfaResponse.ok) {

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MessageSquare, X, Send, Sparkles, Bot } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 
 interface Message {
   id: string;
@@ -84,7 +85,7 @@ function MessageBubble({ msg }: { msg: Message }) {
         <Bot className="h-3.5 w-3.5 text-primary" />
       </div>
       <div
-        className="max-w-[80%] rounded-lg px-4 py-2.5 text-sm"
+        className="chat-md max-w-[80%] rounded-lg px-4 py-2.5 text-sm"
         style={{
           background: "#1E2330",
           boxShadow: "var(--shadow-neu-sm)",
@@ -94,7 +95,7 @@ function MessageBubble({ msg }: { msg: Message }) {
           lineHeight: "1.6",
         }}
       >
-        {msg.content}
+        <ReactMarkdown>{msg.content}</ReactMarkdown>
       </div>
     </div>
   );
@@ -105,6 +106,7 @@ export function AIChatPanel() {
   const [messages, setMessages] = useState<Message[]>([WELCOME_MESSAGE]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -147,23 +149,39 @@ export function AIChatPanel() {
     setIsLoading(true);
 
     try {
+      const payload: Record<string, string> = { message: text };
+      if (sessionId) {
+        payload.sessionId = sessionId;
+      }
+
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
 
+      if (!res.ok) {
+        throw new Error(data?.error ?? `Error: ${res.status}`);
+      }
+
+      if (data?.sessionId) {
+        setSessionId(data.sessionId);
+      }
+
       const reply =
+        data?.data?.reply ||
+        data?.data?.message ||
+        data?.data?.content ||
+        data?.reply ||
         data?.message ||
         data?.response ||
         data?.content ||
         data?.text ||
+        (typeof data?.data === "string" ? data.data : null) ||
         (typeof data === "string" ? data : null) ||
-        (res.ok
-          ? "Got it — but the response format was unexpected."
-          : `Error: ${data?.error ?? "Something went wrong"}`);
+        "Got it — but the response format was unexpected.";
 
       const aiMsg: Message = {
         id: `ai-${Date.now()}`,
@@ -176,19 +194,20 @@ export function AIChatPanel() {
         const next = [...prev, aiMsg];
         return next.slice(-MAX_MESSAGES);
       });
-    } catch {
+    } catch (err) {
+      const errorText =
+        err instanceof Error ? err.message : "Something went wrong";
       const errMsg: Message = {
         id: `err-${Date.now()}`,
         role: "assistant",
-        content:
-          "Connection error — couldn't reach the sentiment engine. Try again.",
+        content: `Connection error — ${errorText}. Try again.`,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errMsg]);
     } finally {
       setIsLoading(false);
     }
-  }, [input, isLoading]);
+  }, [input, isLoading, sessionId]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -210,6 +229,81 @@ export function AIChatPanel() {
         }
         .chat-panel-open {
           animation: chat-panel-enter 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+        }
+        .chat-md > *:first-child { margin-top: 0; }
+        .chat-md > *:last-child { margin-bottom: 0; }
+        .chat-md p { margin: 0.4em 0; }
+        .chat-md ul, .chat-md ol { margin: 0.4em 0; padding-left: 1.4em; }
+        .chat-md li { margin: 0.15em 0; }
+        .chat-md li::marker { color: #6B7A8D; }
+        .chat-md strong { color: #FBBF24; font-weight: 600; }
+        .chat-md em { color: #A5B4C8; }
+        .chat-md code {
+          font-family: JetBrains Mono, monospace;
+          font-size: 0.85em;
+          background: #0D0F14;
+          border: 1px solid #2A3040;
+          border-radius: 4px;
+          padding: 0.15em 0.35em;
+          color: #FF4757;
+        }
+        .chat-md pre {
+          margin: 0.5em 0;
+          background: #0D0F14;
+          border: 1px solid #2A3040;
+          border-radius: 6px;
+          padding: 0.6em 0.8em;
+          overflow-x: auto;
+        }
+        .chat-md pre code {
+          background: none;
+          border: none;
+          padding: 0;
+          color: #E8ECF1;
+          font-size: 0.8em;
+        }
+        .chat-md h1, .chat-md h2, .chat-md h3, .chat-md h4 {
+          font-family: Space Grotesk, system-ui, sans-serif;
+          color: #E8ECF1;
+          margin: 0.6em 0 0.3em;
+          line-height: 1.3;
+        }
+        .chat-md h1 { font-size: 1.15em; }
+        .chat-md h2 { font-size: 1.05em; }
+        .chat-md h3 { font-size: 0.95em; }
+        .chat-md blockquote {
+          margin: 0.4em 0;
+          padding-left: 0.8em;
+          border-left: 2px solid #FF4757;
+          color: #A5B4C8;
+        }
+        .chat-md hr {
+          border: none;
+          border-top: 1px solid #2A3040;
+          margin: 0.6em 0;
+        }
+        .chat-md a {
+          color: #FF4757;
+          text-decoration: underline;
+          text-underline-offset: 2px;
+        }
+        .chat-md a:hover { color: #ff6b78; }
+        .chat-md table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 0.4em 0;
+          font-size: 0.85em;
+        }
+        .chat-md th, .chat-md td {
+          border: 1px solid #2A3040;
+          padding: 0.3em 0.5em;
+          text-align: left;
+        }
+        .chat-md th {
+          background: #0D0F14;
+          font-family: Space Grotesk, system-ui, sans-serif;
+          font-weight: 600;
+          color: #E8ECF1;
         }
       `}</style>
 
