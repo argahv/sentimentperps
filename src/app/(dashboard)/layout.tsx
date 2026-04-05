@@ -14,6 +14,7 @@ import {
   LogOut,
   Copy,
   Check,
+  History,
 } from "lucide-react";
 import { DepositBridgeModal } from "@/components/ui/DepositBridgeModal";
 import { AIChatPanel } from "@/components/ui/AIChatPanel";
@@ -27,6 +28,7 @@ import { sendPageview } from "@/lib/fuul";
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/trade", label: "Trade", icon: TrendingUp },
+  { href: "/transactions", label: "History", icon: History },
   { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
   { href: "/profile", label: "Profile", icon: User },
   { href: "/referral", label: "Referral", icon: Gift },

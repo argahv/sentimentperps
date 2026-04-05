@@ -23,7 +23,7 @@ interface PositionsSidebarProps {
 }
 
 export function PositionsSidebar({ onClosePosition, onCancelOrder }: PositionsSidebarProps) {
-  const { positions, openOrders, closedPositions, isLoading } = usePositionsStore();
+  const { positions, openOrders, closedPositions, isLoading, historyError } = usePositionsStore();
   const totalPnl = usePositionsStore((s) => s.getTotalUnrealizedPnl());
   const [closingId, setClosingId] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
@@ -298,11 +298,17 @@ export function PositionsSidebar({ onClosePosition, onCancelOrder }: PositionsSi
       ) : activeTab === 'triggers' ? (
         <ActiveTriggers />
       ) : (
-        (!closedPositions || closedPositions.length === 0) ? (
-          <div className="py-6 text-center text-xs text-muted-foreground">
-            No trade history yet
-          </div>
-        ) : (
+        <>
+          {historyError && (
+            <div className="px-3 py-2 text-[10px] text-warning bg-warning/10 border border-warning/20 rounded-md">
+              {historyError}
+            </div>
+          )}
+          {(!closedPositions || closedPositions.length === 0) ? (
+            <div className="py-6 text-center text-xs text-muted-foreground">
+              {historyError ? "Unable to load trade history" : "No trade history yet"}
+            </div>
+          ) : (
           <div className="flex flex-col gap-2">
             {closedPositions.map((pos) => {
               const isLong = pos.side === "long";
@@ -357,7 +363,8 @@ export function PositionsSidebar({ onClosePosition, onCancelOrder }: PositionsSi
               );
             })}
           </div>
-        )
+        )}
+        </>
       )}
     </div>
   );

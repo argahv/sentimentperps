@@ -201,7 +201,7 @@ export default function TradeContent() {
           </div>
         </div>
 
-        <div className="flex w-full shrink-0 flex-col gap-3 lg:w-[340px] xl:w-[380px] lg:sticky lg:top-4 lg:max-h-[calc(100dvh-88px)] lg:gap-4 lg:overflow-y-auto">
+        <div className="flex w-full shrink-0 flex-col gap-3 lg:w-[340px] xl:w-[380px] lg:sticky lg:top-20 lg:gap-4 lg:overflow-y-auto max-h-screen">
           <div
             className="card-entrance"
             style={{ animationDelay: `calc(4 * var(--stagger-base))` }}

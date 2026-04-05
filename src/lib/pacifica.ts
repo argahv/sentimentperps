@@ -14,6 +14,10 @@ import type {
   PacificaOrder,
   PacificaPositionsResponse,
   PacificaOrdersResponse,
+  PacificaTradeHistoryResponse,
+  PacificaOrderHistoryResponse,
+  PacificaFundingHistoryResponse,
+  PacificaPortfolioResponse,
 } from "@/types/pacifica";
 
 const PACIFICA_BASE_URL =
@@ -350,4 +354,65 @@ export async function getKlines(
   const arr = json.data ?? json;
   if (!Array.isArray(arr)) throw new Error("Unexpected kline response shape");
   return arr as PacificaKline[];
+}
+
+export async function getTradeHistory(
+  account: string,
+  opts: { symbol?: string; start_time?: number; end_time?: number; limit?: number; cursor?: string } = {},
+): Promise<PacificaTradeHistoryResponse> {
+  const params = new URLSearchParams({ account });
+  if (opts.symbol) params.set("symbol", opts.symbol);
+  if (opts.start_time) params.set("start_time", String(opts.start_time));
+  if (opts.end_time) params.set("end_time", String(opts.end_time));
+  if (opts.limit) params.set("limit", String(opts.limit));
+  if (opts.cursor) params.set("cursor", opts.cursor);
+
+  const res = await fetch(`${PACIFICA_BASE_URL}/trades/history?${params}`, {
+    next: { revalidate: 0 },
+  });
+  if (!res.ok) throw new Error(`Pacifica trades/history failed: ${res.status}`);
+  return res.json();
+}
+
+export async function getOrderHistory(
+  account: string,
+  opts: { limit?: number; cursor?: string } = {},
+): Promise<PacificaOrderHistoryResponse> {
+  const params = new URLSearchParams({ account });
+  if (opts.limit) params.set("limit", String(opts.limit));
+  if (opts.cursor) params.set("cursor", opts.cursor);
+
+  const res = await fetch(`${PACIFICA_BASE_URL}/orders/history?${params}`, {
+    next: { revalidate: 0 },
+  });
+  if (!res.ok) throw new Error(`Pacifica orders/history failed: ${res.status}`);
+  return res.json();
+}
+
+export async function getFundingHistory(
+  account: string,
+  opts: { limit?: number; cursor?: string } = {},
+): Promise<PacificaFundingHistoryResponse> {
+  const params = new URLSearchParams({ account });
+  if (opts.limit) params.set("limit", String(opts.limit));
+  if (opts.cursor) params.set("cursor", opts.cursor);
+
+  const res = await fetch(`${PACIFICA_BASE_URL}/funding/history?${params}`, {
+    next: { revalidate: 0 },
+  });
+  if (!res.ok) throw new Error(`Pacifica funding/history failed: ${res.status}`);
+  return res.json();
+}
+
+export async function getPortfolio(
+  account: string,
+  timeRange: "1d" | "7d" | "14d" | "30d" | "all" = "30d",
+): Promise<PacificaPortfolioResponse> {
+  const params = new URLSearchParams({ account, time_range: timeRange });
+
+  const res = await fetch(`${PACIFICA_BASE_URL}/portfolio?${params}`, {
+    next: { revalidate: 0 },
+  });
+  if (!res.ok) throw new Error(`Pacifica portfolio failed: ${res.status}`);
+  return res.json();
 }

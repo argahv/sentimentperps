@@ -428,7 +428,7 @@ export default function ReferralContent() {
         </div>
 
         <div
-          className="w-full lg:w-[300px] xl:w-[320px] shrink-0 flex flex-col gap-3 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-88px)] lg:overflow-y-auto card-entrance"
+          className="w-full lg:w-[300px] xl:w-[320px] shrink-0 flex flex-col gap-3 lg:sticky lg:top-20 lg:overflow-y-auto max-h-screen card-entrance"
           style={{ animationDelay: "calc(2 * var(--stagger-base))" }}
         >
           <div className="card-entrance" style={{ animationDelay: "calc(6 * var(--stagger-base))" }}>

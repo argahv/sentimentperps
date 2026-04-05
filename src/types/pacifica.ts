@@ -200,3 +200,85 @@ export interface PacificaTpSlRequest {
   take_profit?: PacificaTpSlLevel;
   stop_loss?: PacificaTpSlLevel;
 }
+
+// ─── History / Analytics types ──────────────────────────────────────────────
+
+/** A single fill from GET /api/v1/trades/history */
+export interface PacificaTradeFill {
+  history_id: number;
+  order_id: number;
+  client_order_id: string;
+  symbol: string;
+  amount: string;
+  price: string;
+  entry_price: string;
+  fee: string;
+  pnl: string;
+  event_type: "fulfill_taker" | "fulfill_maker";
+  side: "open_long" | "open_short" | "close_long" | "close_short";
+  created_at: number;
+  cause: "normal" | "market_liquidation" | "backstop_liquidation" | "settlement";
+}
+
+export interface PacificaTradeHistoryResponse {
+  success: boolean;
+  data: PacificaTradeFill[];
+  next_cursor: string;
+  has_more: boolean;
+}
+
+/** A historical order from GET /api/v1/orders/history */
+export interface PacificaHistoricalOrder {
+  order_id: number;
+  client_order_id: string;
+  symbol: string;
+  side: PacificaOrderSide;
+  initial_price: string;
+  average_filled_price: string;
+  amount: string;
+  filled_amount: string;
+  order_status: "open" | "partially_filled" | "filled" | "cancelled" | "rejected";
+  order_type: string;
+  stop_price: string | null;
+  reduce_only: boolean;
+  reason: "cancel" | "force_cancel" | "expired" | "post_only_rejected" | "self_trade_prevented" | null;
+  created_at: number;
+  updated_at: number;
+}
+
+export interface PacificaOrderHistoryResponse {
+  success: boolean;
+  data: PacificaHistoricalOrder[];
+  next_cursor: string;
+  has_more: boolean;
+}
+
+/** A funding payment from GET /api/v1/funding/history */
+export interface PacificaFundingPayment {
+  history_id: number;
+  symbol: string;
+  side: PacificaOrderSide;
+  amount: string;
+  payout: string;
+  rate: string;
+  created_at: number;
+}
+
+export interface PacificaFundingHistoryResponse {
+  success: boolean;
+  data: PacificaFundingPayment[];
+  next_cursor: string;
+  has_more: boolean;
+}
+
+/** A portfolio equity snapshot from GET /api/v1/portfolio */
+export interface PacificaPortfolioSnapshot {
+  account_equity: string;
+  pnl: string;
+  timestamp: number;
+}
+
+export interface PacificaPortfolioResponse {
+  success: boolean;
+  data: PacificaPortfolioSnapshot[];
+}

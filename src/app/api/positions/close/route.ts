@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { evaluateAndPersist } from "@/lib/badges";
 
 export async function POST(request: Request) {
   try {
@@ -12,6 +14,7 @@ export async function POST(request: Request) {
       signature,
       timestamp,
       expiry_window,
+      positionMeta,
     } = body;
     if (!symbol || !side || !amount) {
       return NextResponse.json(
@@ -48,6 +51,47 @@ export async function POST(request: Request) {
         expiry_window,
       },
     );
+
+    if (positionMeta) {
+      const { entryPrice, markPrice, leverage, pnlUsdc, direction } = positionMeta;
+      const pnlPct =
+        entryPrice > 0
+          ? ((markPrice - entryPrice) / entryPrice) * 100 *
+            (direction === "long" ? 1 : -1)
+          : 0;
+
+      const minutesAfterSignal = positionMeta.minutesAfterSignal ?? 5;
+      const sentimentAligned = positionMeta.sentimentAligned ?? true;
+      const score =
+        minutesAfterSignal > 0 && pnlPct > 0
+          ? Math.round(pnlPct * (1 / minutesAfterSignal) * 100) / 100
+          : 0;
+
+      try {
+        await prisma.trade.create({
+          data: {
+            walletAddress,
+            symbol,
+            direction: direction ?? (side === "ask" ? "long" : "short"),
+            leverage: leverage ?? 1,
+            size: Number(amount),
+            entryPrice,
+            exitPrice: markPrice,
+            pnlUsdc: pnlUsdc ?? 0,
+            pnlPct,
+            sentimentScoreAtEntry: positionMeta.sentimentScoreAtEntry ?? 0,
+            minutesAfterSignal,
+            sentimentAligned,
+            score,
+            closedAt: new Date(),
+          },
+        });
+
+        await evaluateAndPersist(walletAddress, score).catch(() => {});
+      } catch (dbErr) {
+        console.error("[positions/close] DB persist failed (non-blocking):", dbErr);
+      }
+    }
 
     return NextResponse.json({ order });
   } catch (error) {

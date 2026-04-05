@@ -7,6 +7,7 @@ interface PositionsState {
   openOrders: PacificaOrder[];
   isLoading: boolean;
   error: string | null;
+  historyError: string | null;
 
   setPositions: (positions: PacificaPosition[]) => void;
   setClosedPositions: (positions: PacificaPosition[]) => void;
@@ -14,6 +15,7 @@ interface PositionsState {
   setOpenOrders: (orders: PacificaOrder[]) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+  setHistoryError: (error: string | null) => void;
 
   getTotalUnrealizedPnl: () => number;
   getPositionByMarket: (marketId: string) => PacificaPosition | undefined;
@@ -25,6 +27,7 @@ export const usePositionsStore = create<PositionsState>((set, get) => ({
   openOrders: [],
   isLoading: false,
   error: null,
+  historyError: null,
 
   setPositions: (positions) => set({ positions }),
   setClosedPositions: (positions) => set({ closedPositions: positions }),
@@ -32,6 +35,7 @@ export const usePositionsStore = create<PositionsState>((set, get) => ({
   setOpenOrders: (orders) => set({ openOrders: orders }),
   setLoading: (loading) => set({ isLoading: loading }),
   setError: (error) => set({ error }),
+  setHistoryError: (error) => set({ historyError: error }),
 
   getTotalUnrealizedPnl: () =>
     get().positions.reduce((sum, p) => sum + p.unrealized_pnl, 0),
