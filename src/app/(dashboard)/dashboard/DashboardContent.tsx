@@ -16,6 +16,7 @@ import { TrendingNarratives } from "@/components/ui/TrendingNarratives";
 import { SentimentReplay } from "@/components/ui/SentimentReplay";
 import { DashboardHeroStats } from "@/components/ui/DashboardHeroStats";
 import { RecentWinsFeed } from "@/components/ui/RecentWinsFeed";
+import { QuestBoard } from "@/components/ui/QuestBoard";
 import { LogIn, ChevronDown, Crosshair } from "lucide-react";
 
 const TICKER_SYMBOLS = ["BTC", "ETH", "SOL", "DOGE", "ARB", "AVAX"];
@@ -88,6 +89,9 @@ export default function DashboardContent() {
           </div>
           <div className="card-entrance" style={{ animationDelay: "calc(2.8 * var(--stagger-base))" }}>
             <DivergenceAlerts />
+          </div>
+          <div className="card-entrance" style={{ animationDelay: "calc(3.3 * var(--stagger-base))" }}>
+            <QuestBoard />
           </div>
           <div className="card-entrance" style={{ animationDelay: "calc(3.8 * var(--stagger-base))" }}>
             <RecentWinsFeed />

@@ -12,11 +12,19 @@ import type { TradeDirection } from "@/types/app";
 
 const LEVERAGE_OPTIONS = [1, 2, 5, 10, 20] as const;
 
-function getSuggestedLeverage(score: number, sentiment: "positive" | "negative"): number {
+function getSuggestedLeverage(
+  score: number,
+  sentiment: "positive" | "negative",
+  existingPositionCount: number,
+  totalMarginUsed: number,
+): number {
   const confidence = sentiment === "positive" ? score : 100 - score;
-  if (confidence >= 80) return 10;
-  if (confidence >= 70) return 5;
-  return 2;
+  const baseLeverage = confidence >= 80 ? 10 : confidence >= 70 ? 5 : 2;
+
+  const positionPenalty = existingPositionCount >= 5 ? 2 : existingPositionCount >= 3 ? 1 : 0;
+  const marginPenalty = totalMarginUsed >= 500 ? 2 : totalMarginUsed >= 200 ? 1 : 0;
+
+  return Math.max(1, baseLeverage - positionPenalty - marginPenalty);
 }
 
 interface OrderFormProps {
@@ -78,7 +86,8 @@ export function OrderForm({
   const currentSentiment = card?.sentimentScore ?? sentimentScore ?? 50;
 
   const positions = usePositionsStore((s) => s.positions);
-  const avgSize = positions.length > 0 ? positions.reduce((s, p) => s + p.margin, 0) / Math.min(positions.length, 10) : 0;
+  const totalMarginUsed = positions.reduce((s, p) => s + p.margin, 0);
+  const avgSize = positions.length > 0 ? totalMarginUsed / Math.min(positions.length, 10) : 0;
 
   const getMarketBySymbol = useMarketsStore((s) => s.getMarketBySymbol);
   const market = marketId ? getMarketBySymbol(marketId) : undefined;
@@ -146,7 +155,7 @@ export function OrderForm({
 
   const suggestedLeverage =
     hasSuggestion && sentimentScore !== undefined
-      ? getSuggestedLeverage(sentimentScore, sentimentLabel as "positive" | "negative")
+      ? getSuggestedLeverage(sentimentScore, sentimentLabel as "positive" | "negative", positions.length, totalMarginUsed)
       : null;
 
   const confidence =

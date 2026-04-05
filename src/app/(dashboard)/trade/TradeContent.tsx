@@ -34,6 +34,18 @@ export default function TradeContent() {
   const { refetch: refetchPositions } = usePositions(walletAddress, null, 15_000);
   const { candles, markers, currentPrice, priceChange, priceChangePct, isLive } = usePriceData(symbol);
 
+  const sentimentOverlay = useMemo(() => {
+    if (!candles.length || !tokenCard) return undefined;
+    const score = tokenCard.sentimentScore;
+    const len = candles.length;
+    return candles.map((c, i) => {
+      const progress = len > 1 ? i / (len - 1) : 1;
+      const eased = 1 - Math.pow(1 - progress, 2);
+      const value = 50 + (score - 50) * eased + (Math.sin(i * 0.15) * 3);
+      return { time: c.time, value: Math.max(0, Math.min(100, value)) };
+    });
+  }, [candles, tokenCard]);
+
   useSentimentPolling(30_000);
 
   const [autoTradeEnabled, setAutoTradeEnabled] = useState(false);
@@ -173,7 +185,7 @@ export default function TradeContent() {
             className="card-entrance"
             style={{ animationDelay: `calc(1 * var(--stagger-base))` }}
           >
-            <PriceChart data={candles} markers={markers} symbol={symbol} height={480} isLive={isLive} />
+            <PriceChart data={candles} sentimentData={sentimentOverlay} markers={markers} symbol={symbol} height={480} isLive={isLive} />
           </div>
 
           <div

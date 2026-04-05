@@ -111,12 +111,14 @@ Animations: duration-150/200 ease-out (snappy, mechanical — never bouncy)
 ```
 
 **Shadow system** (neumorphic dual-shadow):
+
 - `shadow-neu` — Default card depth (6px dark + 6px light offset)
 - `shadow-neu-hover` — Elevated hover state (10px + inset highlight)
 - `shadow-neu-inset` — Recessed/pressed elements (inset 3px)
 - `shadow-neu-inset-deep` — Deep inset for active/pressed states (inset 5px)
 
 **Utility classes** (defined in `globals.css`):
+
 - `swiss-card` / `flat-card` / `neu-card` — Card containers with neumorphic shadows + border
 - `swiss-btn-accent` — Primary CTA (bg-primary, neumorphic shadow, active:translate-y-[1px])
 - `swiss-btn-outline` — Secondary button (border, hover inverts with shadow)
@@ -142,19 +144,12 @@ All new UI must follow the Dark Industrial Skeuomorphism style — neumorphic ca
 - **Position close side flip**: `long → ask`, `short → bid`. Easy to reverse. Always test.
 - **Leaderboard data is seeded demo data** — not connected to a real backend yet.
 - **Price chart candles are synthetic** (seeded PRNG) — not live market data.
-- **Stop-loss/take-profit fields exist in forms but are NOT submitted** to Pacifica yet.
-- **Sentiment triggers fire notifications but do NOT auto-execute trades.**
 - **Multiple `useMarkets()` mounts can spawn duplicate polling intervals.**
-- **No React error boundaries** — a single component crash takes down the dashboard.
 
 ## WIP / Incomplete Features
 
-- Badge awarding logic (types defined, not earned)
-- Referral system (store exists, no full UI)
-- Auto-trade execution from sentiment triggers
 - Live chart data (currently synthetic)
 - State persistence (localStorage/backend)
-- Error boundaries
 
 ## Premium UX Standards
 
@@ -169,3 +164,5 @@ This app targets a premium trading experience. Every interaction should feel pol
 
 Always make sure its ready for hackathon, and that it follows the guidelines in AGENTS.md upate .agents for anything related to hackathon. MUST always remeber to use Fuul Rhinofi ,PRIVY,PACIFICA,ELFA where relevant, they should all be implemented where needed as its for hackathon, use relevant skills where needed.
 REMEMBER I need it complete by 14th of April 2026
+
+Upon completion of each session, summarize and save the work done, and update the logs to ai-sessions.md
