@@ -220,10 +220,20 @@ export function PositionsSidebar({ onClosePosition, onCancelOrder }: PositionsSi
           <div className="flex flex-col gap-2">
             {openOrders.map((order) => {
               const isBid = order.side === "bid";
-              const remaining = (
-                parseFloat(order.initial_amount) - parseFloat(order.filled_amount || "0")
-              ).toFixed(4);
+              const isStopOrder = order.order_type.includes("take_profit") || order.order_type.includes("stop_loss");
+              const isTp = order.order_type.includes("take_profit");
+              const displayPrice = isStopOrder && order.stop_price
+                ? parseFloat(order.stop_price)
+                : parseFloat(order.price);
+              const initialAmt = parseFloat(order.initial_amount) || 0;
+              const filledAmt = parseFloat(order.filled_amount || "0");
+              const remaining = (initialAmt - filledAmt).toFixed(4);
               const isCancelling = cancellingId === order.order_id;
+
+              let typeLabel = order.order_type;
+              if (isTp) typeLabel = "TP";
+              else if (order.order_type.includes("stop_loss")) typeLabel = "SL";
+              else if (order.order_type === "limit") typeLabel = "limit";
 
               return (
                 <div
@@ -243,7 +253,7 @@ export function PositionsSidebar({ onClosePosition, onCancelOrder }: PositionsSi
                     <div className="flex flex-col">
                       <span className="text-sm font-medium">{order.symbol}</span>
                       <span className="text-[10px] text-muted-foreground tabular-nums">
-                        {order.order_type} · {remaining} remaining
+                        {typeLabel}{isStopOrder ? "" : ` · ${remaining} remaining`}
                       </span>
                     </div>
                   </div>
@@ -251,11 +261,18 @@ export function PositionsSidebar({ onClosePosition, onCancelOrder }: PositionsSi
                   <div className="flex items-center gap-2">
                     <div className="flex flex-col items-end">
                       <span className="tabular-nums text-sm font-medium">
-                        ${parseFloat(order.price).toFixed(2)}
+                        {displayPrice > 0 ? `$${displayPrice.toFixed(2)}` : "—"}
                       </span>
-                      <span className="text-[10px] text-muted-foreground tabular-nums">
-                        {order.filled_amount || "0"} / {order.initial_amount}
-                      </span>
+                      {!isStopOrder && (
+                        <span className="text-[10px] text-muted-foreground tabular-nums">
+                          {order.filled_amount || "0"} / {order.initial_amount}
+                        </span>
+                      )}
+                      {isStopOrder && (
+                        <span className={`text-[10px] font-medium ${isTp ? "text-success" : "text-danger"}`}>
+                          {isTp ? "Take Profit" : "Stop Loss"}
+                        </span>
+                      )}
                     </div>
 
                     {onCancelOrder && (

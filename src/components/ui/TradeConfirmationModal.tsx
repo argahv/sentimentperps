@@ -221,7 +221,7 @@ export function TradeConfirmationModal({
         </div>
 
         <p className="mb-4 text-center text-[10px] text-muted-foreground">
-          0.05% builder fee via SENTPERPS
+          Powered by Pacifica Exchange
         </p>
 
         <div className="grid grid-cols-2 gap-2">

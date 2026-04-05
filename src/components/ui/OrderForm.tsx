@@ -97,11 +97,24 @@ export function OrderForm({
 
   const sizeNum = Number(size);
   const belowMin = size !== "" && sizeNum > 0 && sizeNum < minOrderUsdc;
-  const isOrderValid = !!marketId && size !== "" && sizeNum >= minOrderUsdc;
   const isTriggerValid = size !== "" && sizeNum > 0;
 
   const tpNum = takeProfit ? Number(takeProfit) : undefined;
   const slNum = stopLoss ? Number(stopLoss) : undefined;
+
+  // TP/SL validation — long: TP > price, SL < price; short: TP < price, SL > price
+  const tpError = tpNum !== undefined && currentPrice
+    ? direction === "long"
+      ? tpNum <= currentPrice ? `TP must be above $${currentPrice.toLocaleString()}` : null
+      : tpNum >= currentPrice ? `TP must be below $${currentPrice.toLocaleString()}` : null
+    : null;
+  const slError = slNum !== undefined && currentPrice
+    ? direction === "long"
+      ? slNum >= currentPrice ? `SL must be below $${currentPrice.toLocaleString()}` : null
+      : slNum <= currentPrice ? `SL must be above $${currentPrice.toLocaleString()}` : null
+    : null;
+  const hasTpSlError = tpError !== null || slError !== null;
+  const isOrderValid = !!marketId && size !== "" && sizeNum >= minOrderUsdc && !hasTpSlError;
 
   const handleSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -462,8 +475,16 @@ export function OrderForm({
                     onChange={(e) => setTakeProfit(e.target.value)}
                     placeholder="—"
                     disabled={isSubmitting}
-                    className="swiss-input bg-surface px-3 py-2 text-sm placeholder:text-muted disabled:opacity-50 focus:outline-none focus:border-foreground transition-colors"
+                    className={`swiss-input bg-surface px-3 py-2 text-sm placeholder:text-muted disabled:opacity-50 focus:outline-none transition-colors ${
+                      tpError ? "border-danger focus:border-danger" : "focus:border-foreground"
+                    }`}
                   />
+                  {tpError && (
+                    <span className="flex items-center gap-1 text-[10px] text-danger">
+                      <AlertTriangle className="h-3 w-3 shrink-0" />
+                      {tpError}
+                    </span>
+                  )}
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor="stopLoss" className="text-xs text-muted-foreground">
@@ -478,8 +499,16 @@ export function OrderForm({
                     onChange={(e) => setStopLoss(e.target.value)}
                     placeholder="—"
                     disabled={isSubmitting}
-                    className="swiss-input bg-surface px-3 py-2 text-sm placeholder:text-muted disabled:opacity-50 focus:outline-none focus:border-foreground transition-colors"
+                    className={`swiss-input bg-surface px-3 py-2 text-sm placeholder:text-muted disabled:opacity-50 focus:outline-none transition-colors ${
+                      slError ? "border-danger focus:border-danger" : "focus:border-foreground"
+                    }`}
                   />
+                  {slError && (
+                    <span className="flex items-center gap-1 text-[10px] text-danger">
+                      <AlertTriangle className="h-3 w-3 shrink-0" />
+                      {slError}
+                    </span>
+                  )}
                 </div>
               </div>
             )}

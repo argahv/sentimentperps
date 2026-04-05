@@ -21,6 +21,8 @@ interface TradeParams {
   leverage: number;
   price?: number;
   stopPrice?: number;
+  takeProfit?: number;
+  stopLoss?: number;
 }
 
 export interface TradeResult {
@@ -110,6 +112,13 @@ export function useTrade() {
         if (roundedAmount <= 0) throw new Error(`Order size too small for ${params.marketId} (min lot size: ${lotSize})`);
         const amountStr = roundedAmount.toFixed(lotDecimals);
 
+        const tickSize = market.tick_size > 0 ? market.tick_size : 0.1;
+        const tickDecimals = tickSize < 1 ? Math.round(-Math.log10(tickSize)) : 0;
+        const alignPrice = (price: number): string => {
+          const aligned = Math.round(price / tickSize) * tickSize;
+          return aligned.toFixed(tickDecimals);
+        };
+
         let signFields: Record<string, unknown>;
         let signType: string;
 
@@ -122,6 +131,12 @@ export function useTrade() {
             slippage_percent: "0.5",
             reduce_only: false,
           };
+          if (params.takeProfit !== undefined) {
+            signFields.take_profit = { stop_price: alignPrice(params.takeProfit) };
+          }
+          if (params.stopLoss !== undefined) {
+            signFields.stop_loss = { stop_price: alignPrice(params.stopLoss) };
+          }
         } else {
           signType = "create_order";
           signFields = {
@@ -132,6 +147,12 @@ export function useTrade() {
             tif: "GTC" as TimeInForce,
             reduce_only: false,
           };
+          if (params.takeProfit !== undefined) {
+            signFields.take_profit = { stop_price: alignPrice(params.takeProfit) };
+          }
+          if (params.stopLoss !== undefined) {
+            signFields.stop_loss = { stop_price: alignPrice(params.stopLoss) };
+          }
         }
 
         const { walletAddress, signature, timestamp, expiry_window } =
@@ -271,15 +292,23 @@ export function useTrade() {
       stopLoss?: number;
     }) => {
       try {
+        const market = getMarketBySymbol(params.symbol);
+        const tickSize = market?.tick_size && market.tick_size > 0 ? market.tick_size : 0.1;
+        const tickDecimals = tickSize < 1 ? Math.round(-Math.log10(tickSize)) : 0;
+        const alignPrice = (price: number): string => {
+          const aligned = Math.round(price / tickSize) * tickSize;
+          return aligned.toFixed(tickDecimals);
+        };
+
         const tpslData: Record<string, unknown> = {
           symbol: params.symbol,
           side: params.side,
         };
         if (params.takeProfit !== undefined) {
-          tpslData.take_profit = { stop_price: String(params.takeProfit) };
+          tpslData.take_profit = { stop_price: alignPrice(params.takeProfit) };
         }
         if (params.stopLoss !== undefined) {
-          tpslData.stop_loss = { stop_price: String(params.stopLoss) };
+          tpslData.stop_loss = { stop_price: alignPrice(params.stopLoss) };
         }
 
         const { walletAddress: addr, signature, timestamp, expiry_window } =
@@ -289,10 +318,7 @@ export function useTrade() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            symbol: params.symbol,
-            side: params.side,
-            takeProfit: params.takeProfit,
-            stopLoss: params.stopLoss,
+            ...tpslData,
             walletAddress: addr,
             signature,
             timestamp,
@@ -318,7 +344,7 @@ export function useTrade() {
         });
       }
     },
-    [signPayload, addNotification],
+    [signPayload, addNotification, getMarketBySymbol],
   );
 
   const cancelOrder = useCallback(

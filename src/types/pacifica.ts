@@ -96,6 +96,8 @@ export interface PacificaOrderRequest {
   tif: TimeInForce;
   reduce_only: boolean;
   leverage?: number;
+  take_profit?: PacificaTpSlLevel;
+  stop_loss?: PacificaTpSlLevel;
 }
 
 /** Request body for POST /api/v1/orders/create_market — matches Pacifica exactly */
@@ -106,6 +108,8 @@ export interface PacificaMarketOrderRequest {
   slippage_percent: string;
   reduce_only: boolean;
   leverage?: number;
+  take_profit?: PacificaTpSlLevel;
+  stop_loss?: PacificaTpSlLevel;
 }
 
 export interface PacificaOrder {

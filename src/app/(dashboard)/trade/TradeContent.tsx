@@ -30,7 +30,7 @@ export default function TradeContent() {
   const tokenCards = useSentimentStore((s) => s.tokenCards);
   const tokenCard = tokenCards.find((t) => t.symbol === symbol);
 
-  const { ready: tradeReady, isSubmitting, lastError, submitTrade, closePosition, cancelOrder, walletAddress, setTpSl, signPayload } = useTrade();
+  const { ready: tradeReady, isSubmitting, lastError, submitTrade, closePosition, cancelOrder, walletAddress } = useTrade();
   const { refetch: refetchPositions } = usePositions(walletAddress, null, 15_000);
   const { candles, markers, currentPrice, priceChange, priceChangePct, isLive } = usePriceData(symbol);
 
@@ -95,15 +95,12 @@ export default function TradeContent() {
         direction: data.direction,
         size: data.size,
         leverage: data.leverage,
+        takeProfit: data.takeProfit,
+        stopLoss: data.stopLoss,
       });
       refetchPositions();
-
-      if (data.takeProfit !== undefined || data.stopLoss !== undefined) {
-        const tpslSide = data.direction === "long" ? "bid" as const : "ask" as const;
-        setTpSl({ symbol: data.symbol, side: tpslSide, takeProfit: data.takeProfit, stopLoss: data.stopLoss });
-      }
     },
-    [submitTrade, refetchPositions, setTpSl]
+    [submitTrade, refetchPositions]
   );
 
   const handleClosePosition = useCallback(

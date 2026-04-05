@@ -137,7 +137,7 @@ export async function createOrder(
   order: PacificaOrderRequest,
   auth: AuthHeaders & { timestamp: number; expiry_window: number },
 ): Promise<PacificaOrder> {
-  const body = {
+  const body: Record<string, unknown> = {
     account: auth.walletAddress,
     agent_wallet: null,
     signature: auth.signature,
@@ -150,6 +150,8 @@ export async function createOrder(
     tif: order.tif,
     reduce_only: order.reduce_only,
   };
+  if (order.take_profit) body.take_profit = order.take_profit;
+  if (order.stop_loss) body.stop_loss = order.stop_loss;
 
   const res = await fetch(`${PACIFICA_BASE_URL}/orders/create`, {
     method: "POST",
@@ -168,7 +170,7 @@ export async function createMarketOrder(
   order: PacificaMarketOrderRequest,
   auth: AuthHeaders & { timestamp: number; expiry_window: number },
 ): Promise<PacificaOrder> {
-  const body = {
+  const body: Record<string, unknown> = {
     account: auth.walletAddress,
     agent_wallet: null,
     signature: auth.signature,
@@ -180,6 +182,8 @@ export async function createMarketOrder(
     slippage_percent: order.slippage_percent,
     reduce_only: order.reduce_only,
   };
+  if (order.take_profit) body.take_profit = order.take_profit;
+  if (order.stop_loss) body.stop_loss = order.stop_loss;
 
   const res = await fetch(`${PACIFICA_BASE_URL}/orders/create_market`, {
     method: "POST",
@@ -277,8 +281,8 @@ export async function setPositionTpSl(
   params: {
     symbol: string;
     side: "bid" | "ask";
-    takeProfit?: number;
-    stopLoss?: number;
+    take_profit?: { stop_price: string; limit_price?: string; client_order_id?: string };
+    stop_loss?: { stop_price: string; limit_price?: string; client_order_id?: string };
   },
   auth: AuthHeaders & { timestamp: number; expiry_window: number },
 ): Promise<void> {
@@ -292,12 +296,11 @@ export async function setPositionTpSl(
     side: params.side,
   };
 
-  // Pacifica expects TP/SL as objects with stop_price (and optional limit_price)
-  if (params.takeProfit !== undefined) {
-    body.take_profit = { stop_price: String(params.takeProfit) };
+  if (params.take_profit) {
+    body.take_profit = params.take_profit;
   }
-  if (params.stopLoss !== undefined) {
-    body.stop_loss = { stop_price: String(params.stopLoss) };
+  if (params.stop_loss) {
+    body.stop_loss = params.stop_loss;
   }
 
   const res = await fetch(`${PACIFICA_BASE_URL}/positions/tpsl`, {

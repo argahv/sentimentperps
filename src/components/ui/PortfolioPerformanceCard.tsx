@@ -17,8 +17,7 @@ export function PortfolioPerformanceCard() {
   const [timeRange, setTimeRange] = useState<TimeRange>("1D");
   const [history, setHistory] = useState<PnLSnapshot[]>([]);
 
-  const totalMargin = positions.reduce((sum, pos) => sum + pos.margin, 0);
-  const currentTotalValue = totalMargin + getTotalUnrealizedPnl();
+  const currentTotalValue = getTotalUnrealizedPnl();
   
   useEffect(() => {
     setHistory([{ timestamp: Date.now(), value: currentTotalValue }]);
@@ -105,10 +104,10 @@ export function PortfolioPerformanceCard() {
     <div className="flat-card rounded-lg p-6 sm:p-8 card-entrance col-span-full industrial-screws flex flex-col md:flex-row items-start md:items-center justify-between gap-6 overflow-hidden relative">
 
       <div className="flex flex-col z-10">
-        <span className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-1">Total Portfolio Value</span>
+        <span className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-1">Unrealized P&amp;L</span>
         <div className="flex items-baseline gap-3">
-          <h2 className="text-3xl sm:text-4xl font-bold tabular-nums tracking-tight text-foreground">
-            ${currentTotalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          <h2 className={`text-3xl sm:text-4xl font-bold tabular-nums tracking-tight ${currentTotalValue >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
+            {currentTotalValue >= 0 ? '+' : ''}${currentTotalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </h2>
           <span className={`flex items-center text-sm font-semibold tabular-nums px-2 py-1 rounded-full ${isPositive ? 'bg-success-muted text-[var(--color-success)]' : 'bg-danger-muted text-[var(--color-danger)]'}`}>
             {isPositive ? <TrendingUp size={14} className="mr-1" /> : <TrendingDown size={14} className="mr-1" />}

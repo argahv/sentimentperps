@@ -34,6 +34,8 @@ export async function POST(request: Request) {
           amount: String(amount),
           slippage_percent: body.slippage_percent ?? "0.5",
           reduce_only: body.reduce_only ?? false,
+          take_profit: body.take_profit,
+          stop_loss: body.stop_loss,
         },
         auth
       );
@@ -50,6 +52,8 @@ export async function POST(request: Request) {
         amount: String(amount),
         tif: body.tif ?? "GTC",
         reduce_only: body.reduce_only ?? false,
+        take_profit: body.take_profit,
+        stop_loss: body.stop_loss,
       },
       auth
     );
