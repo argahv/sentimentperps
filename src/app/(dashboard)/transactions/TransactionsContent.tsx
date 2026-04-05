@@ -19,6 +19,7 @@ import {
 import type {
   PacificaTradeFill,
   PacificaHistoricalOrder,
+  PacificaFundingPayment,
   PacificaPortfolioSnapshot,
 } from "@/types/pacifica";
 
@@ -458,6 +459,13 @@ export default function TransactionsContent() {
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [ordersError, setOrdersError] = useState<string | null>(null);
 
+  // Funding state
+  const [funding, setFunding] = useState<PacificaFundingPayment[]>([]);
+  const [fundingCursor, setFundingCursor] = useState<string | null>(null);
+  const [fundingHasMore, setFundingHasMore] = useState(false);
+  const [fundingLoading, setFundingLoading] = useState(false);
+  const [fundingError, setFundingError] = useState<string | null>(null);
+
   // Portfolio state
   const [portfolio, setPortfolio] = useState<PacificaPortfolioSnapshot[]>([]);
   const [portfolioLoading, setPortfolioLoading] = useState(false);
@@ -545,6 +553,42 @@ export default function TransactionsContent() {
 
   // ── Fetch portfolio ───────────────────────────────────────────────────
 
+  const fetchFunding = useCallback(
+    async (cursor?: string) => {
+      if (!walletAddress) return;
+      setFundingLoading(true);
+      setFundingError(null);
+      try {
+        const params = new URLSearchParams({
+          account: walletAddress,
+          limit: "50",
+        });
+        if (cursor) params.set("cursor", cursor);
+
+        const res = await fetch(`/api/funding/history?${params}`);
+        if (!res.ok) {
+          const json = await res.json().catch(() => ({}));
+          throw new Error(
+            json.error || `Failed to fetch funding: ${res.status}`,
+          );
+        }
+        const json = await res.json();
+        const newFunding: PacificaFundingPayment[] = json.data ?? [];
+
+        setFunding((prev) => (cursor ? [...prev, ...newFunding] : newFunding));
+        setFundingCursor(json.next_cursor ?? null);
+        setFundingHasMore(json.has_more ?? false);
+      } catch (err) {
+        setFundingError(
+          err instanceof Error ? err.message : "Failed to fetch funding history",
+        );
+      } finally {
+        setFundingLoading(false);
+      }
+    },
+    [walletAddress],
+  );
+
   const fetchPortfolio = useCallback(
     async (range: TimeRange) => {
       if (!walletAddress) return;
@@ -572,6 +616,7 @@ export default function TransactionsContent() {
     // Fetch fills, orders, and portfolio in parallel
     fetchFills();
     fetchOrders();
+    fetchFunding();
     fetchPortfolio(timeRange);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [walletAddress]);
@@ -760,7 +805,16 @@ export default function TransactionsContent() {
           />
         )}
 
-        {activeTab === "funding" && <FundingPlaceholder />}
+        {activeTab === "funding" && (
+          <FundingTable
+            funding={funding}
+            loading={fundingLoading}
+            error={fundingError}
+            hasMore={fundingHasMore}
+            onLoadMore={() => fundingCursor && fetchFunding(fundingCursor)}
+            onRetry={() => fetchFunding()}
+          />
+        )}
       </div>
     </div>
   );
@@ -1075,18 +1129,139 @@ function OrdersTable({
   );
 }
 
-// ─── Funding Placeholder ───────────────────────────────────────────────────
+// ─── Funding Table ─────────────────────────────────────────────────────────
 
-function FundingPlaceholder() {
+function fundingSideBadge(side: "bid" | "ask"): { label: string; cls: string } {
+  return side === "bid"
+    ? { label: "LONG", cls: "bg-success/15 text-success border-success/30" }
+    : { label: "SHORT", cls: "bg-danger/15 text-danger border-danger/30" };
+}
+
+function FundingTable({
+  funding,
+  loading,
+  error,
+  hasMore,
+  onLoadMore,
+  onRetry,
+}: {
+  funding: PacificaFundingPayment[];
+  loading: boolean;
+  error: string | null;
+  hasMore: boolean;
+  onLoadMore: () => void;
+  onRetry: () => void;
+}) {
+  if (error && funding.length === 0) {
+    return <ErrorBanner message={error} onRetry={onRetry} />;
+  }
+
   return (
-    <div className="flat-card industrial-screws rounded-lg flex flex-col items-center justify-center py-20">
-      <span className="led-indicator led-yellow mb-4" />
-      <p className="text-sm font-semibold text-foreground mb-1">
-        Funding History
-      </p>
-      <p className="text-xs text-muted-foreground">
-        Funding payment history coming soon
-      </p>
+    <div className="flat-card industrial-screws rounded-lg overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="border-b border-border bg-surface-muted/50">
+              <th className="px-3 py-3 text-left font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                Date
+              </th>
+              <th className="px-3 py-3 text-left font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                Symbol
+              </th>
+              <th className="px-3 py-3 text-left font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                Side
+              </th>
+              <th className="px-3 py-3 text-right font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                Position Size
+              </th>
+              <th className="px-3 py-3 text-right font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                Rate
+              </th>
+              <th className="px-3 py-3 text-right font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                Payment
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {funding.map((f) => {
+              const badge = fundingSideBadge(f.side);
+              const payout = parseFloat(f.payout) || 0;
+              const rate = parseFloat(f.rate) || 0;
+              return (
+                <tr
+                  key={f.history_id}
+                  className="border-b border-border/50 hover:bg-surface-elevated/50 transition-colors duration-150"
+                >
+                  <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground whitespace-nowrap">
+                    {fmtDateTime(f.created_at)}
+                  </td>
+                  <td className="px-3 py-2.5 font-mono text-xs font-semibold text-foreground">
+                    {f.symbol}
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <span
+                      className={`inline-block px-2 py-0.5 rounded text-[9px] font-mono font-bold border ${badge.cls}`}
+                    >
+                      {badge.label}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2.5 text-right font-mono text-xs">
+                    {fmtCrypto(f.amount)}
+                  </td>
+                  <td className="px-3 py-2.5 text-right font-mono text-xs text-muted-foreground">
+                    {(rate * 100).toFixed(4)}%
+                  </td>
+                  <td
+                    className={`px-3 py-2.5 text-right font-mono text-xs font-semibold ${pnlColor(payout)}`}
+                  >
+                    {payout > 0 ? "+" : ""}
+                    {fmtUsd(payout)}
+                  </td>
+                </tr>
+              );
+            })}
+
+            {loading &&
+              funding.length === 0 &&
+              Array.from({ length: 5 }).map((_, i) => (
+                <SkeletonRow key={`skel-${i}`} cols={6} />
+              ))}
+          </tbody>
+        </table>
+      </div>
+
+      {!loading && funding.length === 0 && !error && (
+        <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+          <Clock className="h-8 w-8 mb-2 opacity-40" />
+          <span className="text-sm">No funding payments yet</span>
+          <span className="text-xs mt-1 opacity-60">
+            Funding payments will appear here when you hold positions
+          </span>
+        </div>
+      )}
+
+      {error && funding.length > 0 && (
+        <ErrorBanner message={error} onRetry={onRetry} />
+      )}
+
+      {(hasMore || (loading && funding.length > 0)) && (
+        <div className="flex justify-center py-4 border-t border-border/50">
+          <button
+            onClick={onLoadMore}
+            disabled={loading}
+            className="swiss-btn-outline flex items-center gap-2 px-5 py-2 text-[10px] font-mono font-bold uppercase tracking-widest disabled:opacity-40"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Loading...
+              </>
+            ) : (
+              "Load More"
+            )}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
