@@ -96,8 +96,6 @@ export interface PacificaOrderRequest {
   tif: TimeInForce;
   reduce_only: boolean;
   leverage?: number;
-  builder_code?: string;
-  max_builder_fee_rate?: number;
 }
 
 /** Request body for POST /api/v1/orders/create_market — matches Pacifica exactly */
@@ -108,8 +106,6 @@ export interface PacificaMarketOrderRequest {
   slippage_percent: string;
   reduce_only: boolean;
   leverage?: number;
-  builder_code?: string;
-  max_builder_fee_rate?: number;
 }
 
 export interface PacificaOrder {
@@ -153,12 +149,6 @@ export interface PacificaOrdersResponse {
   orders: PacificaOrder[];
 }
 
-export interface PacificaAuthPayload {
-  timestamp: number;
-  expiry_window: number;
-  [key: string]: unknown;
-}
-
 export interface PacificaWSMessage {
   type: string;
   channel: string;
@@ -192,9 +182,17 @@ export interface PacificaBuilderInfo {
   total_fees_earned: number;
 }
 
+/** TP/SL price level — Pacifica requires an object, not a flat string */
+export interface PacificaTpSlLevel {
+  stop_price: string;
+  limit_price?: string;
+  client_order_id?: string;
+}
+
 /** Request body for POST /api/v1/positions/tpsl */
 export interface PacificaTpSlRequest {
   symbol: string;
-  take_profit?: string;
-  stop_loss?: string;
+  side: PacificaOrderSide;
+  take_profit?: PacificaTpSlLevel;
+  stop_loss?: PacificaTpSlLevel;
 }

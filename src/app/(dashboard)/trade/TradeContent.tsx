@@ -99,7 +99,8 @@ export default function TradeContent() {
       refetchPositions();
 
       if (data.takeProfit !== undefined || data.stopLoss !== undefined) {
-        setTpSl({ symbol: data.symbol, takeProfit: data.takeProfit, stopLoss: data.stopLoss });
+        const tpslSide = data.direction === "long" ? "bid" as const : "ask" as const;
+        setTpSl({ symbol: data.symbol, side: tpslSide, takeProfit: data.takeProfit, stopLoss: data.stopLoss });
       }
     },
     [submitTrade, refetchPositions, setTpSl]

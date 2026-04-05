@@ -165,4 +165,4 @@ This app targets a premium trading experience. Every interaction should feel pol
 Always make sure its ready for hackathon, and that it follows the guidelines in AGENTS.md upate .agents for anything related to hackathon. MUST always remeber to use Fuul Rhinofi ,PRIVY,PACIFICA,ELFA where relevant, they should all be implemented where needed as its for hackathon, use relevant skills where needed.
 REMEMBER I need it complete by 14th of April 2026
 
-Upon completion of each session, summarize and save the work done, and update the logs to ai-sessions.md
+Upon completion of each session, summarize and save the work done, and update the logs to ../ai-sessions.md

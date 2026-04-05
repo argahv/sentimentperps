@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-export async function DELETE(request: Request) {
+export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { order_id, symbol, walletAddress, signature, timestamp, expiry_window } = body;

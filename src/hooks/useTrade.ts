@@ -9,8 +9,6 @@ import { useMarketsStore } from "@/stores/markets";
 import {
   createSignatureHeader,
   prepareSignatureMessage,
-  BUILDER_CODE,
-  DEFAULT_BUILDER_FEE_RATE,
 } from "@/lib/pacifica";
 import type { TradeDirection } from "@/types/app";
 import type { PacificaOrderSide, TimeInForce } from "@/types/pacifica";
@@ -40,14 +38,17 @@ export function useTrade() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
 
-  // Prefer the Privy embedded wallet for signing: Privy's embedded wallet signs
-  // raw Ed25519 bytes with NO off-chain prefix (unlike external wallets such as
-  // Phantom/Backpack which add the Solana off-chain message prefix before signing).
-  // Pacifica expects raw Ed25519 — so using an external wallet would produce a
-  // "Invalid message" error on every trade.
+  // Prefer the user's external wallet (Phantom, Backpack, etc.) for signing.
+  // Solana signMessage does NOT add an off-chain prefix (unlike Ethereum) — both
+  // Privy embedded and external wallets sign the raw Uint8Array bytes as-is.
+  // Pacifica expects raw Ed25519, which both produce correctly.
+  // By preferring the external wallet, the user sees their own wallet's signing UI
+  // (e.g. Phantom popup) instead of Privy's embedded signing modal.
   const wallet = useMemo(() => {
     if (!wallets.length) return null;
-    return wallets.find((w) => w.standardWallet.name === "Privy") ?? wallets[0];
+    return (
+      wallets.find((w) => w.standardWallet.name !== "Privy") ?? wallets[0]
+    );
   }, [wallets]);
 
   const signPayload = useCallback(
@@ -141,8 +142,6 @@ export function useTrade() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             ...signFields,
-            builder_code: BUILDER_CODE,
-            max_builder_fee_rate: DEFAULT_BUILDER_FEE_RATE,
             isMarket,
             walletAddress,
             signature,
@@ -170,7 +169,7 @@ export function useTrade() {
         setIsSubmitting(false);
       }
     },
-    [privyReady, authenticated, signPayload, addNotification],
+    [privyReady, authenticated, signPayload, addNotification, getMarketBySymbol],
   );
 
   const closePosition = useCallback(
@@ -209,8 +208,6 @@ export function useTrade() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             ...closeSignFields,
-            builder_code: BUILDER_CODE,
-            max_builder_fee_rate: DEFAULT_BUILDER_FEE_RATE,
             walletAddress,
             signature,
             timestamp,
@@ -269,17 +266,21 @@ export function useTrade() {
   const setTpSl = useCallback(
     async (params: {
       symbol: string;
+      side: PacificaOrderSide;
       takeProfit?: number;
       stopLoss?: number;
     }) => {
       try {
         const tpslData: Record<string, unknown> = {
           symbol: params.symbol,
+          side: params.side,
         };
-        if (params.takeProfit !== undefined)
-          tpslData.take_profit = String(params.takeProfit);
-        if (params.stopLoss !== undefined)
-          tpslData.stop_loss = String(params.stopLoss);
+        if (params.takeProfit !== undefined) {
+          tpslData.take_profit = { stop_price: String(params.takeProfit) };
+        }
+        if (params.stopLoss !== undefined) {
+          tpslData.stop_loss = { stop_price: String(params.stopLoss) };
+        }
 
         const { walletAddress: addr, signature, timestamp, expiry_window } =
           await signPayload("set_position_tpsl", tpslData);
@@ -289,6 +290,7 @@ export function useTrade() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             symbol: params.symbol,
+            side: params.side,
             takeProfit: params.takeProfit,
             stopLoss: params.stopLoss,
             walletAddress: addr,
@@ -328,7 +330,7 @@ export function useTrade() {
         await signPayload("cancel_order", cancelSignFields);
 
       const res = await fetch("/api/orders/cancel", {
-        method: "DELETE",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...cancelSignFields,

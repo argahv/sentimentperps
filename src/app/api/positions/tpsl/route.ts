@@ -3,10 +3,13 @@ import { NextResponse } from "next/server";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { symbol, takeProfit, stopLoss, walletAddress, signature, timestamp, expiry_window } = body;
+    const { symbol, side, takeProfit, stopLoss, walletAddress, signature, timestamp, expiry_window } = body;
 
     if (!symbol) {
       return NextResponse.json({ error: "Missing required field: symbol" }, { status: 400 });
+    }
+    if (!side || (side !== "bid" && side !== "ask")) {
+      return NextResponse.json({ error: "Missing or invalid required field: side (bid|ask)" }, { status: 400 });
     }
     if (!walletAddress || !signature) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
@@ -20,7 +23,7 @@ export async function POST(request: Request) {
 
     const { setPositionTpSl } = await import("@/lib/pacifica");
     await setPositionTpSl(
-      { symbol, takeProfit, stopLoss },
+      { symbol, side, takeProfit, stopLoss },
       { walletAddress, signature, timestamp, expiry_window }
     );
 
