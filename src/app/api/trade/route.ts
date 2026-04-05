@@ -24,9 +24,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const auth = { walletAddress, signature, timestamp, expiry_window };
-
     if (isMarket) {
+      const auth = { walletAddress, signature, timestamp, expiry_window };
       const { createMarketOrder } = await import("@/lib/pacifica");
       const order = await createMarketOrder(
         {
@@ -43,6 +42,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ order });
     }
 
+    const auth = { walletAddress, signature, timestamp, expiry_window };
     const { createOrder } = await import("@/lib/pacifica");
     const order = await createOrder(
       {

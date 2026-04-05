@@ -28,6 +28,7 @@ interface OrderFormProps {
   sentimentLabel?: "positive" | "negative" | "neutral";
   sentimentVelocity?: number;
   authenticated?: boolean;
+  onLogin?: () => void;
   autoTradeEnabled?: boolean;
   onAutoTradeToggle?: (enabled: boolean) => void;
   onSubmit?: (data: {
@@ -50,6 +51,7 @@ export function OrderForm({
   sentimentLabel,
   sentimentVelocity,
   authenticated,
+  onLogin,
   autoTradeEnabled,
   onAutoTradeToggle,
   onSubmit,
@@ -481,6 +483,14 @@ export function OrderForm({
             <Bell className="h-4 w-4" />
             Trigger set! Check the Triggers tab below.
           </div>
+        ) : mode === "order" && !authenticated ? (
+          <button
+            type="button"
+            onClick={onLogin}
+            className="swiss-btn-accent flex items-center justify-center gap-2 py-3 text-sm font-semibold text-white transition-all duration-200 bg-primary"
+          >
+            Connect Wallet to Trade
+          </button>
         ) : mode === "order" ? (
           <button
             type="submit"

@@ -871,3 +871,16 @@ td, th {
     transition-duration: 0.01ms !important;
   }
 }
+
+.rhino-widget-reset img,
+.rhino-widget-reset svg,
+.rhino-widget-reset video,
+.rhino-widget-reset canvas {
+  display: inline;
+  vertical-align: middle;
+}
+
+.rhino-widget-reset img,
+.rhino-widget-reset video {
+  max-width: none;
+}

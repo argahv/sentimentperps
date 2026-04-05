@@ -30,7 +30,7 @@ export default function TradeContent() {
   const tokenCards = useSentimentStore((s) => s.tokenCards);
   const tokenCard = tokenCards.find((t) => t.symbol === symbol);
 
-  const { isSubmitting, submitTrade, closePosition, cancelOrder, walletAddress, setTpSl, signPayload } = useTrade();
+  const { ready: tradeReady, isSubmitting, submitTrade, closePosition, cancelOrder, walletAddress, setTpSl, signPayload } = useTrade();
   const { refetch: refetchPositions } = usePositions(walletAddress, null, 15_000);
   const { candles, markers, currentPrice, priceChange, priceChangePct } = usePriceData(symbol);
 
@@ -107,8 +107,8 @@ export default function TradeContent() {
   );
 
   const handleCancelOrder = useCallback(
-    async (orderId: string) => {
-      await cancelOrder(orderId);
+    async (orderId: string, symbol: string) => {
+      await cancelOrder(orderId, symbol);
       refetchPositions();
     },
     [cancelOrder, refetchPositions]
@@ -205,7 +205,8 @@ export default function TradeContent() {
               sentimentScore={tokenCard?.sentimentScore}
               sentimentLabel={tokenCard?.sentiment}
               sentimentVelocity={tokenCard?.velocity}
-              authenticated={authenticated}
+              authenticated={authenticated && tradeReady && !!walletAddress}
+              onLogin={login}
               autoTradeEnabled={autoTradeEnabled}
               onAutoTradeToggle={setAutoTradeEnabled}
             />

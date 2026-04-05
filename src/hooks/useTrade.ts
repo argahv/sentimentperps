@@ -40,11 +40,14 @@ export function useTrade() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
 
-  // Use the first available wallet — don't deprioritize Privy embedded wallets,
-  // since the user's beta access is tied to whichever wallet redeemed the code.
+  // Prefer the Privy embedded wallet for signing: Privy's embedded wallet signs
+  // raw Ed25519 bytes with NO off-chain prefix (unlike external wallets such as
+  // Phantom/Backpack which add the Solana off-chain message prefix before signing).
+  // Pacifica expects raw Ed25519 — so using an external wallet would produce a
+  // "Invalid message" error on every trade.
   const wallet = useMemo(() => {
     if (!wallets.length) return null;
-    return wallets.find((w) => w.standardWallet.name !== "Privy") ?? wallets[0];
+    return wallets.find((w) => w.standardWallet.name === "Privy") ?? wallets[0];
   }, [wallets]);
 
   const signPayload = useCallback(
@@ -106,42 +109,40 @@ export function useTrade() {
         if (roundedAmount <= 0) throw new Error(`Order size too small for ${params.marketId} (min lot size: ${lotSize})`);
         const amountStr = roundedAmount.toFixed(lotDecimals);
 
-        let orderFields: Record<string, unknown>;
+        let signFields: Record<string, unknown>;
         let signType: string;
 
         if (isMarket) {
           signType = "create_market_order";
-          orderFields = {
+          signFields = {
             symbol: params.marketId,
             side: pacificaSide,
             amount: amountStr,
             slippage_percent: "0.5",
             reduce_only: false,
-            builder_code: BUILDER_CODE,
-            max_builder_fee_rate: DEFAULT_BUILDER_FEE_RATE,
           };
         } else {
           signType = "create_order";
-          orderFields = {
+          signFields = {
             symbol: params.marketId,
             side: pacificaSide,
             price: String(params.price),
             amount: amountStr,
             tif: "GTC" as TimeInForce,
             reduce_only: false,
-            builder_code: BUILDER_CODE,
-            max_builder_fee_rate: DEFAULT_BUILDER_FEE_RATE,
           };
         }
 
         const { walletAddress, signature, timestamp, expiry_window } =
-          await signPayload(signType, orderFields);
+          await signPayload(signType, signFields);
 
         const res = await fetch("/api/trade", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            ...orderFields,
+            ...signFields,
+            builder_code: BUILDER_CODE,
+            max_builder_fee_rate: DEFAULT_BUILDER_FEE_RATE,
             isMarket,
             walletAddress,
             signature,
@@ -192,24 +193,24 @@ export function useTrade() {
       try {
         const closeSide: PacificaOrderSide = side === "long" ? "ask" : "bid";
 
-        const closeFields: Record<string, unknown> = {
+        const closeSignFields: Record<string, unknown> = {
           symbol,
           side: closeSide,
           amount: String(size),
           slippage_percent: "0.5",
           reduce_only: true,
-          builder_code: BUILDER_CODE,
-          max_builder_fee_rate: DEFAULT_BUILDER_FEE_RATE,
         };
 
         const { walletAddress, signature, timestamp, expiry_window } =
-          await signPayload("create_market_order", closeFields);
+          await signPayload("create_market_order", closeSignFields);
 
         const res = await fetch("/api/positions/close", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            ...closeFields,
+            ...closeSignFields,
+            builder_code: BUILDER_CODE,
+            max_builder_fee_rate: DEFAULT_BUILDER_FEE_RATE,
             walletAddress,
             signature,
             timestamp,
@@ -319,17 +320,18 @@ export function useTrade() {
   );
 
   const cancelOrder = useCallback(
-    async (orderId: string): Promise<void> => {
+    async (orderId: string, symbol: string): Promise<void> => {
       if (!privyReady || !authenticated) throw new Error("Not authenticated");
 
+      const cancelSignFields = { symbol, order_id: orderId };
       const { walletAddress: addr, signature, timestamp, expiry_window } =
-        await signPayload("cancel_order", { order_id: orderId });
+        await signPayload("cancel_order", cancelSignFields);
 
       const res = await fetch("/api/orders/cancel", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          orderId,
+          ...cancelSignFields,
           walletAddress: addr,
           signature,
           timestamp,

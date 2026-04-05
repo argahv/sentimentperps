@@ -1,6 +1,6 @@
 "use client";
 
-import { usePrivy } from "@privy-io/react-auth";
+import { usePrivy, useActiveWallet } from "@privy-io/react-auth";
 import { useWallets } from "@privy-io/react-auth/solana";
 import { BadgeList } from "@/components/ui/BadgeChip";
 import { usePositionsStore } from "@/stores/positions";
@@ -191,6 +191,7 @@ function SidebarSkeleton() {
 
 export default function ProfileContent() {
   const { login, authenticated, ready: privyReady, user } = usePrivy();
+  const { connect: openWalletDialog, setActiveWallet } = useActiveWallet();
   const { wallets } = useWallets();
   const { positions, closedPositions } = usePositionsStore();
   const [copied, setCopied] = useState(false);
@@ -256,6 +257,10 @@ export default function ProfileContent() {
   const shortAddress = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : null;
   const walletProvider = wallet?.standardWallet?.name ?? "Unknown";
   const isEmbeddedWallet = walletProvider === "Privy";
+
+  useEffect(() => {
+    if (wallet) setActiveWallet(wallet as unknown as Parameters<typeof setActiveWallet>[0]);
+  }, [wallet, setActiveWallet]);
 
   const fetchTrades = useCallback(async () => {
     if (!address) return;
@@ -466,11 +471,12 @@ export default function ProfileContent() {
             </h1>
             {address && (
               <button
-                onClick={handleCopy}
+                onClick={() => openWalletDialog()}
                 className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                title="Manage wallet"
               >
                 <span className="font-mono">{shortAddress}</span>
-                {copied ? <Check className="h-3 w-3 text-success" /> : <Copy className="h-3 w-3" />}
+                <Wallet className="h-3 w-3" />
               </button>
             )}
           </div>
@@ -799,15 +805,20 @@ export default function ProfileContent() {
             </div>
             {address ? (
               <div className="flex flex-col gap-2">
-                <div className="border border-border-muted bg-surface-muted px-3 py-2 flex items-center gap-2">
+                <button
+                  onClick={() => openWalletDialog()}
+                  className="border border-border-muted bg-surface-muted px-3 py-2 flex items-center gap-2 hover:bg-surface-elevated transition-colors text-left w-full"
+                  title="Manage wallet"
+                >
                   <span className="font-mono text-xs text-foreground truncate flex-1">{address}</span>
                   <button
-                    onClick={handleCopy}
+                    onClick={(e) => { e.stopPropagation(); handleCopy(); }}
                     className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                    title="Copy address"
                   >
                     {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
                   </button>
-                </div>
+                </button>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="border border-border-muted bg-surface-muted px-3 py-1.5 flex flex-col">
                     <span className="text-[10px] text-muted-foreground">Provider</span>

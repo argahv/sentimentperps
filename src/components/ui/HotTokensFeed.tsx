@@ -1,13 +1,26 @@
 "use client";
 
 import { useSentimentStore } from "@/stores/sentiment";
+import { useMarketsStore } from "@/stores/markets";
 import { TokenCard } from "./TokenCard";
 import { Flame, Clock, Loader2 } from "lucide-react";
 
 export function HotTokensFeed() {
   const { tokenCards, isLoading, error, lastUpdated } = useSentimentStore();
+  const markets = useMarketsStore((s) => s.markets);
 
-  const hotTokens = [...tokenCards]
+  const tradeableSymbols = new Set(
+    markets.map((m) => {
+      const base = m.symbol.replace(/USDC$/, "").replace(/USD$/, "");
+      return base.toUpperCase();
+    })
+  );
+
+  const tradeableCards = tokenCards.filter((t) =>
+    tradeableSymbols.has(t.symbol.toUpperCase())
+  );
+
+  const hotTokens = [...tradeableCards]
     .sort((a, b) => b.velocity - a.velocity)
     .slice(0, 10);
 
@@ -15,7 +28,7 @@ export function HotTokensFeed() {
   const getIntensity = (velocity: number) =>
     maxVelocity > 0 ? Math.min(velocity / maxVelocity, 1) : 0;
 
-  const risingTokens = [...tokenCards]
+  const risingTokens = [...tradeableCards]
     .filter((t) => t.mentionChange > 50)
     .sort((a, b) => b.mentionChange - a.mentionChange)
     .slice(0, 5);

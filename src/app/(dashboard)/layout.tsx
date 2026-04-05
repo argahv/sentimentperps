@@ -19,7 +19,7 @@ import { DepositBridgeModal } from "@/components/ui/DepositBridgeModal";
 import { AIChatPanel } from "@/components/ui/AIChatPanel";
 import { useMarkets } from "@/hooks/useMarkets";
 import { usePrivyConfigured } from "@/app/providers";
-import { usePrivy } from "@privy-io/react-auth";
+import { usePrivy, useActiveWallet } from "@privy-io/react-auth";
 import { useWallets } from "@privy-io/react-auth/solana";
 import { WalletsDialog } from "@privy-io/react-auth/ui";
 import { sendPageview } from "@/lib/fuul";
@@ -35,32 +35,21 @@ const NAV_ITEMS = [
 function SidebarWallet() {
   const configured = usePrivyConfigured();
   const [copied, setCopied] = useState(false);
-  const [showWallets, setShowWallets] = useState(false);
 
   if (!configured) return null;
 
-  return (
-    <SidebarWalletInner
-      copied={copied}
-      setCopied={setCopied}
-      showWallets={showWallets}
-      setShowWallets={setShowWallets}
-    />
-  );
+  return <SidebarWalletInner copied={copied} setCopied={setCopied} />;
 }
 
 function SidebarWalletInner({
   copied,
   setCopied,
-  showWallets,
-  setShowWallets,
 }: {
   copied: boolean;
   setCopied: (v: boolean) => void;
-  showWallets: boolean;
-  setShowWallets: (v: boolean) => void;
 }) {
   const { login, logout, authenticated, ready } = usePrivy();
+  const { connect: openWalletDialog, setActiveWallet } = useActiveWallet();
   const { wallets } = useWallets();
   const wallet = useMemo(
     () => wallets.find((w) => w.standardWallet.name !== "Privy") ?? wallets[0] ?? null,
@@ -68,6 +57,10 @@ function SidebarWalletInner({
   );
   const address = wallet?.address ?? null;
   const shortAddress = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : null;
+
+  useEffect(() => {
+    if (wallet) setActiveWallet(wallet as unknown as Parameters<typeof setActiveWallet>[0]);
+  }, [wallet, setActiveWallet]);
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -81,44 +74,31 @@ function SidebarWalletInner({
 
   if (authenticated && address) {
     return (
-      <div className="relative">
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={() => setShowWallets(!showWallets)}
-          onKeyDown={(e) => e.key === "Enter" && setShowWallets(!showWallets)}
-          className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 bg-surface-muted border border-border rounded-lg hover:bg-surface-elevated transition-colors"
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => openWalletDialog()}
+        onKeyDown={(e) => e.key === "Enter" && openWalletDialog()}
+        className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 bg-surface-muted border border-border rounded-lg hover:bg-surface-elevated transition-colors"
+      >
+        <Wallet className="h-3.5 w-3.5 text-primary shrink-0" />
+        <span className="font-mono text-[10px] text-foreground truncate">
+          {shortAddress}
+        </span>
+        <button
+          onClick={handleCopy}
+          className="shrink-0 text-muted-foreground hover:text-primary transition-colors"
+          title="Copy address"
         >
-          <Wallet className="h-3.5 w-3.5 text-primary shrink-0" />
-          <span className="font-mono text-[10px] text-foreground truncate">
-            {shortAddress}
-          </span>
-          <button
-            onClick={handleCopy}
-            className="shrink-0 text-muted-foreground hover:text-primary transition-colors"
-            title="Copy address"
-          >
-            {copied ? <Check className="h-3 w-3 text-success" /> : <Copy className="h-3 w-3" />}
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); logout(); }}
-            className="ml-auto shrink-0 text-muted-foreground hover:text-danger transition-colors"
-            title="Disconnect"
-          >
-            <LogOut className="h-3.5 w-3.5" />
-          </button>
-        </div>
-        {showWallets && (
-          <>
-            <div
-              className="fixed inset-0 z-40"
-              onClick={() => setShowWallets(false)}
-            />
-            <div className="absolute bottom-full left-0 right-0 mb-2 z-50 rounded-lg border border-border bg-surface shadow-[var(--shadow-neu)] overflow-hidden">
-              <WalletsDialog />
-            </div>
-          </>
-        )}
+          {copied ? <Check className="h-3 w-3 text-success" /> : <Copy className="h-3 w-3" />}
+        </button>
+        <button
+          onClick={(e) => { e.stopPropagation(); logout(); }}
+          className="ml-auto shrink-0 text-muted-foreground hover:text-danger transition-colors"
+          title="Disconnect"
+        >
+          <LogOut className="h-3.5 w-3.5" />
+        </button>
       </div>
     );
   }
@@ -149,6 +129,7 @@ export default function DashboardLayout({
 
   return (
     <>
+    <WalletsDialog />
     <div className="flex h-full min-h-dvh flex-col md:flex-row bg-background text-foreground">
       <nav className="hidden md:flex md:w-64 md:flex-col md:h-dvh md:sticky md:top-0 bg-surface border-r border-border relative z-10 shadow-[var(--shadow-neu)]">
         <div className="flex h-8 items-center gap-2 px-4 bg-surface-muted border-b border-border shadow-[var(--shadow-neu-inset-sm)]">

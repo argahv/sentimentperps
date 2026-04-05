@@ -47,7 +47,7 @@ function sortPayload(obj: unknown): unknown {
  */
 export function createSignatureHeader(
   type: string,
-  expiryWindow: number = 60_000,
+  expiryWindow: number = 5_000,
 ): { type: string; timestamp: number; expiry_window: number } {
   return {
     type,
@@ -192,6 +192,7 @@ export async function createOrder(
 ): Promise<PacificaOrder> {
   const body = {
     account: auth.walletAddress,
+    agent_wallet: null,
     signature: auth.signature,
     timestamp: auth.timestamp,
     expiry_window: auth.expiry_window,
@@ -201,8 +202,8 @@ export async function createOrder(
     amount: order.amount,
     tif: order.tif,
     reduce_only: order.reduce_only,
-    builder_code: order.builder_code ?? BUILDER_CODE,
-    max_builder_fee_rate: order.max_builder_fee_rate ?? DEFAULT_BUILDER_FEE_RATE,
+    ...(order.builder_code ? { builder_code: order.builder_code } : {}),
+    ...(order.max_builder_fee_rate !== undefined ? { max_builder_fee_rate: order.max_builder_fee_rate } : {}),
   };
 
   const res = await fetch(`${PACIFICA_BASE_URL}/orders/create`, {
@@ -224,6 +225,7 @@ export async function createMarketOrder(
 ): Promise<PacificaOrder> {
   const body = {
     account: auth.walletAddress,
+    agent_wallet: null,
     signature: auth.signature,
     timestamp: auth.timestamp,
     expiry_window: auth.expiry_window,
@@ -232,8 +234,8 @@ export async function createMarketOrder(
     amount: order.amount,
     slippage_percent: order.slippage_percent,
     reduce_only: order.reduce_only,
-    builder_code: order.builder_code ?? BUILDER_CODE,
-    max_builder_fee_rate: order.max_builder_fee_rate ?? DEFAULT_BUILDER_FEE_RATE,
+    ...(order.builder_code ? { builder_code: order.builder_code } : {}),
+    ...(order.max_builder_fee_rate !== undefined ? { max_builder_fee_rate: order.max_builder_fee_rate } : {}),
   };
 
   const res = await fetch(`${PACIFICA_BASE_URL}/orders/create_market`, {
@@ -281,13 +283,16 @@ export async function getOpenOrders(
 
 export async function cancelOrder(
   orderId: string,
-  auth: AuthHeaders & { timestamp: number; expiry_window: number; type: string },
+  symbol: string,
+  auth: AuthHeaders & { timestamp: number; expiry_window: number },
 ): Promise<void> {
   const body = {
     account: auth.walletAddress,
+    agent_wallet: null,
     signature: auth.signature,
     timestamp: auth.timestamp,
     expiry_window: auth.expiry_window,
+    symbol,
     order_id: orderId,
   };
   const res = await fetch(`${PACIFICA_BASE_URL}/orders/cancel`, {
@@ -307,6 +312,7 @@ export async function setPositionTpSl(
 ): Promise<void> {
   const body: Record<string, unknown> = {
     account: auth.walletAddress,
+    agent_wallet: null,
     signature: auth.signature,
     timestamp: auth.timestamp,
     expiry_window: auth.expiry_window,

@@ -3,22 +3,21 @@ import { NextResponse } from "next/server";
 export async function DELETE(request: Request) {
   try {
     const body = await request.json();
-    const { orderId, walletAddress, signature, timestamp, expiry_window } = body;
+    const { order_id, symbol, walletAddress, signature, timestamp, expiry_window } = body;
 
-    if (!orderId || !walletAddress || !signature || !timestamp || !expiry_window) {
+    if (!order_id || !symbol || !walletAddress || !signature || !timestamp || !expiry_window) {
       return NextResponse.json(
-        { error: "Missing required fields: orderId, walletAddress, signature, timestamp, expiry_window" },
+        { error: "Missing required fields: order_id, symbol, walletAddress, signature, timestamp, expiry_window" },
         { status: 400 },
       );
     }
 
     const { cancelOrder } = await import("@/lib/pacifica");
-    await cancelOrder(orderId, {
+    await cancelOrder(order_id, symbol, {
       walletAddress,
       signature,
       timestamp,
       expiry_window,
-      type: "cancel_order",
     });
 
     return NextResponse.json({ success: true });

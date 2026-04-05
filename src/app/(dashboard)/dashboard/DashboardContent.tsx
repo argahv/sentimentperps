@@ -38,8 +38,8 @@ export default function DashboardContent() {
     refetch();
   };
 
-  const handleCancelOrder = async (orderId: string) => {
-    await cancelOrder(orderId);
+  const handleCancelOrder = async (orderId: string, symbol: string) => {
+    await cancelOrder(orderId, symbol);
     refetch();
   };
 

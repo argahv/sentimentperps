@@ -19,7 +19,7 @@ interface PositionsSidebarProps {
     size: number,
     positionMeta?: { entryPrice: number; markPrice: number; leverage: number; pnlUsdc: number }
   ) => Promise<void>;
-  onCancelOrder?: (orderId: string) => Promise<void>;
+  onCancelOrder?: (orderId: string, symbol: string) => Promise<void>;
 }
 
 export function PositionsSidebar({ onClosePosition, onCancelOrder }: PositionsSidebarProps) {
@@ -44,11 +44,11 @@ export function PositionsSidebar({ onClosePosition, onCancelOrder }: PositionsSi
     }
   };
 
-  const handleCancel = async (orderId: string) => {
+  const handleCancel = async (orderId: string, symbol: string) => {
     if (!onCancelOrder) return;
     setCancellingId(orderId);
     try {
-      await onCancelOrder(orderId);
+      await onCancelOrder(orderId, symbol);
     } finally {
       setCancellingId(null);
     }
@@ -260,7 +260,7 @@ export function PositionsSidebar({ onClosePosition, onCancelOrder }: PositionsSi
 
                     {onCancelOrder && (
                       <button
-                        onClick={() => handleCancel(order.order_id)}
+                        onClick={() => handleCancel(order.order_id, order.symbol)}
                         disabled={isCancelling}
                         className="border border-border-muted p-1.5 text-muted-foreground transition-all hover:border-danger hover:text-danger disabled:opacity-50"
                         title="Cancel order"

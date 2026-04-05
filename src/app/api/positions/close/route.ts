@@ -4,23 +4,31 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    const { symbol, side, amount, walletAddress, signature, timestamp, expiry_window } = body;
+    const {
+      symbol,
+      side,
+      amount,
+      walletAddress,
+      signature,
+      timestamp,
+      expiry_window,
+    } = body;
     if (!symbol || !side || !amount) {
       return NextResponse.json(
         { error: "Missing required fields: symbol, side, amount" },
-        { status: 400 }
+        { status: 400 },
       );
     }
     if (!walletAddress || !signature) {
       return NextResponse.json(
         { error: "Authentication required: walletAddress, signature" },
-        { status: 401 }
+        { status: 401 },
       );
     }
     if (!timestamp || !expiry_window) {
       return NextResponse.json(
         { error: "Missing required fields: timestamp, expiry_window" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -35,7 +43,12 @@ export async function POST(request: Request) {
         builder_code: body.builder_code,
         max_builder_fee_rate: body.max_builder_fee_rate,
       },
-      { walletAddress, signature, timestamp, expiry_window }
+      {
+        walletAddress,
+        signature,
+        timestamp,
+        expiry_window,
+      },
     );
 
     return NextResponse.json({ order });
