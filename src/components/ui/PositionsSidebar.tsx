@@ -190,7 +190,7 @@ export function PositionsSidebar({ onClosePosition, onCancelOrder }: PositionsSi
                       <button
                         onClick={() => handleClose(pos.position_id, pos.symbol, pos.side, pos.size)}
                         disabled={isClosing}
-                        className="border border-border-muted p-1.5 text-muted-foreground transition-all hover:border-danger hover:text-danger disabled:opacity-50"
+                        className="border border-border-muted min-h-[44px] min-w-[44px] flex items-center justify-center text-muted-foreground transition-all hover:border-danger hover:text-danger disabled:opacity-50"
                         title="Close position"
                       >
                         {isClosing ? (
@@ -262,7 +262,7 @@ export function PositionsSidebar({ onClosePosition, onCancelOrder }: PositionsSi
                       <button
                         onClick={() => handleCancel(order.order_id, order.symbol)}
                         disabled={isCancelling}
-                        className="border border-border-muted p-1.5 text-muted-foreground transition-all hover:border-danger hover:text-danger disabled:opacity-50"
+                        className="border border-border-muted min-h-[44px] min-w-[44px] flex items-center justify-center text-muted-foreground transition-all hover:border-danger hover:text-danger disabled:opacity-50"
                         title="Cancel order"
                       >
                         {isCancelling ? (

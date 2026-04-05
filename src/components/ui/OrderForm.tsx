@@ -24,6 +24,7 @@ interface OrderFormProps {
   marketId: string | null;
   currentPrice?: number;
   isSubmitting?: boolean;
+  lastError?: string | null;
   sentimentScore?: number;
   sentimentLabel?: "positive" | "negative" | "neutral";
   sentimentVelocity?: number;
@@ -47,6 +48,7 @@ export function OrderForm({
   marketId,
   currentPrice,
   isSubmitting,
+  lastError,
   sentimentScore,
   sentimentLabel,
   sentimentVelocity,
@@ -329,6 +331,7 @@ export function OrderForm({
             type="button"
             onClick={() => setDirection("long")}
             disabled={isSubmitting}
+            aria-pressed={direction === "long"}
             className={`relative z-10 py-2 text-sm font-semibold transition-all ${
               direction === "long"
                 ? "border border-border-muted text-white"
@@ -341,6 +344,7 @@ export function OrderForm({
             type="button"
             onClick={() => setDirection("short")}
             disabled={isSubmitting}
+            aria-pressed={direction === "short"}
             className={`relative z-10 py-2 text-sm font-semibold transition-all ${
               direction === "short"
                 ? "border border-border-muted text-white"
@@ -401,6 +405,7 @@ export function OrderForm({
                 type="button"
                 onClick={() => setLeverage(lev)}
                 disabled={isSubmitting}
+                aria-pressed={leverage === lev}
                 className={`flex-1 py-1.5 text-xs font-medium transition-all ${
                   leverage === lev
                     ? "border border-border-muted bg-primary text-white"
@@ -470,6 +475,13 @@ export function OrderForm({
               </div>
             )}
           </>
+        )}
+
+        {mode === "order" && lastError && (
+          <div className="flex items-center gap-2 rounded-md border border-danger/30 bg-danger/10 px-3 py-2">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-danger" />
+            <span className="text-xs text-danger">{lastError}</span>
+          </div>
         )}
 
         {mode === "order" && !marketId && (

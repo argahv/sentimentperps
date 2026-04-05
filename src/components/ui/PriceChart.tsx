@@ -41,13 +41,14 @@ interface PriceChartProps {
   markers?: ChartMarker[];
   height?: number;
   symbol?: string;
+  isLive?: boolean;
 }
 
 function toLWCTime(ts: number): Time {
   return (ts / 1000) as Time;
 }
 
-export function PriceChart({ data, sentimentData, markers, height = 400, symbol }: PriceChartProps) {
+export function PriceChart({ data, sentimentData, markers, height = 400, symbol, isLive }: PriceChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick", Time> | null>(null);
@@ -208,6 +209,10 @@ export function PriceChart({ data, sentimentData, markers, height = 400, symbol 
             <span className="text-sm font-semibold text-foreground/60">{symbol}/USDC</span>
             <span className="bg-surface-elevated rounded-full px-1.5 py-0.5 text-[10px] text-muted-foreground">
               PERP
+            </span>
+            <span className={`flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${isLive ? "bg-success/15 text-success" : "bg-warning/15 text-warning"}`}>
+              <span className={`inline-block h-1.5 w-1.5 rounded-full ${isLive ? "led-green animate-pulse" : "bg-warning"}`} />
+              {isLive ? "LIVE" : "SYNTHETIC"}
             </span>
           </div>
         ) : <div />}

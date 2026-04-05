@@ -56,12 +56,18 @@ function signalsToTokenCards(signals: SentimentSignal[]): TokenCardData[] {
 }
 
 export function useSentimentPolling(intervalMs: number = 180_000) {
-  const { setSignals, setTokenCards, setLoading, setError } = useSentimentStore();
+  const hasFetchedRef = useRef(false);
+  const setSignals = useSentimentStore((s) => s.setSignals);
+  const setTokenCards = useSentimentStore((s) => s.setTokenCards);
+  const setLoading = useSentimentStore((s) => s.setLoading);
+  const setError = useSentimentStore((s) => s.setError);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchSentiment = useCallback(async () => {
     try {
-      setLoading(true);
+      if (!hasFetchedRef.current) {
+        setLoading(true);
+      }
       setError(null);
 
       const res = await fetch("/api/sentiment?timeWindow=24h&limit=20");
@@ -81,6 +87,8 @@ export function useSentimentPolling(intervalMs: number = 180_000) {
       for (const signal of signals) {
         pushVelocity(signal.symbol, signal.velocity);
       }
+
+      hasFetchedRef.current = true;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch sentiment");
     } finally {

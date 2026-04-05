@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { Loader2, ArrowUpRight, ArrowDownRight, X } from "lucide-react";
 import type { TradeDirection } from "@/types/app";
 
@@ -44,17 +44,63 @@ export function TradeConfirmationModal({
   takeProfit,
   stopLoss,
 }: TradeConfirmationModalProps) {
+  const modalRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const cancelBtnRef = useRef<HTMLButtonElement>(null);
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !isSubmitting) onClose();
+      if (e.key === "Escape" && !isSubmitting) {
+        onClose();
+        return;
+      }
+
+      if (e.key === "Tab" && modalRef.current) {
+        const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        
+        if (focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            e.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement.focus();
+          }
+        }
+      }
     },
     [onClose, isSubmitting]
   );
 
   useEffect(() => {
     if (!isOpen) return;
+
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+    
+    if (cancelBtnRef.current) {
+      cancelBtnRef.current.focus();
+    } else {
+      requestAnimationFrame(() => {
+        if (cancelBtnRef.current) cancelBtnRef.current.focus();
+      });
+    }
+
     document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      if (previousFocusRef.current) {
+        previousFocusRef.current.focus();
+      }
+    };
   }, [isOpen, handleKeyDown]);
 
   if (!isOpen) return null;
@@ -79,6 +125,10 @@ export function TradeConfirmationModal({
       onClick={(e) => {
         if (e.target === e.currentTarget && !isSubmitting) onClose();
       }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-heading"
+      ref={modalRef}
     >
       <div className="absolute inset-0 bg-background/80" />
 
@@ -104,7 +154,7 @@ export function TradeConfirmationModal({
             )}
           </div>
           <div>
-            <h3 className="text-sm font-semibold font-display uppercase tracking-widest">
+            <h3 id="modal-heading" className="text-sm font-semibold font-display uppercase tracking-widest">
               Confirm {isLong ? "Long" : "Short"}
             </h3>
             <p className="text-xs text-muted-foreground">{symbol}/USDC PERP</p>
@@ -176,6 +226,7 @@ export function TradeConfirmationModal({
 
         <div className="grid grid-cols-2 gap-2">
           <button
+            ref={cancelBtnRef}
             type="button"
             onClick={onClose}
             disabled={isSubmitting}

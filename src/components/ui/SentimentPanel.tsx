@@ -79,7 +79,7 @@ export function SentimentPanel({ symbol }: { symbol: string }) {
           {signal.topMentions.slice(0, 3).map((mention) => (
             <div
               key={mention.id}
-              className="bg-surface-elevated rounded-md flex flex-col gap-1 px-3 py-2 transition-all duration-200 hover:bg-surface-elevated"
+              className="bg-surface-elevated rounded-md flex flex-col gap-1 px-3 py-2 transition-all duration-200 hover:brightness-110"
             >
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium">

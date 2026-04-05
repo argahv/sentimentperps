@@ -30,9 +30,9 @@ export default function TradeContent() {
   const tokenCards = useSentimentStore((s) => s.tokenCards);
   const tokenCard = tokenCards.find((t) => t.symbol === symbol);
 
-  const { ready: tradeReady, isSubmitting, submitTrade, closePosition, cancelOrder, walletAddress, setTpSl, signPayload } = useTrade();
+  const { ready: tradeReady, isSubmitting, lastError, submitTrade, closePosition, cancelOrder, walletAddress, setTpSl, signPayload } = useTrade();
   const { refetch: refetchPositions } = usePositions(walletAddress, null, 15_000);
-  const { candles, markers, currentPrice, priceChange, priceChangePct } = usePriceData(symbol);
+  const { candles, markers, currentPrice, priceChange, priceChangePct, isLive } = usePriceData(symbol);
 
   useSentimentPolling(30_000);
 
@@ -173,7 +173,7 @@ export default function TradeContent() {
             className="card-entrance"
             style={{ animationDelay: `calc(1 * var(--stagger-base))` }}
           >
-            <PriceChart data={candles} markers={markers} symbol={symbol} height={480} />
+            <PriceChart data={candles} markers={markers} symbol={symbol} height={480} isLive={isLive} />
           </div>
 
           <div
@@ -201,6 +201,7 @@ export default function TradeContent() {
               marketId={marketId}
               currentPrice={currentPrice}
               isSubmitting={isSubmitting}
+              lastError={lastError}
               onSubmit={handleSubmit}
               sentimentScore={tokenCard?.sentimentScore}
               sentimentLabel={tokenCard?.sentiment}

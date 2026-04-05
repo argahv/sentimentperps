@@ -35,72 +35,7 @@ export function useSentimentTriggerEngine(options?: {
     }
   }, []);
 
-  const checkTriggers = useRef(() => {
-    cleanExpired();
-
-    const active = getActiveTriggers();
-    if (!active.length) return;
-
-    for (const trigger of active) {
-      const signal = signals.find(
-        (s) => s.symbol.toUpperCase() === trigger.symbol.toUpperCase()
-      );
-      const card = tokenCards.find(
-        (c) => c.symbol.toUpperCase() === trigger.symbol.toUpperCase()
-      );
-
-      const sentimentScore = card?.sentimentScore ?? signal?.mentionCount ?? null;
-      if (sentimentScore === null) continue;
-
-      const fired =
-        (trigger.condition === "above" && sentimentScore >= trigger.threshold) ||
-        (trigger.condition === "below" && sentimentScore <= trigger.threshold);
-
-      if (fired) {
-        updateTriggerStatus(trigger.id, "triggered", new Date());
-
-        const shouldAutoExecute =
-          options?.autoExecute &&
-          options?.onAutoTrade &&
-          autoTradeCountRef.current < MAX_AUTO_TRADES_PER_HOUR &&
-          Date.now() - lastAutoTradeRef.current > COOLDOWN_MS;
-
-        if (shouldAutoExecute && options?.onAutoTrade) {
-          resetHourlyCount();
-          autoTradeCountRef.current++;
-          lastAutoTradeRef.current = Date.now();
-
-          addNotification({
-            type: "info",
-            title: `Auto-Executing — ${trigger.symbol}`,
-            message: `${trigger.direction.toUpperCase()} ${trigger.size} USDC @ ${trigger.leverage}x`,
-            duration: 5000,
-          });
-
-          options.onAutoTrade({
-            symbol: trigger.symbol,
-            direction: trigger.direction,
-            size: trigger.size,
-            leverage: trigger.leverage,
-          }).catch(() => {
-            addNotification({
-              type: "error",
-              title: `Auto-Trade Failed — ${trigger.symbol}`,
-              message: "Trade execution failed. Please try manually.",
-              duration: 8000,
-            });
-          });
-        } else {
-          addNotification({
-            type: "success",
-            title: `Trigger Fired — ${trigger.symbol}`,
-            message: `Sentiment ${trigger.condition} ${trigger.threshold}: ${trigger.direction.toUpperCase()} ${trigger.size} USDC @ ${trigger.leverage}x`,
-            duration: 8000,
-          });
-        }
-      }
-    }
-  });
+  const checkTriggers = useRef(() => {});
 
   useEffect(() => {
     checkTriggers.current = () => {

@@ -207,7 +207,7 @@ export default function DashboardLayout({
               }`}
             >
               <Icon className="h-4 w-4" strokeWidth={2} />
-              <span className="text-[8px] sm:text-[10px] hidden sm:block">{label}</span>
+              <span className="text-[8px] sm:text-[10px]">{label}</span>
             </Link>
           );
         })}
