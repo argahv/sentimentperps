@@ -2,21 +2,23 @@
 
 import { Trophy } from "lucide-react";
 
-interface LeaderboardEntry {
+interface FuulLeaderboardEntry {
   address: string;
-  fullAddress: string;
-  referrals: number;
-  earned: number;
+  affiliate_code?: string;
+  total_amount: number;
+  rank: number;
+  total_attributions: number;
+  referred_users?: number;
 }
 
 export function ReferralLeaderboard({
   currentUserAddress,
-  leaderboard,
+  entries,
 }: {
   currentUserAddress: string | null;
-  leaderboard: LeaderboardEntry[];
+  entries: FuulLeaderboardEntry[];
 }) {
-  if (leaderboard.length === 0) {
+  if (entries.length === 0) {
     return (
       <div className="swiss-card bg-surface p-6 rounded-lg industrial-screws flex flex-col gap-4">
         <div>
@@ -41,30 +43,30 @@ export function ReferralLeaderboard({
       </div>
 
       <div className="flex flex-col border border-primary/10 rounded-md overflow-hidden">
-        {leaderboard.map((referrer, idx) => {
+        {entries.map((entry, idx) => {
           const isYou =
             currentUserAddress !== null &&
-            referrer.fullAddress.toLowerCase() === currentUserAddress.toLowerCase();
-          const displayAddress = referrer.address;
+            entry.address.toLowerCase() === currentUserAddress.toLowerCase();
+          const shortAddress = `${entry.address.slice(0, 4)}...${entry.address.slice(-4)}`;
 
           return (
             <div
-              key={referrer.fullAddress}
+              key={entry.address}
               className={`flex items-center justify-between p-4 card-entrance ${
-                idx !== leaderboard.length - 1 ? "border-b border-primary/5" : ""
+                idx !== entries.length - 1 ? "border-b border-primary/5" : ""
               } ${isYou ? "border-l-[3px] border-l-primary bg-primary/5" : "bg-background/40"}`}
               style={{ animationDelay: `calc(${idx} * var(--stagger-base, 100ms))` }}
             >
               <div className="flex items-center gap-4">
                 <span className="text-sm font-bold text-muted-foreground tabular-nums w-4">
-                  {idx + 1}
+                  {entry.rank}
                 </span>
                 <div className="h-8 w-8 bg-primary/20 text-primary flex items-center justify-center font-bold text-sm shrink-0">
-                  {displayAddress.charAt(0).toUpperCase()}
+                  {entry.address.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex flex-col">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm font-medium">{displayAddress}</span>
+                    <span className="font-mono text-sm font-medium">{shortAddress}</span>
                     {isYou && (
                       <span className="text-[10px] font-bold bg-primary text-white px-1.5 py-0.5 uppercase tracking-widest">
                         You
@@ -72,13 +74,13 @@ export function ReferralLeaderboard({
                     )}
                   </div>
                   <span className="text-xs text-muted-foreground tabular-nums">
-                    {referrer.referrals} referrals
+                    {entry.referred_users ?? entry.total_attributions} referrals
                   </span>
                 </div>
               </div>
               <div className="text-right">
                 <span className="font-bold text-success tabular-nums">
-                  ${referrer.earned.toFixed(2)}
+                  {entry.total_amount.toLocaleString()} pts
                 </span>
               </div>
             </div>

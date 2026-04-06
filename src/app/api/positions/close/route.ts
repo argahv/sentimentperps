@@ -87,7 +87,16 @@ export async function POST(request: Request) {
           },
         });
 
-        await evaluateAndPersist(walletAddress, score).catch(() => {});
+        try {
+          const gamification = await evaluateAndPersist(walletAddress, score);
+          if (gamification.badges.length > 0 || gamification.xpGained > 0) {
+            console.log(
+              `[positions/close] Gamification: wallet=${walletAddress} badges=[${gamification.badges.join(",")}] xp=+${gamification.xpGained} score=${score}`
+            );
+          }
+        } catch (evalErr) {
+          console.error("[positions/close] evaluateAndPersist failed:", evalErr);
+        }
       } catch (dbErr) {
         console.error("[positions/close] DB persist failed (non-blocking):", dbErr);
       }

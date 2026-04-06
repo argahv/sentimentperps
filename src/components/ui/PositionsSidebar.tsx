@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { usePositionsStore } from "@/stores/positions";
+import { useSentimentStore } from "@/stores/sentiment";
 import { useSentimentTriggersStore } from "@/stores/sentimentTriggers";
 import { ActiveTriggers } from "@/components/ui/ActiveTriggers";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
@@ -18,7 +19,15 @@ interface PositionsSidebarProps {
     marketId: string,
     side: TradeDirection,
     size: number,
-    positionMeta?: { entryPrice: number; markPrice: number; leverage: number; pnlUsdc: number }
+    positionMeta?: {
+      entryPrice: number;
+      markPrice: number;
+      leverage: number;
+      pnlUsdc: number;
+      sentimentScoreAtEntry?: number;
+      minutesAfterSignal?: number;
+      sentimentAligned?: boolean;
+    }
   ) => Promise<void>;
   onCancelOrder?: (orderId: string, symbol: string) => Promise<void>;
 }
@@ -26,6 +35,7 @@ interface PositionsSidebarProps {
 export function PositionsSidebar({ onClosePosition, onCancelOrder }: PositionsSidebarProps) {
   const { positions, openOrders, closedPositions, isLoading, historyError } = usePositionsStore();
   const totalPnl = usePositionsStore((s) => s.getTotalUnrealizedPnl());
+  const getSignalBySymbol = useSentimentStore((s) => s.getSignalBySymbol);
   const [closingId, setClosingId] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'open' | 'orders' | 'triggers' | 'history'>('open');
@@ -36,8 +46,17 @@ export function PositionsSidebar({ onClosePosition, onCancelOrder }: PositionsSi
     setClosingId(positionId);
     try {
       const pos = positions.find((p) => p.position_id === positionId);
+      const signal = getSignalBySymbol(marketId);
       const meta = pos
-        ? { entryPrice: pos.entry_price, markPrice: pos.mark_price, leverage: pos.leverage, pnlUsdc: pos.unrealized_pnl }
+        ? {
+            entryPrice: pos.entry_price,
+            markPrice: pos.mark_price,
+            leverage: pos.leverage,
+            pnlUsdc: pos.unrealized_pnl,
+            sentimentScoreAtEntry: signal?.velocity ?? 0,
+            minutesAfterSignal: signal ? Math.max(0.1, (Date.now() - new Date(signal.updatedAt).getTime()) / 60000) : 5,
+            sentimentAligned: signal ? (side === "long" ? signal.sentiment === "positive" : signal.sentiment === "negative") : true,
+          }
         : undefined;
       await onClosePosition(marketId, side, size, meta);
     } finally {

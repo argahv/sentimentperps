@@ -288,14 +288,21 @@ export default function ProfileContent() {
     setStatsError(null);
     try {
       const res = await fetch(`/api/profile/stats?wallet=${address}`);
+      const data = await res.json();
       if (!res.ok) {
-        const data = await res.json();
         throw new Error(data.error ?? "Failed to fetch stats");
       }
-      const { stats } = await res.json();
-      setDbStats(stats ?? null);
+      // If DB had a connection error, the server returns zeros with dbError flag.
+      // In that case, ignore the zeros so we fall back to client-computed localStats.
+      if (data.dbError) {
+        console.warn("[profile] Stats DB error, using local fallback");
+        setDbStats(null);
+      } else {
+        setDbStats(data.stats ?? null);
+      }
     } catch (err) {
       setStatsError(err instanceof Error ? err.message : "Failed to fetch stats");
+      setDbStats(null);
     } finally {
       setStatsLoading(false);
     }

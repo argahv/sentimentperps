@@ -16,65 +16,27 @@ import {
   ArrowDownToLine,
   Clock,
 } from "lucide-react";
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { EarningsProjection } from "@/components/ui/EarningsProjection";
 import { ReferralLeaderboard } from "@/components/ui/ReferralLeaderboard";
 import { ShareCardPreview } from "@/components/ui/ShareCardPreview";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { generateTrackingLink, identifyUser } from "@/lib/fuul";
-
-interface ReferralStats {
-  totalReferred: number;
-  activeTraders: number;
-  totalEarned: number;
-  pendingRewards: number;
-}
-
-interface ActivityEntry {
-  address: string;
-  fullAddress: string;
-  joinedAt: string;
-  trades: number;
-  earned: number;
-  recentEarned: number;
-}
-
-interface LeaderboardEntry {
-  address: string;
-  fullAddress: string;
-  referrals: number;
-  earned: number;
-}
-
-interface ClaimEntry {
-  id: string;
-  amount: number;
-  status: string;
-  createdAt: string;
-}
-
-const EMPTY_STATS: ReferralStats = {
-  totalReferred: 0,
-  activeTraders: 0,
-  totalEarned: 0,
-  pendingRewards: 0,
-};
+import type { UserPointsMovement, StatsBreakdownResult } from "@/lib/fuul";
+import type { ClaimCheckTotalItem } from "@/lib/fuul";
+import {
+  useFuulStats,
+  useFuulLeaderboard,
+  useFuulClaims,
+  useFuulActivity,
+  useFuulEarningsBreakdown,
+} from "@/hooks/useFuulData";
 
 export default function ReferralContent() {
   const { login, authenticated, ready: privyReady } = usePrivy();
   const { wallets } = useWallets();
   const [copied, setCopied] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
-
-  const [stats, setStats] = useState<ReferralStats>(EMPTY_STATS);
-  const [activity, setActivity] = useState<ActivityEntry[]>([]);
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [claims, setClaims] = useState<ClaimEntry[]>([]);
-  const [claiming, setClaiming] = useState(false);
-  const [claimError, setClaimError] = useState<string | null>(null);
-  const [claimSuccess, setClaimSuccess] = useState<string | null>(null);
 
   const wallet = useMemo(
     () => wallets.find((w) => w.standardWallet.name !== "Privy") ?? wallets[0] ?? null,
@@ -97,47 +59,40 @@ export default function ReferralContent() {
 
   const activeCopyLink = fuulLink ?? referralLink;
 
-  const fetchData = useCallback(async () => {
-    if (!address) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const [statsRes, lbRes, claimsRes] = await Promise.all([
-        fetch(`/api/referral/stats?wallet=${encodeURIComponent(address)}`),
-        fetch("/api/referral/leaderboard"),
-        fetch(`/api/referral/claim?wallet=${encodeURIComponent(address)}`),
-      ]);
+  const fuulStats = useFuulStats(address);
+  const fuulLeaderboard = useFuulLeaderboard();
+  const fuulClaims = useFuulClaims(address);
+  const fuulActivity = useFuulActivity(address);
+  const fuulBreakdown = useFuulEarningsBreakdown(address);
 
-      if (!statsRes.ok) {
-        const d = await statsRes.json();
-        throw new Error(d.error ?? "Failed to load referral stats");
-      }
-      if (!lbRes.ok) {
-        const d = await lbRes.json();
-        throw new Error(d.error ?? "Failed to load leaderboard");
-      }
-
-      const statsData = await statsRes.json();
-      const lbData = await lbRes.json();
-
-      setStats(statsData.stats);
-      setActivity(statsData.activity);
-      setLeaderboard(lbData.leaderboard);
-
-      if (claimsRes.ok) {
-        const claimsData = await claimsRes.json();
-        setClaims(claimsData.claims ?? []);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
-    } finally {
-      setLoading(false);
+  const stats = useMemo(() => {
+    if (!fuulStats.data) {
+      return { totalReferred: 0, activeTraders: 0, totalEarned: 0, pendingRewards: 0 };
     }
-  }, [address]);
+    const totalEarnings = fuulStats.data.total_earnings
+      ? fuulStats.data.total_earnings.reduce((sum: number, e: { amount?: number }) => sum + (e.amount ?? 0), 0)
+      : 0;
+    const pendingRewards = fuulClaims.totals?.unclaimed
+      ? fuulClaims.totals.unclaimed.reduce((sum: number, item: { amount?: string }) => sum + parseFloat(item.amount ?? "0"), 0)
+      : 0;
+    return {
+      totalReferred: fuulStats.data.referred_users ?? 0,
+      activeTraders: fuulStats.data.referred_users ?? 0,
+      totalEarned: Math.round(totalEarnings * 100) / 100,
+      pendingRewards: Math.round(pendingRewards * 100) / 100,
+    };
+  }, [fuulStats.data, fuulClaims.totals]);
 
-  useEffect(() => {
-    if (address) fetchData();
-  }, [address, fetchData]);
+  const loading = fuulStats.loading || fuulLeaderboard.loading;
+  const error = fuulStats.error ?? fuulLeaderboard.error ?? null;
+
+  const handleRefetchAll = () => {
+    fuulStats.refetch();
+    fuulLeaderboard.refetch();
+    fuulClaims.refetch();
+    fuulActivity.refetch();
+    fuulBreakdown.refetch();
+  };
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(referralCode);
@@ -151,31 +106,15 @@ export default function ReferralContent() {
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
-  const handleClaim = async () => {
-    if (!address || claiming) return;
-    setClaiming(true);
-    setClaimError(null);
-    setClaimSuccess(null);
-    try {
-      const res = await fetch("/api/referral/claim", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ walletAddress: address }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error ?? "Failed to claim rewards");
-      }
-      setClaimSuccess(`Claimed $${data.claim.amount.toFixed(2)}`);
-      fetchData();
-      setTimeout(() => setClaimSuccess(null), 4000);
-    } catch (err) {
-      setClaimError(err instanceof Error ? err.message : "Failed to claim");
-      setTimeout(() => setClaimError(null), 4000);
-    } finally {
-      setClaiming(false);
-    }
-  };
+  const activityEntries: UserPointsMovement[] = fuulActivity.data?.results ?? [];
+
+  const leaderboardEntries = fuulLeaderboard.data?.results ?? [];
+
+  const breakdownData = fuulBreakdown.data?.results?.map((r: StatsBreakdownResult) => ({
+    date: r.date,
+    earnings: r.earnings ?? 0,
+    volume: r.r1_volume ?? 0,
+  }));
 
   if (privyReady && !authenticated) {
     return (
@@ -213,7 +152,7 @@ export default function ReferralContent() {
           <AlertCircle className="h-10 w-10 text-danger" />
           <p className="text-sm text-muted-foreground text-center max-w-sm">{error}</p>
           <button
-            onClick={fetchData}
+            onClick={handleRefetchAll}
             className="swiss-btn-accent flex items-center gap-2 bg-primary px-5 py-2 text-sm font-semibold text-white"
           >
             <RefreshCw className="h-4 w-4" />
@@ -234,12 +173,12 @@ export default function ReferralContent() {
           </p>
         </div>
         <a
-          href="https://app.fuul.xyz"
+          href="https://hub.fuul.xyz/sentimentperps"
           target="_blank"
           rel="noopener noreferrer"
           className="swiss-btn-outline flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
         >
-          Fuul Dashboard <ExternalLink className="h-3 w-3" />
+          Rewards Hub <ExternalLink className="h-3 w-3" />
         </a>
       </div>
 
@@ -371,11 +310,11 @@ export default function ReferralContent() {
                 Activity Timeline
               </h3>
               <span className="text-[10px] font-semibold text-muted-foreground tabular-nums">
-                {activity.length} referrals
+                {activityEntries.length} events
               </span>
             </div>
             <div className="px-5 pb-5">
-              {loading ? (
+              {fuulActivity.loading ? (
                 <div className="flex flex-col gap-4">
                   {Array.from({ length: 3 }).map((_, i) => (
                     <div key={i} className="flex gap-4">
@@ -397,7 +336,7 @@ export default function ReferralContent() {
                     </div>
                   ))}
                 </div>
-              ) : activity.length === 0 ? (
+              ) : activityEntries.length === 0 ? (
                 <div className="flex flex-col items-center gap-3 py-8">
                   <Users className="h-8 w-8 text-muted-foreground/40" />
                   <p className="text-sm text-muted-foreground text-center">
@@ -407,33 +346,54 @@ export default function ReferralContent() {
               ) : (
                 <div className="relative">
                   <div className="absolute left-[15px] top-0 bottom-0 w-0.5 bg-primary/20" />
-                  {activity.map((ref, idx) => (
-                    <div
-                      key={ref.fullAddress}
-                      className="relative flex gap-4 pb-5 last:pb-0 card-entrance"
-                      style={{ animationDelay: `calc(${idx + 7} * var(--stagger-base))` }}
-                    >
-                      <div className="relative z-10 shrink-0 flex h-[30px] w-[30px] items-center justify-center">
-                        <div
-                          className={`h-2.5 w-2.5 rounded-full ${ref.trades > 5 ? "bg-primary" : "bg-muted-foreground opacity-50"}`}
-                        />
-                      </div>
-                      <div className="flex-1 border border-border-muted bg-surface p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <div className="flex flex-col gap-1">
-                          <span className="text-sm font-mono font-medium">{ref.address}</span>
-                          <span className="text-[10px] text-muted-foreground">Joined {ref.joinedAt}</span>
+                  {activityEntries.map((entry, idx) => {
+                    const isActive = entry.payout_status === "paid" || entry.payout_status === "completed";
+                    const formattedDate = entry.date
+                      ? new Date(entry.date).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })
+                      : "—";
+                    const earned = parseFloat(entry.total_amount ?? "0");
+                    return (
+                      <div
+                        key={entry.conversion_id ?? idx}
+                        className="relative flex gap-4 pb-5 last:pb-0 card-entrance"
+                        style={{ animationDelay: `calc(${idx + 7} * var(--stagger-base))` }}
+                      >
+                        <div className="relative z-10 shrink-0 flex h-[30px] w-[30px] items-center justify-center">
+                          <div
+                            className={`h-2.5 w-2.5 rounded-full ${isActive ? "bg-primary" : "bg-muted-foreground opacity-50"}`}
+                          />
                         </div>
-                        <div className="flex flex-col sm:items-end gap-1">
-                          <span className="text-sm font-semibold text-success tabular-nums">
-                            +${ref.earned.toFixed(2)}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground tabular-nums">
-                            {ref.trades} trades
-                          </span>
+                        <div className="flex-1 border border-border-muted bg-surface p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div className="flex flex-col gap-1">
+                            <span className="text-sm font-mono font-medium">
+                              {entry.conversion_name ?? entry.project_name ?? "Referral Event"}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">{formattedDate}</span>
+                          </div>
+                          <div className="flex flex-col sm:items-end gap-1">
+                            <span className="text-sm font-semibold text-success tabular-nums">
+                              +{earned.toFixed(4)}
+                            </span>
+                            <span
+                              className={`text-[9px] font-semibold px-1.5 py-0.5 border ${
+                                entry.payout_status === "paid" || entry.payout_status === "completed"
+                                  ? "border-success/40 text-success bg-success/10"
+                                  : entry.payout_status === "pending"
+                                    ? "border-warning/40 text-warning bg-warning/10"
+                                    : "border-border-muted text-muted-foreground bg-surface-elevated"
+                              }`}
+                            >
+                              {entry.payout_status ?? "pending"}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -448,11 +408,15 @@ export default function ReferralContent() {
             <EarningsProjection
               currentEarnings={stats.totalEarned}
               referralCount={stats.totalReferred}
+              breakdownData={breakdownData}
             />
           </div>
 
           <div className="card-entrance" style={{ animationDelay: "calc(7 * var(--stagger-base))" }}>
-            <ReferralLeaderboard currentUserAddress={address} leaderboard={leaderboard} />
+            <ReferralLeaderboard
+              currentUserAddress={address}
+              entries={leaderboardEntries}
+            />
           </div>
 
           <div
@@ -475,26 +439,28 @@ export default function ReferralContent() {
              </div>
 
             <button
-              onClick={handleClaim}
-              disabled={claiming || stats.pendingRewards <= 0}
+              onClick={fuulClaims.claimAll}
+              disabled={fuulClaims.claiming || stats.pendingRewards <= 0}
               className={`swiss-btn-accent flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold transition-all ${
                 stats.pendingRewards > 0
                   ? "bg-primary text-white hover:bg-primary/90"
                   : "bg-surface-elevated text-muted-foreground cursor-not-allowed"
               }`}
             >
-              <ArrowDownToLine className={`h-4 w-4 ${claiming ? "animate-bounce" : ""}`} />
-              {claiming ? "Claiming..." : "Claim Rewards"}
+              <ArrowDownToLine className={`h-4 w-4 ${fuulClaims.claiming ? "animate-bounce" : ""}`} />
+              {fuulClaims.claiming ? "Claiming..." : "Claim Rewards"}
             </button>
 
-            {claimSuccess && (
-              <p className="text-xs text-success text-center font-medium">{claimSuccess}</p>
+            {fuulClaims.claimResult && (
+              <p className="text-xs text-success text-center font-medium">
+                Claim initiated — check your wallet
+              </p>
             )}
-            {claimError && (
-              <p className="text-xs text-danger text-center font-medium">{claimError}</p>
+            {fuulClaims.claimError && (
+              <p className="text-xs text-danger text-center font-medium">{fuulClaims.claimError}</p>
             )}
 
-            {claims.length > 0 && (
+            {fuulClaims.totals?.claimed && fuulClaims.totals.claimed.length > 0 && (
               <div className="flex flex-col gap-2 mt-1">
                 <div className="flex items-center gap-1.5">
                   <Clock className="h-3 w-3 text-muted-foreground" />
@@ -502,29 +468,21 @@ export default function ReferralContent() {
                     Claim History
                   </span>
                 </div>
-                {claims.slice(0, 5).map((claim) => (
+                {fuulClaims.totals.claimed.slice(0, 5).map((item: ClaimCheckTotalItem, idx: number) => (
                   <div
-                    key={claim.id}
+                    key={`${item.currency_address ?? ""}-${idx}`}
                     className="border border-border-muted bg-surface px-3 py-2 flex items-center justify-between"
                   >
                     <div className="flex flex-col gap-0.5">
                       <span className="text-xs font-semibold text-success tabular-nums">
-                        +${claim.amount.toFixed(2)}
+                        +{parseFloat(item.amount ?? "0").toFixed(4)} {item.currency_name ?? ""}
                       </span>
                       <span className="text-[9px] text-muted-foreground tabular-nums">
-                        {new Date(claim.createdAt).toLocaleDateString()}
+                        {item.currency_name ?? "Tokens"}
                       </span>
                     </div>
-                    <span
-                      className={`text-[9px] font-semibold px-1.5 py-0.5 border ${
-                        claim.status === "pending"
-                          ? "border-warning/40 text-warning bg-warning/10"
-                          : claim.status === "completed"
-                            ? "border-success/40 text-success bg-success/10"
-                            : "border-border-muted text-muted-foreground bg-surface-elevated"
-                      }`}
-                    >
-                      {claim.status}
+                    <span className="text-[9px] font-semibold px-1.5 py-0.5 border border-success/40 text-success bg-success/10">
+                      claimed
                     </span>
                   </div>
                 ))}

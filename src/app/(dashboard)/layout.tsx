@@ -24,6 +24,8 @@ import { usePrivy, useActiveWallet } from "@privy-io/react-auth";
 import { useWallets } from "@privy-io/react-auth/solana";
 import { WalletsDialog } from "@privy-io/react-auth/ui";
 import { sendPageview } from "@/lib/fuul";
+import { ReferralRegistrar } from "@/components/ReferralRegistrar";
+import { FuulIdentify } from "@/components/FuulIdentify";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -218,6 +220,8 @@ export default function DashboardLayout({
       <DepositBridgeModal isOpen={showDeposit} onClose={() => setShowDeposit(false)} />
     </div>
     <AIChatPanel />
+    <ReferralRegistrar />
+    <FuulIdentify />
     </>
   );
 }

@@ -73,12 +73,13 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : "";
+    console.error("[profile/stats] GET error:", msg);
     if (msg.includes("localhost") || msg.includes("5432") || msg.includes("ECONNREFUSED") || msg.includes("Can't reach")) {
       return NextResponse.json({
         stats: { totalTrades: 0, winRate: 0, totalPnl: 0, bestTrade: 0, totalScore: 0, avgResponseTime: 0, sentimentAccuracy: 0, rank: null, totalTraders: 0 },
+        dbError: true,
       });
     }
-    console.error("[profile/stats] GET error:", msg);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json({ error: msg, dbError: true }, { status: 500 });
   }
 }

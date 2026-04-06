@@ -140,7 +140,7 @@ export default function TradeContent() {
       posMarketId: string,
       side: TradeDirection,
       size: number,
-      positionMeta?: { entryPrice: number; markPrice: number; leverage: number; pnlUsdc: number }
+      positionMeta?: { entryPrice: number; markPrice: number; leverage: number; pnlUsdc: number; sentimentScoreAtEntry?: number; minutesAfterSignal?: number; sentimentAligned?: boolean }
     ) => {
       await closePosition(posMarketId, side, size, positionMeta);
       refetchPositions();

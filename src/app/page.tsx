@@ -13,6 +13,7 @@ import {
   ActivityIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { FuulPageview } from "@/components/FuulPageview";
 
 const STEPS = [
   {
@@ -80,6 +81,7 @@ const SPONSORS = [
 export default function HomePage() {
   return (
     <div className="flex min-h-dvh flex-col bg-background text-foreground page-enter">
+      <FuulPageview page="homepage" />
       {/* Navigation */}
       <nav className="sticky top-0 z-50 border-b border-border/50 bg-background/95 backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 md:px-8">

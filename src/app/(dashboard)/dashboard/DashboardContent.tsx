@@ -31,7 +31,7 @@ export default function DashboardContent() {
     marketId: string,
     side: "long" | "short",
     size: number,
-    positionMeta?: { entryPrice: number; markPrice: number; leverage: number; pnlUsdc: number }
+    positionMeta?: { entryPrice: number; markPrice: number; leverage: number; pnlUsdc: number; sentimentScoreAtEntry?: number; minutesAfterSignal?: number; sentimentAligned?: boolean }
   ) => {
     await closePosition(marketId, side, size, positionMeta);
     refetch();

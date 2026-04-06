@@ -10,6 +10,7 @@ import {
   createSignatureHeader,
   prepareSignatureMessage,
 } from "@/lib/pacifica";
+import { sendFuulConversionEvent } from "@/lib/fuul";
 import type { TradeDirection } from "@/types/app";
 import type { PacificaOrderSide, TimeInForce } from "@/types/pacifica";
 
@@ -180,6 +181,16 @@ export function useTrade() {
           message: `${params.size} USDC at ${params.leverage}x leverage`,
         });
 
+        sendFuulConversionEvent({
+          walletAddress,
+          symbol: params.symbol,
+          direction: params.direction,
+          sizeUsdc: params.size,
+          leverage: params.leverage,
+          eventType: "trade_open",
+          orderId: data.order.order_id,
+        });
+
         return { orderId: data.order.order_id, status: data.order.status };
       } catch (err) {
         const message = err instanceof Error ? err.message : "Trade failed";
@@ -203,6 +214,9 @@ export function useTrade() {
         markPrice: number;
         leverage: number;
         pnlUsdc: number;
+        sentimentScoreAtEntry?: number;
+        minutesAfterSignal?: number;
+        sentimentAligned?: boolean;
       },
     ): Promise<TradeResult> => {
       if (!privyReady || !authenticated) throw new Error("Not authenticated");
@@ -240,6 +254,9 @@ export function useTrade() {
                   leverage: positionMeta.leverage,
                   pnlUsdc: positionMeta.pnlUsdc,
                   direction: side,
+                  sentimentScoreAtEntry: positionMeta.sentimentScoreAtEntry,
+                  minutesAfterSignal: positionMeta.minutesAfterSignal,
+                  sentimentAligned: positionMeta.sentimentAligned,
                 }
               : undefined,
           }),
@@ -252,6 +269,17 @@ export function useTrade() {
           type: "success",
           title: "Position closed",
           message: `Closed ${side} on ${symbol}`,
+        });
+
+        sendFuulConversionEvent({
+          walletAddress,
+          symbol,
+          direction: side,
+          sizeUsdc: size,
+          leverage: positionMeta?.leverage ?? 1,
+          eventType: "trade_close",
+          pnlUsdc: positionMeta?.pnlUsdc,
+          orderId: data.order.order_id,
         });
 
         return { orderId: data.order.order_id, status: data.order.status };
