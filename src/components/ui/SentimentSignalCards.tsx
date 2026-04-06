@@ -1,117 +1,298 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { useSentimentStore } from "@/stores/sentiment";
-import { TrendingUp, TrendingDown, Minus, ArrowRight } from "lucide-react";
+import { usePriceData } from "@/hooks/usePriceData";
+import {
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  ArrowRight,
+  ArrowUpRight,
+  ArrowDownRight,
+  Grid3x3,
+} from "lucide-react";
+import { InfoTooltip } from "./InfoTooltip";
 import type { TokenCardData } from "@/types/app";
 
-export function SentimentSignalCards() {
-  const { tokenCards, isLoading } = useSentimentStore();
+/* ── Heatmap color helpers ── */
 
-  const getSignalInfo = (score: number) => {
-    const confidence = Math.abs(score - 50) * 2;
-    
-    if (score >= 65) {
-      return {
-        type: "BUY",
-        color: "text-success",
-        led: "led-green",
-        Icon: TrendingUp,
-        confidence,
-      };
-    }
-    if (score <= 35) {
-      return {
-        type: "SELL",
-        color: "text-primary",
-        led: "led-red",
-        Icon: TrendingDown,
-        confidence,
-      };
-    }
+function getBackgroundColor(score: number): string {
+  if (score <= 35) {
+    const ratio = (35 - score) / 35;
+    return `rgba(255, 71, 87, ${0.08 + ratio * 0.17})`;
+  }
+  if (score >= 65) {
+    const ratio = (score - 65) / 35;
+    return `rgba(34, 197, 94, ${0.08 + ratio * 0.17})`;
+  }
+  return "rgba(107, 122, 141, 0.08)";
+}
+
+function getBorderColor(score: number): string {
+  if (score <= 35) return "rgba(255, 71, 87, 0.35)";
+  if (score >= 65) return "rgba(34, 197, 94, 0.35)";
+  return "rgba(107, 122, 141, 0.25)";
+}
+
+function getGlowStyle(
+  velocity: number,
+  score: number
+): React.CSSProperties {
+  if (velocity <= 0.5) return {};
+  const color =
+    score >= 65
+      ? "34, 197, 94"
+      : score <= 35
+        ? "255, 71, 87"
+        : "107, 122, 141";
+  const intensity = Math.min(velocity / 5, 1);
+  const blur = 5 + intensity * 15;
+  const spread = intensity * 2;
+  const opacity = 0.1 + intensity * 0.3;
+  return {
+    boxShadow: `0 0 ${blur}px ${spread}px rgba(${color}, ${opacity})`,
+  };
+}
+
+/* ── Signal logic ── */
+
+function getSignalInfo(score: number) {
+  const confidence = Math.abs(score - 50) * 2;
+
+  if (score >= 65) {
     return {
-      type: "HOLD",
-      color: "text-warning",
-      led: "led-yellow",
-      Icon: Minus,
+      type: "BUY" as const,
+      color: "text-success",
+      led: "led-green",
+      Icon: TrendingUp,
       confidence,
     };
+  }
+  if (score <= 35) {
+    return {
+      type: "SELL" as const,
+      color: "text-primary",
+      led: "led-red",
+      Icon: TrendingDown,
+      confidence,
+    };
+  }
+  return {
+    type: "HOLD" as const,
+    color: "text-warning",
+    led: "led-yellow",
+    Icon: Minus,
+    confidence,
   };
+}
 
-  if (isLoading) {
-    return (
-      <div className="flex overflow-x-auto gap-3 pb-2 hide-scrollbar">
-        {[1, 2, 3, 4, 5].map((i) => (
-          <div
-            key={i}
-            className="flat-card shrink-0 w-[170px] p-4 flex flex-col gap-3 card-entrance"
-            style={{ animationDelay: `calc(${i * 0.5} * var(--stagger-base))` }}
-          >
-            <div className="flex justify-between items-center">
-              <div className="h-5 w-12 bg-surface-elevated animate-pulse rounded" />
-              <div className="h-3 w-3 rounded-full bg-surface-elevated animate-pulse" />
-            </div>
-            <div className="h-6 w-16 bg-surface-elevated animate-pulse rounded mt-1" />
-            <div className="h-4 w-full bg-surface-elevated animate-pulse rounded mt-2" />
+/* ── Individual cell (hook-safe — usePriceData per symbol) ── */
+
+function SignalCell({ token }: { token: TokenCardData }) {
+  const { currentPrice, priceChangePct } = usePriceData(token.symbol);
+  const { type, color, led, Icon, confidence } = getSignalInfo(
+    token.sentimentScore
+  );
+
+  const formattedPrice = useMemo(() => {
+    if (currentPrice >= 1000)
+      return currentPrice.toLocaleString("en-US", {
+        maximumFractionDigits: 0,
+      });
+    if (currentPrice >= 1) return currentPrice.toFixed(2);
+    return currentPrice.toFixed(4);
+  }, [currentPrice]);
+
+  const isPositive = priceChangePct >= 0;
+
+  return (
+    <Link
+      href={`/trade?symbol=${token.symbol}`}
+      className="block rounded-lg p-3.5 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] border relative group"
+      style={{
+        backgroundColor: getBackgroundColor(token.sentimentScore),
+        borderColor: getBorderColor(token.sentimentScore),
+        ...getGlowStyle(token.velocity, token.sentimentScore),
+      }}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <span className="font-display font-bold text-lg text-foreground leading-none">
+            {token.symbol}
+          </span>
+          <div className={`${led} shrink-0`} title={type} />
+        </div>
+        <span
+          className={`flex items-center gap-1 text-xs font-bold px-1.5 py-0.5 rounded ${color}`}
+        >
+          <Icon className="h-3 w-3" />
+          {type}
+        </span>
+      </div>
+
+      <div className="flex items-baseline justify-between mb-2.5">
+        <span className="font-mono text-sm tabular-nums text-foreground">
+          ${formattedPrice}
+        </span>
+        <span
+          className={`flex items-center gap-0.5 text-[11px] font-medium tabular-nums ${
+            isPositive ? "text-success" : "text-danger"
+          }`}
+        >
+          {isPositive ? (
+            <ArrowUpRight className="h-2.5 w-2.5" />
+          ) : (
+            <ArrowDownRight className="h-2.5 w-2.5" />
+          )}
+          {isPositive ? "+" : ""}
+          {priceChangePct.toFixed(2)}%
+        </span>
+      </div>
+
+      <div className="flex items-end justify-between pt-2.5 border-t border-border/30">
+        <div className="flex flex-col gap-0.5">
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] text-muted-foreground font-sans uppercase tracking-wider">
+              Confidence
+            </span>
+            <InfoTooltip
+              content="Signal strength based on how far sentiment deviates from neutral. Higher confidence means stronger directional bias."
+              size={11}
+            />
           </div>
-        ))}
+          <span className="font-mono text-sm tabular-nums">
+            {confidence.toFixed(0)}%
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="flex flex-col items-end">
+            <span className="text-[10px] text-muted-foreground font-sans uppercase tracking-wider">
+              Score
+            </span>
+            <span
+              className={`font-mono tabular-nums text-sm font-bold ${
+                token.sentimentScore > 50
+                  ? "text-success"
+                  : token.sentimentScore < 50
+                    ? "text-danger"
+                    : "text-foreground"
+              }`}
+            >
+              {token.sentimentScore.toFixed(0)}
+            </span>
+          </div>
+
+          <div className="swiss-btn-outline h-7 w-7 rounded flex items-center justify-center bg-surface/50 group-hover:bg-surface-elevated transition-colors">
+            <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+/* ── Main component ── */
+
+export function SentimentSignalCards() {
+  const tokenCards = useSentimentStore((s) => s.tokenCards);
+  const isLoading = useSentimentStore((s) => s.isLoading);
+
+  if (isLoading && tokenCards.length === 0) {
+    return (
+      <div className="swiss-card rounded-lg p-4 industrial-screws card-entrance relative overflow-hidden">
+        <div className="flex items-center justify-between mb-4 pb-3 border-b border-border">
+          <div className="flex items-center gap-2">
+            <div className="swiss-icon-well flex h-7 w-7 items-center justify-center">
+              <Grid3x3 className="h-3.5 w-3.5 text-foreground" />
+            </div>
+            <div>
+              <h2 className="font-display text-sm font-bold uppercase tracking-widest text-foreground">
+                Sentiment Command Center
+              </h2>
+              <p className="text-[10px] text-muted-foreground">
+                Powered by Elfa AI
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+              Live
+            </span>
+            <span className="led-green" />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-[120px] bg-surface-elevated border border-border rounded-lg animate-pulse"
+            />
+          ))}
+        </div>
       </div>
     );
   }
 
   if (!tokenCards || tokenCards.length === 0) {
     return (
-      <div className="flat-card p-6 flex flex-col items-center justify-center text-center text-muted-foreground card-entrance">
-        <Minus className="h-8 w-8 mb-2 opacity-50" />
-        <p className="font-sans text-sm">No sentiment signals available.</p>
+      <div className="swiss-card rounded-lg p-4 industrial-screws card-entrance relative overflow-hidden">
+        <div className="flex items-center justify-between mb-4 pb-3 border-b border-border">
+          <div className="flex items-center gap-2">
+            <div className="swiss-icon-well flex h-7 w-7 items-center justify-center">
+              <Grid3x3 className="h-3.5 w-3.5 text-foreground" />
+            </div>
+            <div>
+              <h2 className="font-display text-sm font-bold uppercase tracking-widest text-foreground">
+                Sentiment Command Center
+              </h2>
+              <p className="text-[10px] text-muted-foreground">
+                Powered by Elfa AI
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="py-8 text-center text-muted-foreground">
+          <Minus className="h-8 w-8 mx-auto mb-2 opacity-50" />
+          <p className="font-sans text-sm">
+            No sentiment signals available.
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex overflow-x-auto gap-3 pb-2 hide-scrollbar">
-      {tokenCards.map((token, idx) => {
-        const { type, color, led, Icon, confidence } = getSignalInfo(token.sentimentScore);
-        
-        return (
-          <div
-            key={token.symbol}
-            className="swiss-card shrink-0 w-[170px] p-4 flex flex-col card-entrance shadow-neu-inset"
-            style={{ animationDelay: `calc(${idx * 0.2} * var(--stagger-base))` }}
-          >
-            <div className="flex justify-between items-start mb-2">
-              <div className="font-display font-bold text-lg">{token.symbol}</div>
-              <div className={`${led} mt-1.5`} title={type} />
-            </div>
-            
-            <div className="flex items-center gap-1.5 mb-1">
-              <Icon className={`h-4 w-4 ${color}`} />
-              <span className={`font-display font-bold ${color}`}>
-                {type}
-              </span>
-            </div>
-            
-            <div className="flex items-center justify-between mt-auto pt-3 border-t border-border/50">
-              <div className="flex flex-col">
-                <span className="text-[10px] text-muted-foreground font-sans uppercase tracking-wider">
-                  Confidence
-                </span>
-                <span className="font-mono text-sm tabular-nums">
-                  {confidence.toFixed(0)}%
-                </span>
-              </div>
-              
-              <Link 
-                href={`/trade?symbol=${token.symbol}`}
-                className="swiss-btn-outline h-7 w-7 rounded flex items-center justify-center bg-surface hover:bg-surface-elevated transition-colors"
-                title={`Trade ${token.symbol}`}
-              >
-                <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
-              </Link>
-            </div>
+    <div className="swiss-card rounded-lg p-4 industrial-screws card-entrance relative overflow-hidden">
+      <div className="flex items-center justify-between mb-4 pb-3 border-b border-border">
+        <div className="flex items-center gap-2">
+          <div className="swiss-icon-well flex h-7 w-7 items-center justify-center">
+            <Grid3x3 className="h-3.5 w-3.5 text-foreground" />
           </div>
-        );
-      })}
+          <div>
+            <h2 className="font-display text-sm font-bold uppercase tracking-widest text-foreground">
+              Sentiment Command Center
+            </h2>
+            <p className="text-[10px] text-muted-foreground">
+              Powered by Elfa AI
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+            Live
+          </span>
+          <span className="led-green" />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
+        {tokenCards.map((token) => (
+          <SignalCell key={token.symbol} token={token} />
+        ))}
+      </div>
     </div>
   );
 }

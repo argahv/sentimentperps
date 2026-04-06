@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { TrendingUp } from "lucide-react";
+import Link from "next/link";
+import { TrendingUp, ArrowUpRight } from "lucide-react";
 import type { ElfaNarrative } from "@/types/elfa";
 
 function NarrativeSkeleton() {
@@ -78,12 +79,14 @@ function NarrativeCard({ narrative, index }: { narrative: ElfaNarrative; index: 
       <div className="flex items-center justify-between gap-2">
         <div className="flex flex-wrap gap-1">
           {narrative.tokens.slice(0, 4).map((token) => (
-            <span
+            <Link
               key={token}
-              className="inline-flex items-center rounded bg-surface-elevated px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground"
+              href={`/trade?symbol=${token}`}
+              className="inline-flex items-center gap-0.5 rounded bg-surface-elevated px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-colors duration-150"
             >
               {token}
-            </span>
+              <ArrowUpRight className="h-2.5 w-2.5" />
+            </Link>
           ))}
         </div>
         <span className={`font-mono text-[10px] uppercase tracking-wide font-semibold ${sentimentColor}`}>

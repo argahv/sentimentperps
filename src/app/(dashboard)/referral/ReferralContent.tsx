@@ -20,6 +20,7 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { EarningsProjection } from "@/components/ui/EarningsProjection";
 import { ReferralLeaderboard } from "@/components/ui/ReferralLeaderboard";
 import { ShareCardPreview } from "@/components/ui/ShareCardPreview";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { generateTrackingLink, identifyUser } from "@/lib/fuul";
 
 interface ReferralStats {
@@ -297,53 +298,65 @@ export default function ReferralContent() {
             ) : (
               <>
                 <div
-                  className="border border-border-muted bg-surface flex items-center gap-3 p-4 card-entrance"
-                  style={{ animationDelay: "calc(2 * var(--stagger-base))" }}
-                >
-                  <div className="swiss-icon-well flex h-10 w-10 items-center justify-center text-primary shrink-0">
-                    <Users className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-widest">Referred</p>
-                    <p className="text-lg font-bold tabular-nums">{stats.totalReferred}</p>
-                  </div>
-                </div>
+                   className="border border-border-muted bg-surface flex items-center gap-3 p-4 card-entrance"
+                   style={{ animationDelay: "calc(2 * var(--stagger-base))" }}
+                 >
+                   <div className="swiss-icon-well flex h-10 w-10 items-center justify-center text-primary shrink-0">
+                     <Users className="h-5 w-5" />
+                   </div>
+                   <div>
+                     <p className="text-xs text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                       Referred
+                       <InfoTooltip content="Total number of users who signed up using your referral link." size={12} />
+                     </p>
+                     <p className="text-lg font-bold tabular-nums">{stats.totalReferred}</p>
+                   </div>
+                 </div>
                 <div
-                  className="border border-border-muted bg-surface flex items-center gap-3 p-4 card-entrance"
-                  style={{ animationDelay: "calc(3 * var(--stagger-base))" }}
-                >
-                  <div className="swiss-icon-well flex h-10 w-10 items-center justify-center text-success shrink-0">
-                    <Users className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-widest">Active</p>
-                    <p className="text-lg font-bold tabular-nums">{stats.activeTraders}</p>
-                  </div>
-                </div>
+                   className="border border-border-muted bg-surface flex items-center gap-3 p-4 card-entrance"
+                   style={{ animationDelay: "calc(3 * var(--stagger-base))" }}
+                 >
+                   <div className="swiss-icon-well flex h-10 w-10 items-center justify-center text-success shrink-0">
+                     <Users className="h-5 w-5" />
+                   </div>
+                   <div>
+                     <p className="text-xs text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                       Active
+                       <InfoTooltip content="Referred users who have made at least one trade in the current period." size={12} />
+                     </p>
+                     <p className="text-lg font-bold tabular-nums">{stats.activeTraders}</p>
+                   </div>
+                 </div>
                 <div
-                  className="border border-border-muted bg-surface flex items-center gap-3 p-4 card-entrance"
-                  style={{ animationDelay: "calc(4 * var(--stagger-base))" }}
-                >
-                  <div className="swiss-icon-well flex h-10 w-10 items-center justify-center text-amber-500 shrink-0">
-                    <DollarSign className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-widest">Earned</p>
-                    <p className="text-lg font-bold text-success tabular-nums">${stats.totalEarned}</p>
-                  </div>
-                </div>
+                   className="border border-border-muted bg-surface flex items-center gap-3 p-4 card-entrance"
+                   style={{ animationDelay: "calc(4 * var(--stagger-base))" }}
+                 >
+                   <div className="swiss-icon-well flex h-10 w-10 items-center justify-center text-amber-500 shrink-0">
+                     <DollarSign className="h-5 w-5" />
+                   </div>
+                   <div>
+                     <p className="text-xs text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                       Earned
+                       <InfoTooltip content="Total referral rewards you have earned to date, in USD." size={12} />
+                     </p>
+                     <p className="text-lg font-bold text-success tabular-nums">${stats.totalEarned}</p>
+                   </div>
+                 </div>
                 <div
-                  className="border border-border-muted bg-surface flex items-center gap-3 p-4 card-entrance"
-                  style={{ animationDelay: "calc(5 * var(--stagger-base))" }}
-                >
-                  <div className="swiss-icon-well flex h-10 w-10 items-center justify-center text-orange-500 shrink-0">
-                    <Gift className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-widest">Pending</p>
-                    <p className="text-lg font-bold tabular-nums">${stats.pendingRewards}</p>
-                  </div>
-                </div>
+                   className="border border-border-muted bg-surface flex items-center gap-3 p-4 card-entrance"
+                   style={{ animationDelay: "calc(5 * var(--stagger-base))" }}
+                 >
+                   <div className="swiss-icon-well flex h-10 w-10 items-center justify-center text-orange-500 shrink-0">
+                     <Gift className="h-5 w-5" />
+                   </div>
+                   <div>
+                     <p className="text-xs text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                       Pending
+                       <InfoTooltip content="Referral rewards awaiting settlement. These will become claimable after the verification period." size={12} />
+                     </p>
+                     <p className="text-lg font-bold tabular-nums">${stats.pendingRewards}</p>
+                   </div>
+                 </div>
               </>
             )}
           </div>
@@ -452,11 +465,14 @@ export default function ReferralContent() {
             </div>
 
             <div className="border border-border-muted bg-surface px-3 py-3 flex flex-col items-center gap-2">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Available to Claim</p>
-              <p className="text-xl font-bold text-success tabular-nums">
-                ${Math.max(0, stats.pendingRewards).toFixed(2)}
-              </p>
-            </div>
+               <p className="text-[10px] text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+                 Available to Claim
+                 <InfoTooltip content="Rewards that have been verified and are ready to be claimed to your wallet." size={10} />
+               </p>
+               <p className="text-xl font-bold text-success tabular-nums">
+                 ${Math.max(0, stats.pendingRewards).toFixed(2)}
+               </p>
+             </div>
 
             <button
               onClick={handleClaim}

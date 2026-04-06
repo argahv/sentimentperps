@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { useSentimentPolling } from "@/hooks/useSentimentPolling";
 import { useTrade } from "@/hooks/useTrade";
@@ -32,6 +32,38 @@ export default function TradeContent() {
 
   const { ready: tradeReady, isSubmitting, lastError, submitTrade, closePosition, cancelOrder, walletAddress } = useTrade();
   const { refetch: refetchPositions } = usePositions(walletAddress, null, 15_000);
+
+  // Fetch Pacifica account equity for balance display
+  const [accountEquity, setAccountEquity] = useState<number | null>(null);
+  useEffect(() => {
+    if (!walletAddress) {
+      setAccountEquity(null);
+      return;
+    }
+    let cancelled = false;
+    const fetchEquity = async () => {
+      try {
+        const res = await fetch(
+          `/api/portfolio?account=${encodeURIComponent(walletAddress)}&time_range=1d`
+        );
+        if (!res.ok) return;
+        const json = await res.json();
+        const snapshots = json?.data;
+        if (Array.isArray(snapshots) && snapshots.length > 0) {
+          const latest = snapshots[snapshots.length - 1];
+          if (!cancelled) setAccountEquity(Number(latest.account_equity) || 0);
+        }
+      } catch {
+        // Fail silently — equity display is informational
+      }
+    };
+    fetchEquity();
+    const interval = setInterval(fetchEquity, 30_000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [walletAddress]);
   const { candles, markers, currentPrice, priceChange, priceChangePct, isLive } = usePriceData(symbol);
 
   const sentimentOverlay = useMemo(() => {
@@ -220,6 +252,7 @@ export default function TradeContent() {
               onLogin={login}
               autoTradeEnabled={autoTradeEnabled}
               onAutoTradeToggle={setAutoTradeEnabled}
+              accountEquity={accountEquity}
             />
           </div>
 

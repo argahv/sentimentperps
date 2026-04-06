@@ -7,6 +7,7 @@ import {
   Users,
   Loader2,
 } from "lucide-react";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 
 interface DashboardStats {
   totalPnl: number;
@@ -52,6 +53,7 @@ const StatItem = ({
   size = "text-2xl",
   Icon,
   delay,
+  tooltip,
 }: {
   label: string;
   value: number | string;
@@ -61,6 +63,7 @@ const StatItem = ({
   size?: string;
   Icon: React.ComponentType<{ className?: string }>;
   delay?: number;
+  tooltip?: string;
 }) => (
   <div
     className="flex items-center gap-3 p-4 bg-surface-elevated rounded-lg shadow-neu-inset border border-border-muted card-entrance"
@@ -72,8 +75,15 @@ const StatItem = ({
       </div>
     )}
     <div className="flex-1 min-w-0">
-      <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+      <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
         {label}
+        {tooltip && (
+          <InfoTooltip
+            content={tooltip}
+            size={12}
+            position="top"
+          />
+        )}
       </span>
       <div className="flex items-baseline gap-1 mt-1">
         <span className={`${size} font-bold tabular-nums tracking-tight text-foreground font-mono`}>
@@ -186,6 +196,12 @@ export function DashboardHeroStats() {
             </div>
             <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground font-display">
               Total Platform P&L
+              <InfoTooltip
+                content="Sum of all realized profit and loss across the platform, denominated in USD."
+                size={14}
+                position="top"
+                className="ml-1.5"
+              />
             </h2>
           </div>
           {displayStats.totalTrades > 0 ? (
@@ -203,6 +219,11 @@ export function DashboardHeroStats() {
                 <span className="flat-tag flat-tag-success px-3 py-1 flex items-center gap-1.5">
                   <TrendingUp className="w-3 h-3" />
                   {displayStats.avgPnlPct >= 0 ? "+" : ""}{displayStats.avgPnlPct.toFixed(1)}% AVG RETURN
+                  <InfoTooltip
+                    content="Average percentage return per trade across all closed positions."
+                    size={12}
+                    position="top"
+                  />
                 </span>
                 <span className="flat-tag px-3 py-1 bg-surface-elevated text-muted-foreground">
                   {displayStats.totalTrades} TRADES
@@ -224,6 +245,12 @@ export function DashboardHeroStats() {
         <div className="lg:col-span-3 flex flex-col items-center justify-center bg-surface rounded-xl border border-border-muted p-6 shadow-neu-inset card-entrance" style={{ animationDelay: "200ms" }}>
           <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground font-display mb-4 w-full text-left">
             Signal Accuracy
+            <InfoTooltip
+              content="Percentage of sentiment signals that correctly predicted price direction. Calculated as correct signals divided by total signals."
+              size={14}
+              position="top"
+              className="ml-1.5"
+            />
           </h2>
           
           <div className="relative flex items-center justify-center w-full max-w-[160px] aspect-[2/1] overflow-hidden">
@@ -264,6 +291,7 @@ export function DashboardHeroStats() {
             Icon={Target}
             delay={350}
             size="text-3xl"
+            tooltip="Percentage of closed trades that were profitable. Wins divided by total closed trades."
           />
           <StatItem
             label="Active Traders"
@@ -272,6 +300,7 @@ export function DashboardHeroStats() {
             Icon={Users}
             delay={400}
             size="text-3xl"
+            tooltip="Number of unique traders with at least one open position or recent trade."
           />
         </div>
       </div>

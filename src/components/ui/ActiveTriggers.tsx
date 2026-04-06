@@ -1,6 +1,7 @@
 "use client";
 
 import { CheckCircle2, Clock, X, TrendingUp, TrendingDown, Zap } from "lucide-react";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { useSentimentTriggersStore, type SentimentTrigger } from "@/stores/sentimentTriggers";
 
 function formatTimeRemaining(expiresAt: Date): string {
@@ -93,37 +94,39 @@ export function ActiveTriggers() {
     (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
   );
 
-  if (sorted.length === 0) {
-    return (
-      <div className="swiss-card bg-surface rounded-lg flex flex-col gap-3 p-4">
-        <div className="flex items-center gap-2">
-          <Zap className="h-4 w-4 text-primary" />
-          <h3 className="font-display text-sm font-semibold uppercase tracking-widest">Active Triggers</h3>
-        </div>
-        <p className="text-center text-xs text-muted-foreground">
-          No triggers set yet. Use the form above to create one.
-        </p>
-      </div>
-    );
-  }
+   if (sorted.length === 0) {
+     return (
+       <div className="swiss-card bg-surface rounded-lg flex flex-col gap-3 p-4">
+         <div className="flex items-center gap-2">
+           <Zap className="h-4 w-4 text-primary" />
+           <h3 className="font-display text-sm font-semibold uppercase tracking-widest">Active Triggers</h3>
+           <InfoTooltip content="Automated orders that monitor sentiment in real-time and execute a trade when your specified threshold is reached." size={14} />
+         </div>
+         <p className="text-center text-xs text-muted-foreground">
+           No triggers set yet. Use the form above to create one.
+         </p>
+       </div>
+     );
+   }
 
-  return (
-    <div className="swiss-card bg-surface rounded-lg flex flex-col gap-3 p-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Zap className="h-4 w-4 text-primary" />
-          <h3 className="font-display text-sm font-semibold uppercase tracking-widest">Triggers</h3>
-        </div>
-        <span className="border border-border-muted bg-surface-elevated px-2 py-0.5 text-[10px] font-semibold text-primary">
-          {triggers.filter((t) => t.status === "active").length} active
-        </span>
-      </div>
+   return (
+     <div className="swiss-card bg-surface rounded-lg flex flex-col gap-3 p-4">
+       <div className="flex items-center justify-between">
+         <div className="flex items-center gap-2">
+           <Zap className="h-4 w-4 text-primary" />
+           <h3 className="font-display text-sm font-semibold uppercase tracking-widest">Triggers</h3>
+           <InfoTooltip content="Automated orders that monitor sentiment in real-time and execute a trade when your specified threshold is reached." size={14} />
+         </div>
+         <span className="border border-border-muted bg-surface-elevated px-2 py-0.5 text-[10px] font-semibold text-primary">
+           {triggers.filter((t) => t.status === "active").length} active
+         </span>
+       </div>
 
-      <div className="flex flex-col gap-2">
-        {sorted.map((trigger) => (
-          <TriggerRow key={trigger.id} trigger={trigger} />
-        ))}
-      </div>
-    </div>
-  );
+       <div className="flex flex-col gap-2">
+         {sorted.map((trigger) => (
+           <TriggerRow key={trigger.id} trigger={trigger} />
+         ))}
+       </div>
+     </div>
+   );
 }

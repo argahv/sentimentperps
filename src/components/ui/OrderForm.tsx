@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronUp, Sparkles, AlertTriangle, Zap, TrendingUp, TrendingDown, Bell } from "lucide-react";
+import { ChevronDown, ChevronUp, Sparkles, AlertTriangle, Zap, TrendingUp, TrendingDown, Bell, Wallet } from "lucide-react";
 import { TradeConfirmationModal } from "@/components/ui/TradeConfirmationModal";
+import { DepositBridgeModal } from "@/components/ui/DepositBridgeModal";
 import { SentimentSparkline } from "@/components/ui/SentimentSparkline";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { useSentimentStore } from "@/stores/sentiment";
 import { usePositionsStore } from "@/stores/positions";
 import { useMarketsStore } from "@/stores/markets";
@@ -40,6 +42,7 @@ interface OrderFormProps {
   onLogin?: () => void;
   autoTradeEnabled?: boolean;
   onAutoTradeToggle?: (enabled: boolean) => void;
+  accountEquity?: number | null;
   onSubmit?: (data: {
     symbol: string;
     marketId: string;
@@ -64,6 +67,7 @@ export function OrderForm({
   onLogin,
   autoTradeEnabled,
   onAutoTradeToggle,
+  accountEquity,
   onSubmit,
 }: OrderFormProps) {
   const [mode, setMode] = useState<"order" | "trigger">("order");
@@ -74,6 +78,7 @@ export function OrderForm({
   const [stopLoss, setStopLoss] = useState("");
   const [showTpSl, setShowTpSl] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [showDeposit, setShowDeposit] = useState(false);
 
   const [triggerCondition, setTriggerCondition] = useState<"above" | "below">("above");
   const [triggerThreshold, setTriggerThreshold] = useState(70);
@@ -236,7 +241,10 @@ export function OrderForm({
 
         <div className="border border-border-muted p-2 rounded-md flex flex-col gap-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Sentiment Velocity</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Sentiment Velocity</span>
+              <InfoTooltip content="Rate of social media mentions per minute for this token. Higher velocity indicates rapidly growing attention and potential price movement." size={12} />
+            </div>
             <span className="text-xs font-semibold text-primary">{currentVelocity.toFixed(1)}/min</span>
           </div>
           <SentimentSparkline symbol={symbol} currentVelocity={currentVelocity} />
@@ -378,9 +386,12 @@ export function OrderForm({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="size" className="text-xs text-muted-foreground">
-            Size (USDC)
-          </label>
+          <div className="flex items-center gap-1.5">
+            <label htmlFor="size" className="text-xs text-muted-foreground">
+              Size (USDC)
+            </label>
+            <InfoTooltip content="The amount in USDC you want to trade. This is your position size before leverage is applied." size={12} />
+          </div>
           <input
             id="size"
             type="number"
@@ -414,12 +425,32 @@ export function OrderForm({
           ) : (
             <span className="text-[10px] text-muted-foreground">Trade size when trigger fires</span>
           )}
+
+           {mode === "order" && accountEquity != null && (
+            <div className="flex items-center justify-between mt-1">
+              <div className="flex items-center gap-1.5">
+                <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                  <Wallet className="h-3 w-3" />
+                  Pacifica Balance
+                </span>
+                <InfoTooltip content="Your available trading balance on Pacifica exchange. This is the equity you can use to open new positions." size={12} />
+              </div>
+              <span className={`text-[10px] font-mono font-semibold ${
+                sizeNum > 0 && sizeNum > accountEquity ? "text-danger" : "text-success"
+              }`}>
+                ${accountEquity.toFixed(2)}
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <span className="tabular-nums text-xs text-muted-foreground">
-            Leverage — {leverage}x
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="tabular-nums text-xs text-muted-foreground">
+              Leverage — {leverage}x
+            </span>
+            <InfoTooltip content="Multiplier applied to your position size. Higher leverage amplifies both gains and losses. Max 20x." size={12} />
+          </div>
           <div className="flex gap-1.5">
             {LEVERAGE_OPTIONS.map((lev) => (
               <button
@@ -463,9 +494,12 @@ export function OrderForm({
             {showTpSl && (
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="takeProfit" className="text-xs text-muted-foreground">
-                    Take Profit ($)
-                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <label htmlFor="takeProfit" className="text-xs text-muted-foreground">
+                      Take Profit ($)
+                    </label>
+                    <InfoTooltip content="Price at which your position automatically closes in profit. For longs, set above entry; for shorts, set below entry." size={12} />
+                  </div>
                   <input
                     id="takeProfit"
                     type="number"
@@ -487,9 +521,12 @@ export function OrderForm({
                   )}
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="stopLoss" className="text-xs text-muted-foreground">
-                    Stop Loss ($)
-                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <label htmlFor="stopLoss" className="text-xs text-muted-foreground">
+                      Stop Loss ($)
+                    </label>
+                    <InfoTooltip content="Price at which your position automatically closes to limit losses. For longs, set below entry; for shorts, set above entry." size={12} />
+                  </div>
                   <input
                     id="stopLoss"
                     type="number"
@@ -575,7 +612,14 @@ export function OrderForm({
         currentPrice={currentPrice ?? 0}
         takeProfit={tpNum}
         stopLoss={slNum}
+        pacificaEquity={accountEquity}
+        onOpenDeposit={() => {
+          setShowModal(false);
+          setShowDeposit(true);
+        }}
       />
+
+      <DepositBridgeModal isOpen={showDeposit} onClose={() => setShowDeposit(false)} />
     </>
   );
 }

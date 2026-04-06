@@ -10,16 +10,14 @@ import { YourEdgeCard } from "@/components/ui/YourEdgeCard";
 import { HotTokensFeed } from "@/components/ui/HotTokensFeed";
 import { PositionsSidebar } from "@/components/ui/PositionsSidebar";
 import { MissedMoves } from "@/components/ui/MissedMoves";
-import { PriceTicker } from "@/components/ui/PriceTicker";
 import { DivergenceAlerts } from "@/components/ui/DivergenceAlerts";
 import { TrendingNarratives } from "@/components/ui/TrendingNarratives";
 import { SentimentReplay } from "@/components/ui/SentimentReplay";
 import { DashboardHeroStats } from "@/components/ui/DashboardHeroStats";
 import { RecentWinsFeed } from "@/components/ui/RecentWinsFeed";
 import { QuestBoard } from "@/components/ui/QuestBoard";
+import { SentimentSignalCards } from "@/components/ui/SentimentSignalCards";
 import { LogIn, ChevronDown, Crosshair } from "lucide-react";
-
-const TICKER_SYMBOLS = ["BTC", "ETH", "SOL", "DOGE", "ARB", "AVAX"];
 
 export default function DashboardContent() {
   const { login, authenticated, ready } = usePrivy();
@@ -65,51 +63,49 @@ export default function DashboardContent() {
         )}
       </div>
 
-      {/* ── Price Ticker (ambient market context) ── */}
+      {/* ── Sentiment Command Center — unified signals, prices, heatmap ── */}
       <div className="card-entrance" style={{ animationDelay: "calc(1 * var(--stagger-base))" }}>
-        <PriceTicker symbols={TICKER_SYMBOLS} />
+        <SentimentSignalCards />
       </div>
 
       {/* ── Hero Stats — platform-wide P&L, sentiment accuracy, wins, traders ── */}
-      <div className="card-entrance" style={{ animationDelay: "calc(1.5 * var(--stagger-base))" }}>
+      <div className="card-entrance" style={{ animationDelay: "calc(1.3 * var(--stagger-base))" }}>
         <DashboardHeroStats />
       </div>
 
       {/* ── Portfolio (full width) ── */}
-      <div className="card-entrance" style={{ animationDelay: "calc(2 * var(--stagger-base))" }}>
+      <div className="card-entrance" style={{ animationDelay: "calc(1.6 * var(--stagger-base))" }}>
         <PortfolioPerformanceCard />
       </div>
 
       {/* ── 2-col cockpit: Left stack + Right stack ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        {/* Left column */}
         <div className="flex flex-col gap-3 min-w-0">
-          <div className="card-entrance" style={{ animationDelay: "calc(2.3 * var(--stagger-base))" }}>
+          <div className="card-entrance" style={{ animationDelay: "calc(2 * var(--stagger-base))" }}>
             <TrendingNarratives />
           </div>
-          <div className="card-entrance" style={{ animationDelay: "calc(2.8 * var(--stagger-base))" }}>
+          <div className="card-entrance" style={{ animationDelay: "calc(2.5 * var(--stagger-base))" }}>
             <DivergenceAlerts />
           </div>
-          <div className="card-entrance" style={{ animationDelay: "calc(3.3 * var(--stagger-base))" }}>
+          <div className="card-entrance" style={{ animationDelay: "calc(3 * var(--stagger-base))" }}>
             <QuestBoard />
           </div>
-          <div className="card-entrance" style={{ animationDelay: "calc(3.8 * var(--stagger-base))" }}>
+          <div className="card-entrance" style={{ animationDelay: "calc(3.5 * var(--stagger-base))" }}>
             <RecentWinsFeed />
           </div>
         </div>
 
-        {/* Right column */}
         <div className="flex flex-col gap-3 min-w-0">
-          <div className="card-entrance" style={{ animationDelay: "calc(3 * var(--stagger-base))" }}>
+          <div className="card-entrance" style={{ animationDelay: "calc(2.3 * var(--stagger-base))" }}>
             <MissedMoves />
           </div>
-          <div className="card-entrance" style={{ animationDelay: "calc(3.5 * var(--stagger-base))" }}>
+          <div className="card-entrance" style={{ animationDelay: "calc(2.8 * var(--stagger-base))" }}>
             <HotTokensFeed />
           </div>
-          <div className="card-entrance" style={{ animationDelay: "calc(4 * var(--stagger-base))" }}>
+          <div className="card-entrance" style={{ animationDelay: "calc(3.3 * var(--stagger-base))" }}>
             <PositionsSidebar onClosePosition={authenticated ? handleClose : undefined} onCancelOrder={authenticated ? handleCancelOrder : undefined} />
           </div>
-          <div className="card-entrance" style={{ animationDelay: "calc(4.5 * var(--stagger-base))" }}>
+          <div className="card-entrance" style={{ animationDelay: "calc(3.8 * var(--stagger-base))" }}>
             {/* Your Edge — collapsible progressive disclosure */}
             <span className="flat-card rounded-lg overflow-hidden transition-all duration-300">
               <button
@@ -137,8 +133,7 @@ export default function DashboardContent() {
         </div>
       </div>
 
-      {/* ── Sentiment Replay (full width — trust/proof, lowest priority) ── */}
-      <div className="card-entrance" style={{ animationDelay: "calc(5 * var(--stagger-base))" }}>
+      <div className="card-entrance" style={{ animationDelay: "calc(4.3 * var(--stagger-base))" }}>
         <SentimentReplay />
       </div>
     </div>

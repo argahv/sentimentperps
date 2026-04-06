@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import {
   createChart,
   CandlestickSeries,
@@ -204,27 +205,33 @@ export function PriceChart({ data, sentimentData, markers, height = 400, symbol,
   return (
     <div className="flat-card rounded-lg bg-surface relative overflow-hidden">
       <div className="absolute left-4 top-3 z-10 flex items-center justify-between w-[calc(100%-2rem)]">
-        {symbol ? (
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-foreground/60">{symbol}/USDC</span>
-            <span className="bg-surface-elevated rounded-full px-1.5 py-0.5 text-[10px] text-muted-foreground">
-              PERP
-            </span>
-            <span className={`flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${isLive ? "bg-success/15 text-success" : "bg-warning/15 text-warning"}`}>
-              <span className={`inline-block h-1.5 w-1.5 rounded-full ${isLive ? "led-green animate-pulse" : "bg-warning"}`} />
-              {isLive ? "LIVE" : "SYNTHETIC"}
-            </span>
-          </div>
-        ) : <div />}
-        {hasSentimentData && (
-          <button
-            onClick={() => setShowSentiment(!showSentiment)}
-            className="bg-surface-elevated rounded-md flex items-center justify-center p-1.5 text-muted-foreground hover:text-foreground transition-colors duration-200"
-            title="Toggle Sentiment Overlay"
-          >
-            {showSentiment ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-          </button>
-        )}
+         {symbol ? (
+           <div className="flex items-center gap-2">
+             <span className="text-sm font-semibold text-foreground/60">{symbol}/USDC</span>
+             <span className="bg-surface-elevated rounded-full px-1.5 py-0.5 text-[10px] text-muted-foreground">
+               PERP
+             </span>
+             <div className="flex items-center gap-1.5">
+               <span className={`flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${isLive ? "bg-success/15 text-success" : "bg-warning/15 text-warning"}`}>
+                 <span className={`inline-block h-1.5 w-1.5 rounded-full ${isLive ? "led-green animate-pulse" : "bg-warning"}`} />
+                 {isLive ? "LIVE" : "SYNTHETIC"}
+               </span>
+               <InfoTooltip content="LIVE: Real-time market data from Pacifica exchange. SYNTHETIC: Simulated price data for demonstration purposes." size={12} />
+             </div>
+           </div>
+         ) : <div />}
+         {hasSentimentData && (
+           <div className="flex items-center gap-1.5">
+             <button
+               onClick={() => setShowSentiment(!showSentiment)}
+               className="bg-surface-elevated rounded-md flex items-center justify-center p-1.5 text-muted-foreground hover:text-foreground transition-colors duration-200"
+               title="Toggle Sentiment Overlay"
+             >
+               {showSentiment ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+             </button>
+             <InfoTooltip content="Overlays the Elfa AI sentiment score on the price chart to visualize correlation between social sentiment and price movement." size={12} />
+           </div>
+         )}
       </div>
       <div ref={containerRef} />
     </div>

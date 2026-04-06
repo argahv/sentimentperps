@@ -3,6 +3,7 @@
 import { usePrivy, useActiveWallet } from "@privy-io/react-auth";
 import { useWallets } from "@privy-io/react-auth/solana";
 import { BadgeList } from "@/components/ui/BadgeChip";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { usePositionsStore } from "@/stores/positions";
 import { WinRateDonut } from "@/components/ui/WinRateDonut";
 import { PerformanceBreakdown } from "@/components/ui/PerformanceBreakdown";
@@ -545,8 +546,9 @@ export default function ProfileContent() {
                     <div className="swiss-icon-well flex h-10 w-10 items-center justify-center text-primary mb-1">
                       <BarChart3 className="h-5 w-5" />
                     </div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold">
+                    <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold flex items-center gap-1">
                       Total Trades
+                      <InfoTooltip content="Total number of trades you have executed on the platform, including both open and closed positions." size={14} />
                     </p>
                     <p className="text-2xl font-bold font-display tabular-nums">
                       {totalTradesAnim.toFixed(0)}
@@ -567,8 +569,9 @@ export default function ProfileContent() {
                     <div className="swiss-icon-well flex h-10 w-10 items-center justify-center text-amber-500 mb-1">
                       <TrendingUp className="h-5 w-5" />
                     </div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold">
+                    <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold flex items-center gap-1">
                       Total PnL
+                      <InfoTooltip content="Your cumulative realized profit and loss across all closed trades, in USD." size={14} />
                     </p>
                     <p
                       className={`text-2xl font-bold font-display tabular-nums ${stats.totalPnl >= 0 ? "text-success" : "text-danger"}`}
@@ -584,8 +587,9 @@ export default function ProfileContent() {
                     <div className="swiss-icon-well flex h-10 w-10 items-center justify-center text-orange-500 mb-1">
                       <Trophy className="h-5 w-5" />
                     </div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold">
+                    <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold flex items-center gap-1">
                       Best Trade
+                      <InfoTooltip content="Your single most profitable closed trade, measured in USD profit." size={14} />
                     </p>
                     <p className="text-2xl font-bold font-display tabular-nums text-success">
                       +${bestTradeAnim.toFixed(2)}
@@ -599,11 +603,12 @@ export default function ProfileContent() {
                 style={{ animationDelay: "300ms" }}
               >
                 <div className="px-3 py-2 mb-2">
-                  <h3 className="text-sm font-semibold flex items-center gap-2 uppercase tracking-widest">
-                    <Target className="h-4 w-4 text-primary" />
-                    Performance Breakdown
-                  </h3>
-                </div>
+                   <h3 className="text-sm font-semibold flex items-center gap-2 uppercase tracking-widest">
+                     <Target className="h-4 w-4 text-primary" />
+                     Performance Breakdown
+                     <InfoTooltip content="Per-token breakdown of your trading performance including win rates and average position sizes." size={14} />
+                   </h3>
+                 </div>
                 {displayTrades.length > 0 ? (
                   <PerformanceBreakdown
                     trades={displayTrades.map((t) => ({
@@ -635,10 +640,13 @@ export default function ProfileContent() {
 
                   <div className="p-4 flex flex-col gap-3">
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      <div className="border border-border-muted bg-surface px-3 py-2.5 flex flex-col gap-1">
-                        <span className="text-[10px] text-muted-foreground">Trading Days</span>
-                        <span className="text-sm font-bold tabular-nums">{journey.daysSinceFirst}</span>
-                      </div>
+                       <div className="border border-border-muted bg-surface px-3 py-2.5 flex flex-col gap-1">
+                         <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                           Trading Days
+                           <InfoTooltip content="Number of days since your first trade on the platform." size={12} />
+                         </span>
+                         <span className="text-sm font-bold tabular-nums">{journey.daysSinceFirst}</span>
+                       </div>
                       <div className="border border-border-muted bg-surface px-3 py-2.5 flex flex-col gap-1">
                         <span className="text-[10px] text-muted-foreground">Win / Total</span>
                         <span className="text-sm font-bold tabular-nums">
@@ -646,12 +654,15 @@ export default function ProfileContent() {
                           <span className="text-muted-foreground"> / {journey.totalTrades}</span>
                         </span>
                       </div>
-                      <div className="border border-border-muted bg-surface px-3 py-2.5 flex flex-col gap-1">
-                        <span className="text-[10px] text-muted-foreground">Sentiment Aligned</span>
-                        <span className="text-sm font-bold tabular-nums text-primary">
-                          {journey.sentimentAlignmentRate}%
-                        </span>
-                      </div>
+                       <div className="border border-border-muted bg-surface px-3 py-2.5 flex flex-col gap-1">
+                         <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                           Sentiment Aligned
+                           <InfoTooltip content="Percentage of your trades where your direction (long/short) matched the Elfa AI sentiment signal at the time of entry." size={12} />
+                         </span>
+                         <span className="text-sm font-bold tabular-nums text-primary">
+                           {journey.sentimentAlignmentRate}%
+                         </span>
+                       </div>
                       <div className="border border-border-muted bg-surface px-3 py-2.5 flex flex-col gap-1">
                         <span className="text-[10px] text-muted-foreground">Favorite Pair</span>
                         <span className="text-sm font-bold">{journey.favoriteSymbol ?? "—"}</span>
@@ -691,18 +702,21 @@ export default function ProfileContent() {
                         </div>
                       </div>
 
-                      <div className="border border-border-muted bg-surface px-3 py-3 flex items-center gap-3">
-                        <div className="swiss-icon-well flex h-9 w-9 items-center justify-center text-primary shrink-0">
-                          <Crosshair className="h-4 w-4" />
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-[10px] text-muted-foreground">Fastest Signal</span>
-                          <span className="text-sm font-bold text-primary tabular-nums">
-                            {journey.fastestSignalResponse}m
-                          </span>
-                          <span className="text-[9px] text-muted-foreground">after sentiment shift</span>
-                        </div>
-                      </div>
+                       <div className="border border-border-muted bg-surface px-3 py-3 flex items-center gap-3">
+                         <div className="swiss-icon-well flex h-9 w-9 items-center justify-center text-primary shrink-0">
+                           <Crosshair className="h-4 w-4" />
+                         </div>
+                         <div className="flex flex-col">
+                           <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                             Fastest Signal
+                             <InfoTooltip content="Your quickest trade execution after a sentiment shift, in minutes. Lower is better." size={12} />
+                           </span>
+                           <span className="text-sm font-bold text-primary tabular-nums">
+                             {journey.fastestSignalResponse}m
+                           </span>
+                           <span className="text-[9px] text-muted-foreground">after sentiment shift</span>
+                         </div>
+                       </div>
                     </div>
                   </div>
                 </div>

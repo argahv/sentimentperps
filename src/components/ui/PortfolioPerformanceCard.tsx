@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { usePositionsStore } from "@/stores/positions";
 import { TrendingUp, TrendingDown, Crosshair } from "lucide-react";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 
 type TimeRange = "1D" | "1W" | "1M";
 
@@ -104,7 +105,10 @@ export function PortfolioPerformanceCard() {
     <div className="flat-card rounded-lg p-6 sm:p-8 card-entrance col-span-full industrial-screws flex flex-col md:flex-row items-start md:items-center justify-between gap-6 overflow-hidden relative">
 
       <div className="flex flex-col z-10">
-        <span className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-1">Unrealized P&amp;L</span>
+         <div className="flex items-center gap-2 mb-1">
+           <span className="text-sm font-medium uppercase tracking-wider text-muted-foreground">Unrealized P&amp;L</span>
+           <InfoTooltip content="Current profit or loss on open positions based on mark price. This value changes in real-time and is only realized when you close the position." />
+         </div>
         <div className="flex items-baseline gap-3">
           <h2 className={`text-3xl sm:text-4xl font-bold tabular-nums tracking-tight ${currentTotalValue >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
             {currentTotalValue >= 0 ? '+' : ''}${currentTotalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}

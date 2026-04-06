@@ -5,6 +5,7 @@ import { usePrivy } from "@privy-io/react-auth";
 import { useWallets } from "@privy-io/react-auth/solana";
 import { useLeaderboardStore } from "@/stores/leaderboard";
 import { BadgeList } from "@/components/ui/BadgeChip";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import {
   Trophy,
   TrendingUp,
@@ -245,11 +246,35 @@ export default function LeaderboardContent() {
             <div className="flex items-center gap-4 px-4 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
               <span className="w-8 text-center">#</span>
               <span className="flex-1">Trader</span>
-              <span className="hidden sm:block w-16 text-right">Win %</span>
+              <span className="hidden sm:flex items-center justify-end w-16 gap-1">
+                Win %
+                <InfoTooltip
+                  content="Percentage of closed trades that were profitable for this trader."
+                  size={12}
+                />
+              </span>
               <span className="hidden sm:block w-14 text-right">Trades</span>
-              <span className="hidden sm:block w-20 text-right">Best Call</span>
-              <span className="hidden sm:block w-20 text-right">Signal Speed</span>
-              <span className="w-24 text-right ml-2">Score</span>
+              <span className="hidden sm:flex items-center justify-end w-20 gap-1">
+                Best Call
+                <InfoTooltip
+                  content="Highest single-trade profit achieved by this trader, in USD."
+                  size={12}
+                />
+              </span>
+              <span className="hidden sm:flex items-center justify-end w-20 gap-1">
+                Signal Speed
+                <InfoTooltip
+                  content="Average time in minutes between a sentiment signal firing and the trader executing. Lower is better."
+                  size={12}
+                />
+              </span>
+              <span className="flex items-center justify-end w-24 ml-2 gap-1">
+                Score
+                <InfoTooltip
+                  content="Composite ranking score. Calculated as: profit% × (1 / minutes). Rewards both profitability and speed of action."
+                  size={12}
+                />
+              </span>
             </div>
 
             {isLoading ? (
@@ -364,7 +389,10 @@ export default function LeaderboardContent() {
                 </div>
 
                 <div>
-                  <span className="text-[10px] text-muted-foreground">Sentiment Accuracy</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] text-muted-foreground">Sentiment Accuracy</span>
+                    <InfoTooltip content="How often the trader's trade direction aligned with the sentiment signal. Higher accuracy means better signal reading." />
+                  </div>
                   <SentimentAccuracyBar accuracy={yourEntry.sentimentAccuracy} />
                 </div>
 
@@ -475,13 +503,16 @@ export default function LeaderboardContent() {
                 <span className="text-sm font-bold tabular-nums">{aggregates.totalTradesAllTime.toLocaleString()}</span>
                 <span className="text-[9px] text-muted-foreground">All-Time Trades</span>
               </div>
-              <div className="flex flex-col items-center gap-1 bg-surface px-2 py-3">
-                <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className={`text-sm font-bold tabular-nums ${aggregates.totalPnlUsdc >= 0 ? "text-success" : "text-danger"}`}>
-                  {aggregates.totalPnlUsdc >= 0 ? "+" : ""}${Math.abs(aggregates.totalPnlUsdc).toLocaleString()}
-                </span>
-                <span className="text-[9px] text-muted-foreground">Total PnL</span>
-              </div>
+               <div className="flex flex-col items-center gap-1 bg-surface px-2 py-3">
+                 <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
+                 <span className={`text-sm font-bold tabular-nums ${aggregates.totalPnlUsdc >= 0 ? "text-success" : "text-danger"}`}>
+                   {aggregates.totalPnlUsdc >= 0 ? "+" : ""}${Math.abs(aggregates.totalPnlUsdc).toLocaleString()}
+                 </span>
+                 <div className="flex items-center gap-1">
+                   <span className="text-[9px] text-muted-foreground">Total PnL</span>
+                   <InfoTooltip content="Combined realized profit and loss across all platform traders." size={12} />
+                 </div>
+               </div>
             </div>
           </div>
         </div>

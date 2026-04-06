@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MessageSquare, X, Send, Sparkles, Bot } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { useSentimentStore } from "@/stores/sentiment";
 
 interface Message {
   id: string;
@@ -109,6 +110,7 @@ export function AIChatPanel() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const tokenCards = useSentimentStore((s) => s.tokenCards);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -149,9 +151,21 @@ export function AIChatPanel() {
     setIsLoading(true);
 
     try {
-      const payload: Record<string, string> = { message: text };
+      const payload: Record<string, unknown> = { message: text };
       if (sessionId) {
         payload.sessionId = sessionId;
+      }
+      if (tokenCards.length > 0) {
+        payload.sentimentContext = tokenCards.map((t) => ({
+          symbol: t.symbol,
+          name: t.name,
+          sentiment: t.sentiment,
+          sentimentScore: t.sentimentScore,
+          mentionCount: t.mentionCount,
+          mentionChange: t.mentionChange,
+          velocity: t.velocity,
+          priceChange24h: t.priceChange24h,
+        }));
       }
 
       const res = await fetch("/api/chat", {
@@ -207,7 +221,7 @@ export function AIChatPanel() {
     } finally {
       setIsLoading(false);
     }
-  }, [input, isLoading, sessionId]);
+  }, [input, isLoading, sessionId, tokenCards]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {

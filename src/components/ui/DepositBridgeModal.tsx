@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { X, ArrowRightLeft } from "lucide-react";
 import dynamic from "next/dynamic";
 import type { DefaultRoute, WidgetTheme, ChainFilter } from "@rhino.fi/widget";
@@ -57,8 +58,16 @@ const widgetTheme: WidgetTheme = {
 export function DepositBridgeModal({ isOpen, onClose }: DepositBridgeModalProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [isOpen]);
+
   if (!mounted || !isOpen) return null;
-  return <DepositBridgeModalInner onClose={onClose} />;
+  return createPortal(<DepositBridgeModalInner onClose={onClose} />, document.body);
 }
 
 function DepositBridgeModalInner({ onClose }: { onClose: () => void }) {
@@ -90,14 +99,17 @@ function DepositBridgeModalInner({ onClose }: { onClose: () => void }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Cross-Chain Deposit"
     >
       <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
 
-      <div className="swiss-card rounded-lg industrial-screws relative w-full max-w-[400px] card-entrance">
+      <div className="swiss-card rounded-lg industrial-screws relative z-10 w-full max-w-[400px] card-entrance bg-surface">
         <div className="flex items-center justify-between px-3.5 pt-3.5 pb-2">
           <div className="flex items-center gap-2">
             <div className="swiss-icon-well flex h-7 w-7 items-center justify-center text-primary">

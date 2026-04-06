@@ -16,6 +16,7 @@ import {
   Wallet,
   Clock,
 } from "lucide-react";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import type {
   PacificaTradeFill,
   PacificaHistoricalOrder,
@@ -220,6 +221,10 @@ function PortfolioChart({
             <TrendingUp className="h-3.5 w-3.5 text-primary" />
           </div>
           <span className="text-sm font-semibold">Portfolio Equity</span>
+          <InfoTooltip
+            size={12}
+            content="Your account equity over time, reflecting both realized trades and current unrealized positions."
+          />
         </div>
         <div className="flex items-center gap-2">
           <span className="font-mono text-sm font-bold">{fmtUsd(latestEq)}</span>
@@ -371,6 +376,7 @@ function AnalyticsCards({
       icon: analytics.totalPnl >= 0 ? TrendingUp : TrendingDown,
       iconColor: analytics.totalPnl >= 0 ? "text-success" : "text-danger",
       sub: `${analytics.totalTrades} closed trades`,
+      tooltip: "Cumulative realized profit and loss from all closed trades in the selected time period.",
     },
     {
       label: "Win Rate",
@@ -384,6 +390,7 @@ function AnalyticsCards({
       icon: Target,
       iconColor: "text-primary",
       sub: `${analytics.winCount}/${analytics.totalTrades} wins`,
+      tooltip: "Percentage of closed trades that were profitable in the selected period. Calculated as winning trades divided by total closed trades.",
     },
     {
       label: "Total Volume",
@@ -392,6 +399,7 @@ function AnalyticsCards({
       icon: BarChart3,
       iconColor: "text-primary",
       sub: "cumulative",
+      tooltip: "Sum of all trade sizes executed in the selected period, in USD.",
     },
     {
       label: "Fees Paid",
@@ -400,6 +408,7 @@ function AnalyticsCards({
       icon: Receipt,
       iconColor: "text-warning",
       sub: "total fees",
+      tooltip: "Total trading fees paid to the Pacifica exchange in the selected period.",
     },
   ];
 
@@ -417,6 +426,10 @@ function AnalyticsCards({
             <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-muted-foreground">
               {card.label}
             </span>
+            <InfoTooltip
+              size={12}
+              content={card.tooltip}
+            />
           </div>
           <span className={`font-mono text-xl font-bold ${card.color}`}>
             {card.value}
@@ -867,14 +880,29 @@ function FillsTable({
               <th className="px-3 py-3 text-right font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                 Entry
               </th>
-              <th className="px-3 py-3 text-right font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+               <th className="px-3 py-3 text-right font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                 Fee
+                <InfoTooltip
+                  size={12}
+                  content="Trading fee charged by Pacifica exchange for this fill."
+                  position="bottom"
+                />
               </th>
               <th className="px-3 py-3 text-right font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                 P&L
+                <InfoTooltip
+                  size={12}
+                  content="Profit or loss realized on this specific trade fill, in USD."
+                  position="bottom"
+                />
               </th>
               <th className="px-3 py-3 text-left font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                 Cause
+                <InfoTooltip
+                  size={12}
+                  content="What triggered this fill — manual order, take profit, stop loss, or liquidation."
+                  position="bottom"
+                />
               </th>
             </tr>
           </thead>
@@ -1174,11 +1202,21 @@ function FundingTable({
               <th className="px-3 py-3 text-right font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                 Position Size
               </th>
-              <th className="px-3 py-3 text-right font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+               <th className="px-3 py-3 text-right font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                 Rate
+                <InfoTooltip
+                  size={12}
+                  content="Funding rate applied to your position. Positive means longs pay shorts; negative means shorts pay longs."
+                  position="bottom"
+                />
               </th>
               <th className="px-3 py-3 text-right font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                 Payment
+                <InfoTooltip
+                  size={12}
+                  content="Funding payment amount. Positive means you received payment; negative means you paid."
+                  position="bottom"
+                />
               </th>
             </tr>
           </thead>

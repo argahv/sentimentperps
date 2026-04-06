@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 
 export function WinRateDonut({
   winRate,
@@ -61,8 +62,8 @@ export function WinRateDonut({
           </span>
         </div>
       </div>
-      <span className="mt-2 text-xs text-muted-foreground uppercase tracking-widest font-semibold">
-        Win Rate
+      <span className="mt-2 text-xs text-muted-foreground uppercase tracking-widest font-semibold flex items-center gap-1.5">
+        Win Rate <InfoTooltip content="Percentage of your closed trades that were profitable. A trade is a 'win' if it closed with positive realized P&L." size={12} />
       </span>
     </div>
   );

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSentimentStore } from "@/stores/sentiment";
+import { InfoTooltip } from "./InfoTooltip";
 
 export function SentimentConfidenceMeter({ symbol }: { symbol: string }) {
   const tokenCard = useSentimentStore((s) =>
@@ -66,8 +67,9 @@ export function SentimentConfidenceMeter({ symbol }: { symbol: string }) {
           </span>
         </div>
       </div>
-      <span className="mt-2 text-xs font-medium text-muted-foreground uppercase tracking-widest">
+      <span className="mt-2 text-xs font-medium text-muted-foreground uppercase tracking-widest flex items-center gap-1">
         Sentiment Confidence
+        <InfoTooltip content="How strongly sentiment leans bullish or bearish. Calculated as distance from neutral (50) scaled to 0-100%. Higher values indicate stronger directional conviction." size={12} />
       </span>
     </div>
   );

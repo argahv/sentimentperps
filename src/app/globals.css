@@ -884,3 +884,99 @@ td, th {
 .rhino-widget-reset video {
   max-width: none;
 }
+
+/* ═══════════════════════════════════════════════
+   INFO TOOLTIP — Industrial Neumorphic
+   ═══════════════════════════════════════════════ */
+
+.info-tooltip-trigger {
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
+.info-tooltip-icon {
+  color: var(--color-muted-foreground);
+  opacity: 0.6;
+  transition: opacity 150ms ease-out, color 150ms ease-out;
+  flex-shrink: 0;
+}
+
+.info-tooltip-trigger:hover .info-tooltip-icon,
+.info-tooltip-trigger:focus .info-tooltip-icon {
+  opacity: 1;
+  color: var(--color-primary);
+}
+
+.info-tooltip-content {
+  /* position & coords set via inline style (fixed + JS-calculated top/left) */
+  z-index: 9999;
+  width: max-content;
+  max-width: 280px;
+  padding: 8px 12px;
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--color-foreground);
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border-bright);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-neu-sm);
+  pointer-events: none;
+  animation: tooltip-fade-in 150ms ease-out;
+}
+
+/* Directional classes: only used for arrow positioning (layout handled by JS) */
+.info-tooltip-top {}
+.info-tooltip-bottom {}
+.info-tooltip-left {}
+.info-tooltip-right {}
+
+.info-tooltip-arrow {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border-bright);
+  transform: rotate(45deg);
+}
+
+.info-tooltip-top .info-tooltip-arrow {
+  bottom: -5px;
+  left: 50%;
+  margin-left: -4px;
+  border-top: none;
+  border-left: none;
+}
+
+.info-tooltip-bottom .info-tooltip-arrow {
+  top: -5px;
+  left: 50%;
+  margin-left: -4px;
+  border-bottom: none;
+  border-right: none;
+}
+
+.info-tooltip-left .info-tooltip-arrow {
+  right: -5px;
+  top: 50%;
+  margin-top: -4px;
+  border-bottom: none;
+  border-left: none;
+}
+
+.info-tooltip-right .info-tooltip-arrow {
+  left: -5px;
+  top: 50%;
+  margin-top: -4px;
+  border-top: none;
+  border-right: none;
+}
+
+@keyframes tooltip-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Bell, TrendingUp, TrendingDown, Zap } from "lucide-react";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { useSentimentStore } from "@/stores/sentiment";
 import { useSentimentTriggersStore } from "@/stores/sentimentTriggers";
 import type { TradeDirection } from "@/types/app";
@@ -51,10 +52,11 @@ export function SentimentTriggerForm({ symbol }: SentimentTriggerFormProps) {
       onSubmit={handleSubmit}
       className="swiss-card bg-surface rounded-lg industrial-screws flex flex-col gap-4 p-4"
     >
-      <div className="flex items-center gap-2">
-        <Zap className="h-4 w-4 text-primary" />
-        <h3 className="font-display text-sm font-semibold uppercase tracking-widest">Sentiment Trigger</h3>
-      </div>
+       <div className="flex items-center gap-2">
+         <Zap className="h-4 w-4 text-primary" />
+         <h3 className="font-display text-sm font-semibold uppercase tracking-widest">Sentiment Trigger</h3>
+         <InfoTooltip content="Set up automated trades that execute when social sentiment reaches a specific level. Powered by Elfa AI real-time sentiment data." size={14} />
+       </div>
 
       <div className="border border-border-muted grid rounded-md grid-cols-2 gap-1 p-1">
         <button
@@ -81,11 +83,14 @@ export function SentimentTriggerForm({ symbol }: SentimentTriggerFormProps) {
         </button>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">Threshold</span>
-          <span className="text-xs font-semibold text-primary">{threshold}</span>
-        </div>
+       <div className="flex flex-col gap-2">
+         <div className="flex items-center justify-between">
+           <div className="flex items-center gap-1.5">
+             <span className="text-xs text-muted-foreground">Threshold</span>
+             <InfoTooltip content="The sentiment score (0-100) that triggers your trade. 0 = extremely bearish, 50 = neutral, 100 = extremely bullish." size={12} />
+           </div>
+           <span className="text-xs font-semibold text-primary">{threshold}</span>
+         </div>
         <div className="relative">
           <input
             type="range"

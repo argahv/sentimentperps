@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { useSentimentStore } from "@/stores/sentiment";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 
 export function YourEdgeCard() {
   const { tokenCards } = useSentimentStore();
@@ -68,9 +69,9 @@ export function YourEdgeCard() {
       </div>
 
       <div className="text-center">
-        <h3 className="text-lg font-bold font-display uppercase tracking-widest text-foreground mb-1">Your Edge</h3>
+        <h3 className="text-lg font-bold font-display uppercase tracking-widest text-foreground mb-1 flex items-center justify-center gap-2">Your Edge <InfoTooltip content="How accurately the sentiment signals predicted price direction for tokens you track. Measures signal-to-price alignment over 24 hours." size={14} /></h3>
         <p className="text-sm font-medium text-muted-foreground flex items-center justify-center gap-1">
-          Avg Response: <span className="tabular-nums text-foreground">{avgResponseTime}s</span>
+          Avg Response: <InfoTooltip content="Average time in seconds between a sentiment signal and trade execution across the platform." size={12} /> <span className="tabular-nums text-foreground">{avgResponseTime}s</span>
         </p>
       </div>
     </div>

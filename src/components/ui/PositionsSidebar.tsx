@@ -4,6 +4,7 @@ import { useState } from "react";
 import { usePositionsStore } from "@/stores/positions";
 import { useSentimentTriggersStore } from "@/stores/sentimentTriggers";
 import { ActiveTriggers } from "@/components/ui/ActiveTriggers";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { ArrowUpRight, ArrowDownRight, Wallet, X, Loader2, ListOrdered, Zap } from "lucide-react";
 import type { TradeDirection } from "@/types/app";
 
@@ -62,6 +63,7 @@ export function PositionsSidebar({ onClosePosition, onCancelOrder }: PositionsSi
             <Wallet className="h-4 w-4 text-primary" />
           </div>
           <h2 className="text-sm font-bold font-display uppercase tracking-widest">Positions</h2>
+          <InfoTooltip size={12} content="Your current open positions, pending orders, active sentiment triggers, and trade history." />
         </div>
         {activeTab === 'open' && positions.length > 0 && (
           <span
@@ -108,7 +110,7 @@ export function PositionsSidebar({ onClosePosition, onCancelOrder }: PositionsSi
             <span className="ml-1 tabular-nums">({openOrders.length})</span>
           )}
         </button>
-        <button
+         <button
           onClick={() => setActiveTab('triggers')}
           className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-semibold transition-all ${
             activeTab === 'triggers' ? 'border border-primary bg-primary-muted text-primary' : 'text-muted-foreground hover:text-foreground'
@@ -116,6 +118,7 @@ export function PositionsSidebar({ onClosePosition, onCancelOrder }: PositionsSi
         >
           <Zap className="h-3 w-3" />
           Triggers
+          <InfoTooltip size={12} position="bottom" content="Automated orders that execute when sentiment reaches your specified threshold." />
           {triggerCount > 0 && (
             <span className="ml-0.5 tabular-nums">({triggerCount})</span>
           )}
@@ -181,9 +184,11 @@ export function PositionsSidebar({ onClosePosition, onCancelOrder }: PositionsSi
                         )}
                         {formatPnl(pos.unrealized_pnl)}
                       </span>
-                      <span className="tabular-nums text-[10px] text-muted-foreground">
-                        Entry: ${pos.entry_price.toFixed(2)}
-                      </span>
+                       <span className="tabular-nums text-[10px] text-muted-foreground flex items-center gap-1">
+                         Entry:
+                         <InfoTooltip size={12} position="bottom" content="The price at which your position was opened." />
+                         ${pos.entry_price.toFixed(2)}
+                       </span>
                     </div>
 
                     {onClosePosition && (

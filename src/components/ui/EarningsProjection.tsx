@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 
 export function EarningsProjection({
   currentEarnings,
@@ -19,12 +20,15 @@ export function EarningsProjection({
 
   return (
     <div className="swiss-card bg-surface p-6 rounded-lg industrial-screws flex flex-col gap-6">
-      <div>
-        <h3 className="font-display text-lg font-bold uppercase tracking-widest">Earnings Projection</h3>
-        <p className="text-sm text-muted-foreground mt-1">
-          Estimate your potential rewards based on your current performance.
-        </p>
-      </div>
+       <div>
+         <h3 className="font-display text-lg font-bold uppercase tracking-widest flex items-center gap-2">
+           Earnings Projection
+           <InfoTooltip content="Estimated future earnings based on your current average reward per referral. Formula: (current earnings ÷ referrals) × (referrals + additional)." size={14} />
+         </h3>
+         <p className="text-sm text-muted-foreground mt-1">
+           Estimate your potential rewards based on your current performance.
+         </p>
+       </div>
 
       <div className="flex flex-col gap-2">
         <label className="text-sm font-medium flex justify-between">

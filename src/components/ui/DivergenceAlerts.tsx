@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Zap, ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown } from "lucide-react";
 import { useSentimentStore } from "@/stores/sentiment";
 import { SentimentBadge } from "@/components/ui/SentimentBadge";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import type { TokenCardData } from "@/types/app";
 
 interface DivergenceItem {
@@ -86,7 +87,7 @@ function DivergenceCard({ item, index }: { item: DivergenceItem; index: number }
               {priceFormatted}
             </span>
           </span>
-          <span className="text-muted-foreground">Strength: <span className="font-semibold tabular-nums text-warning">{divergenceStrength}</span></span>
+          <span className="text-muted-foreground">Strength: <InfoTooltip content="Divergence intensity score. Calculated from the gap between sentiment direction and price movement. Higher values indicate stronger disagreement." size={12} /> <span className="font-semibold tabular-nums text-warning">{divergenceStrength}</span></span>
         </div>
       </div>
 
@@ -98,8 +99,7 @@ function DivergenceCard({ item, index }: { item: DivergenceItem; index: number }
             <TrendingDown className="h-3.5 w-3.5 text-danger" />
           )}
           <span className="text-xs text-muted-foreground">
-            Contrarian:{" "}
-            <span
+            Contrarian: <InfoTooltip content="Suggested trade direction that goes against the current price trend, betting on sentiment to be the leading indicator." size={12} /> <span
               className={`font-semibold ${isContrarianLong ? "text-success" : "text-danger"}`}
             >
               {isContrarianLong ? "Long" : "Short"}
@@ -129,6 +129,7 @@ export function DivergenceAlerts() {
       <div className="flex items-center gap-2">
         <Zap className="h-4 w-4 text-warning" />
         <h2 className="text-base font-bold uppercase tracking-wider">Sentiment Divergence Alerts</h2>
+        <InfoTooltip content="Alerts when price movement and social sentiment disagree. These divergences can signal contrarian trading opportunities." size={14} />
         <span className="bg-warning-muted text-warning rounded-full px-2 py-0.5 text-xs font-semibold">
           {divergences.length}
         </span>

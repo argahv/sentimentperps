@@ -2,6 +2,7 @@
 
 import { useSentimentStore } from "@/stores/sentiment";
 import { SentimentBadge } from "./SentimentBadge";
+import { InfoTooltip } from "./InfoTooltip";
 import {
   MessageCircle,
   Zap,
@@ -48,14 +49,20 @@ export function SentimentPanel({ symbol }: { symbol: string }) {
           <span className="mt-1 text-lg font-semibold">
             {formatNumber(signal.mentionCount)}
           </span>
-          <span className="text-[10px] text-muted-foreground">Mentions</span>
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] text-muted-foreground">Mentions</span>
+            <InfoTooltip content="Total number of social media mentions for this token tracked by Elfa AI across Twitter, Reddit, and other platforms." size={12} />
+          </div>
         </div>
         <div className="bg-surface-elevated rounded-md flex flex-col items-center py-2 transition-all duration-200">
           <Zap className="h-4 w-4 text-primary" />
           <span className="mt-1 text-lg font-semibold">
             {signal.velocity.toFixed(2)}
           </span>
-          <span className="text-[10px] text-muted-foreground">/min</span>
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] text-muted-foreground">/min</span>
+            <InfoTooltip content="Rate of new mentions per minute. A spike in velocity often precedes significant price moves." size={12} />
+          </div>
         </div>
         <div className="bg-surface-elevated rounded-md flex flex-col items-center py-2 transition-all duration-200">
           <Users className="h-4 w-4 text-muted-foreground" />
@@ -67,15 +74,21 @@ export function SentimentPanel({ symbol }: { symbol: string }) {
             {signal.mentionChange >= 0 ? "+" : ""}
             {signal.mentionChange.toFixed(1)}%
           </span>
-          <span className="text-[10px] text-muted-foreground">Change</span>
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] text-muted-foreground">Change</span>
+            <InfoTooltip content="Percentage change in mention volume compared to the previous period. Positive values indicate growing social interest." size={12} />
+          </div>
         </div>
       </div>
 
       {signal.topMentions.length > 0 && (
         <div className="flex flex-col gap-2">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-primary">
-            Top Mentions
-          </h4>
+          <div className="flex items-center gap-1">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-primary">
+              Top Mentions
+            </h4>
+            <InfoTooltip content="Most influential recent social posts mentioning this token, ranked by author reach and engagement." size={12} />
+          </div>
           {signal.topMentions.slice(0, 3).map((mention) => (
             <div
               key={mention.id}

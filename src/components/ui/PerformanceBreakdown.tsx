@@ -1,5 +1,7 @@
 "use client";
 
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
+
 export function PerformanceBreakdown({
   trades,
 }: {
@@ -32,9 +34,18 @@ export function PerformanceBreakdown({
         <div className="grid grid-cols-5 gap-4 px-4 py-2 text-sm font-semibold text-muted-foreground uppercase tracking-widest">
           <div>Token</div>
           <div className="text-right">Trades</div>
-          <div className="text-right">Win Rate</div>
-          <div className="text-right">Total PnL</div>
-          <div className="text-right">Avg Size</div>
+          <div className="text-right flex items-center justify-end gap-2">
+            Win Rate
+            <InfoTooltip content="Percentage of profitable trades for this token. Calculated as wins divided by total trades." size={12} />
+          </div>
+          <div className="text-right flex items-center justify-end gap-2">
+            Total PnL
+            <InfoTooltip content="Cumulative realized profit/loss for this token across all closed trades." size={12} />
+          </div>
+          <div className="text-right flex items-center justify-end gap-2">
+            Avg Size
+            <InfoTooltip content="Average position size in USD for this token. Calculated as total volume divided by number of trades." size={12} />
+          </div>
         </div>
         
         {sorted.map((item, idx) => {

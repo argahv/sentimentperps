@@ -5,7 +5,7 @@ const ELFA_CHAT_URL = "https://api.elfa.ai/v2/chat";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { message, sessionId } = body;
+    const { message, sessionId, sentimentContext } = body;
 
     if (!message || typeof message !== "string" || message.trim().length === 0) {
       return NextResponse.json(
@@ -22,8 +22,27 @@ export async function POST(request: Request) {
       );
     }
 
+    let enrichedMessage = message.trim();
+    if (Array.isArray(sentimentContext) && sentimentContext.length > 0) {
+      const snapshot = sentimentContext
+        .map(
+          (t: {
+            symbol: string;
+            sentiment: string;
+            sentimentScore: number;
+            mentionCount: number;
+            mentionChange: number;
+            velocity: number;
+            priceChange24h: number;
+          }) =>
+            `${t.symbol}: sentiment=${t.sentiment} score=${t.sentimentScore} mentions=${t.mentionCount} change=${t.mentionChange.toFixed(1)}% velocity=${t.velocity.toFixed(2)}/min price24h=${t.priceChange24h >= 0 ? "+" : ""}${t.priceChange24h.toFixed(2)}%`
+        )
+        .join("\n");
+      enrichedMessage = `[Live Sentiment Data]\n${snapshot}\n\n[User Question]\n${enrichedMessage}`;
+    }
+
     const payload: Record<string, unknown> = {
-      message: message.trim(),
+      message: enrichedMessage,
       analysisType: "chat",
     };
 
