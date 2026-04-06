@@ -35,64 +35,6 @@ const timeAgo = (dateStr: string): string => {
   return `${days}d ago`;
 };
 
-const demoWins: RecentWin[] = [
-  {
-    id: "demo-1",
-    symbol: "SOL",
-    direction: "long",
-    leverage: 5,
-    pnlUsdc: 1247.50,
-    pnlPct: 24.95,
-    sentimentScore: 87,
-    closedAt: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
-    trader: "7xKX...gAsU",
-  },
-  {
-    id: "demo-2",
-    symbol: "ETH",
-    direction: "short",
-    leverage: 3,
-    pnlUsdc: 892.30,
-    pnlPct: 17.85,
-    sentimentScore: 92,
-    closedAt: new Date(Date.now() - 5 * 3600 * 1000).toISOString(),
-    trader: "9WzD...tAWWM",
-  },
-  {
-    id: "demo-3",
-    symbol: "AVAX",
-    direction: "long",
-    leverage: 4,
-    pnlUsdc: 2105.75,
-    pnlPct: 42.12,
-    sentimentScore: 78,
-    closedAt: new Date(Date.now() - 8 * 3600 * 1000).toISOString(),
-    trader: "3nVV...sLL",
-  },
-  {
-    id: "demo-4",
-    symbol: "ARB",
-    direction: "long",
-    leverage: 2,
-    pnlUsdc: 456.80,
-    pnlPct: 9.14,
-    sentimentScore: 85,
-    closedAt: new Date(Date.now() - 12 * 3600 * 1000).toISOString(),
-    trader: "HN7c...WrH",
-  },
-  {
-    id: "demo-5",
-    symbol: "LINK",
-    direction: "short",
-    leverage: 3,
-    pnlUsdc: 678.20,
-    pnlPct: 13.56,
-    sentimentScore: 91,
-    closedAt: new Date(Date.now() - 1 * 3600 * 1000).toISOString(),
-    trader: "DRpb...Jkbv",
-  },
-];
-
 export function RecentWinsFeed() {
   const [wins, setWins] = useState<RecentWin[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -109,8 +51,6 @@ export function RecentWinsFeed() {
         setWins(data.wins ?? []);
       } catch (err) {
         setError((err as Error).message);
-        // For hackathon: show demo data if API fails
-        setWins(demoWins);
       } finally {
         setIsLoading(false);
       }
@@ -118,8 +58,8 @@ export function RecentWinsFeed() {
     fetchWins();
   }, []);
 
-  const displayWins = wins.length > 0 ? wins : (isLoading ? [] : demoWins);
-  const isUsingFallback = !wins.length && !isLoading && !error;
+  const displayWins = wins;
+  
 
   if (isLoading && wins.length === 0) {
     return (
@@ -171,11 +111,6 @@ export function RecentWinsFeed() {
         </div>
         
         <div className="flex items-center gap-4">
-          {isUsingFallback && (
-            <span className="hidden sm:inline-block text-[10px] font-mono text-muted-foreground uppercase tracking-wider bg-surface-muted px-2 py-1 rounded">
-              Demo Data
-            </span>
-          )}
           <div className="industrial-vents opacity-50">
             <div className="industrial-vent-slot"></div>
             <div className="industrial-vent-slot"></div>
