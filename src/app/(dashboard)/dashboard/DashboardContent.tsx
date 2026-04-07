@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { useSentimentPolling } from "@/hooks/useSentimentPolling";
 import { useTrade } from "@/hooks/useTrade";
@@ -17,13 +17,25 @@ import { DashboardHeroStats } from "@/components/ui/DashboardHeroStats";
 import { RecentWinsFeed } from "@/components/ui/RecentWinsFeed";
 import { QuestBoard } from "@/components/ui/QuestBoard";
 import { SentimentSignalCards } from "@/components/ui/SentimentSignalCards";
-import { LogIn, ChevronDown, Crosshair } from "lucide-react";
+import { useFuulStats, useFuulLeaderboard } from "@/hooks/useFuulData";
+import Link from "next/link";
+import { LogIn, ChevronDown, Crosshair, Gift, Trophy, ArrowUpRight } from "lucide-react";
 
 export default function DashboardContent() {
   const { login, authenticated, ready } = usePrivy();
   const { walletAddress, closePosition, cancelOrder } = useTrade();
   const { refetch } = usePositions(walletAddress, null, 30_000);
   const [edgeOpen, setEdgeOpen] = useState(false);
+  const fuulStats = useFuulStats(walletAddress);
+  const fuulLeaderboard = useFuulLeaderboard(1, 20);
+
+  const fuulUserRank = useMemo(() => {
+    if (!walletAddress || !fuulLeaderboard.data?.results) return null;
+    const entry = fuulLeaderboard.data.results.find(
+      (r) => r.address.toLowerCase() === walletAddress.toLowerCase()
+    );
+    return entry ?? null;
+  }, [walletAddress, fuulLeaderboard.data]);
 
   useSentimentPolling(60_000);
 
@@ -90,6 +102,63 @@ export default function DashboardContent() {
           <div className="card-entrance" style={{ animationDelay: "calc(3 * var(--stagger-base))" }}>
             <QuestBoard />
           </div>
+          {walletAddress && (
+            <div className="card-entrance" style={{ animationDelay: "calc(3.2 * var(--stagger-base))" }}>
+              <div className="swiss-card bg-surface overflow-hidden">
+                <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
+                  <Gift className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-semibold font-display uppercase tracking-widest">Referral Rewards</span>
+                </div>
+                <div className="p-4 flex flex-col gap-3">
+                  {fuulStats.loading ? (
+                    <div className="grid grid-cols-3 gap-2">
+                      {Array.from({ length: 3 }).map((_, i) => (
+                        <div key={i} className="border border-border-muted bg-surface px-3 py-3 animate-pulse">
+                          <div className="h-3 w-16 rounded bg-muted-foreground/15 mb-2" />
+                          <div className="h-5 w-12 rounded bg-muted-foreground/15" />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="border border-border-muted bg-surface px-3 py-2.5 flex flex-col gap-1">
+                        <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">Points</span>
+                        <span className="text-lg font-bold font-display tabular-nums text-primary">
+                          {fuulUserRank?.total_amount?.toLocaleString() ?? "0"}
+                        </span>
+                      </div>
+                      <div className="border border-border-muted bg-surface px-3 py-2.5 flex flex-col gap-1">
+                        <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">Rank</span>
+                        <span className="text-lg font-bold font-display tabular-nums">
+                          {fuulUserRank ? (
+                            <span className="flex items-center gap-1">
+                              <Trophy className="h-3.5 w-3.5 text-amber-500" />
+                              #{fuulUserRank.rank}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </span>
+                      </div>
+                      <div className="border border-border-muted bg-surface px-3 py-2.5 flex flex-col gap-1">
+                        <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">Referred</span>
+                        <span className="text-lg font-bold font-display tabular-nums">
+                          {fuulStats.data?.referred_users?.toLocaleString() ?? "0"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  <Link
+                    href="/referral"
+                    className="swiss-btn-outline flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/5 transition-colors"
+                  >
+                    View Referral Program
+                    <ArrowUpRight className="h-3 w-3" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="card-entrance" style={{ animationDelay: "calc(3.5 * var(--stagger-base))" }}>
             <RecentWinsFeed />
           </div>

@@ -53,26 +53,43 @@ export interface UserPointsMovementsResponse {
   results: UserPointsMovement[];
 }
 
-let initialized = false;
+let initPromise: Promise<boolean> | null = null;
 
-export async function initFuul(): Promise<void> {
-  if (initialized || typeof window === "undefined") return;
-  try {
-    const { Fuul } = await import("@fuul/sdk");
-    const apiKey = process.env.NEXT_PUBLIC_FUUL_API_KEY;
-    if (!apiKey) {
-      console.warn("[Fuul] NEXT_PUBLIC_FUUL_API_KEY not set — skipping init");
-      return;
+/**
+ * Initialize the Fuul SDK. Safe to call multiple times — only runs once.
+ * Returns a promise that resolves to `true` if initialized, `false` otherwise.
+ * All other Fuul functions internally await this before proceeding.
+ */
+export function initFuul(): Promise<boolean> {
+  if (typeof window === "undefined") return Promise.resolve(false);
+  if (initPromise) return initPromise;
+  initPromise = (async () => {
+    try {
+      const { Fuul } = await import("@fuul/sdk");
+      const apiKey = process.env.NEXT_PUBLIC_FUUL_API_KEY;
+      if (!apiKey) {
+        console.warn("[Fuul] NEXT_PUBLIC_FUUL_API_KEY not set — skipping init");
+        return false;
+      }
+      Fuul.init({ apiKey });
+      return true;
+    } catch (err) {
+      console.warn("[Fuul] Init failed:", err);
+      return false;
     }
-    Fuul.init({ apiKey });
-    initialized = true;
-  } catch (err) {
-    console.warn("[Fuul] Init failed:", err);
-  }
+  })();
+  return initPromise;
+}
+
+/** Wait for Fuul to be ready. Returns false if init failed or was skipped. */
+async function waitForFuul(): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+  if (!initPromise) return false;
+  return initPromise;
 }
 
 export async function sendPageview(pageName?: string): Promise<void> {
-  if (typeof window === "undefined") return;
+  if (!(await waitForFuul())) return;
   try {
     const { Fuul } = await import("@fuul/sdk");
     await Fuul.sendPageview(pageName);
@@ -82,7 +99,7 @@ export async function sendPageview(pageName?: string): Promise<void> {
 }
 
 export async function identifyUser(walletAddress: string): Promise<void> {
-  if (typeof window === "undefined" || !walletAddress) return;
+  if (!walletAddress || !(await waitForFuul())) return;
   try {
     const { Fuul } = await import("@fuul/sdk");
     await Fuul.identifyUser({
@@ -109,7 +126,7 @@ export async function sendFuulConversionEvent(params: {
   pnlUsdc?: number;
   orderId?: string;
 }): Promise<void> {
-  if (typeof window === "undefined" || !params.walletAddress) return;
+  if (!params.walletAddress || !(await waitForFuul())) return;
   try {
     const { Fuul } = await import("@fuul/sdk");
     await Fuul.sendEvent(params.eventType, {
@@ -130,7 +147,7 @@ export async function sendFuulConversionEvent(params: {
 export async function generateTrackingLink(
   affiliateAddress: string,
 ): Promise<string | null> {
-  if (typeof window === "undefined" || !affiliateAddress) return null;
+  if (!affiliateAddress || !(await waitForFuul())) return null;
   try {
     const { Fuul } = await import("@fuul/sdk");
     const baseUrl = window.location.origin;
@@ -149,7 +166,7 @@ export async function generateTrackingLink(
 export async function getFuulAffiliateStats(
   walletAddress: string,
 ): Promise<GetAffiliateStatsResponse | null> {
-  if (typeof window === "undefined") return null;
+  if (!(await waitForFuul())) return null;
   try {
     const { Fuul } = await import("@fuul/sdk");
     return await Fuul.getAffiliateStats({ user_identifier: walletAddress });
@@ -163,7 +180,7 @@ export async function getFuulPointsLeaderboard(
   page = 1,
   pageSize = 10,
 ): Promise<LeaderboardResponse<PointsLeaderboard> | null> {
-  if (typeof window === "undefined") return null;
+  if (!(await waitForFuul())) return null;
   try {
     const { Fuul } = await import("@fuul/sdk");
     return await Fuul.getPointsLeaderboard({ page, page_size: pageSize });
@@ -177,7 +194,7 @@ export async function getFuulReferredUsersLeaderboard(
   page = 1,
   pageSize = 10,
 ): Promise<LeaderboardResponse<ReferredUsersLeaderboard> | null> {
-  if (typeof window === "undefined") return null;
+  if (!(await waitForFuul())) return null;
   try {
     const { Fuul } = await import("@fuul/sdk");
     return await Fuul.getReferredUsersLeaderboard({ page, page_size: pageSize });
@@ -190,7 +207,7 @@ export async function getFuulReferredUsersLeaderboard(
 export async function getFuulClaimCheckTotals(
   walletAddress: string,
 ): Promise<GetClaimCheckTotalsResponse | null> {
-  if (typeof window === "undefined") return null;
+  if (!(await waitForFuul())) return null;
   try {
     const { Fuul } = await import("@fuul/sdk");
     return await Fuul.getClaimCheckTotals({
@@ -206,7 +223,7 @@ export async function getFuulClaimCheckTotals(
 export async function getFuulClaimableChecks(
   walletAddress: string,
 ): Promise<GetClaimableChecksResponse | null> {
-  if (typeof window === "undefined") return null;
+  if (!(await waitForFuul())) return null;
   try {
     const { Fuul } = await import("@fuul/sdk");
     return await Fuul.getClaimableChecks({
@@ -223,7 +240,7 @@ export async function closeFuulClaimChecks(
   walletAddress: string,
   claimCheckIds: string[],
 ): Promise<CloseClaimChecksResponse | null> {
-  if (typeof window === "undefined") return null;
+  if (!(await waitForFuul())) return null;
   try {
     const { Fuul } = await import("@fuul/sdk");
     return await Fuul.closeClaimChecks({
@@ -241,7 +258,7 @@ export async function getFuulClaimChecks(
   walletAddress: string,
   status?: "open" | "unclaimed" | "claimed",
 ): Promise<GetClaimChecksResponse | null> {
-  if (typeof window === "undefined") return null;
+  if (!(await waitForFuul())) return null;
   try {
     const { Fuul } = await import("@fuul/sdk");
     const { ClaimCheckStatus } = await import("@fuul/sdk");
@@ -266,7 +283,7 @@ export async function getFuulPointsMovements(
   page = 1,
   pageSize = 20,
 ): Promise<UserPointsMovementsResponse | null> {
-  if (typeof window === "undefined") return null;
+  if (!(await waitForFuul())) return null;
   try {
     const { Fuul } = await import("@fuul/sdk");
     return await Fuul.getUserPointsMovements({
@@ -286,7 +303,7 @@ export async function getFuulStatsBreakdown(
   groupBy: GroupByPeriod = "day",
   dateRange: DateRangePreset = "30d",
 ): Promise<GetAffiliateStatsBreakdownResponse | null> {
-  if (typeof window === "undefined") return null;
+  if (!(await waitForFuul())) return null;
   try {
     const { Fuul } = await import("@fuul/sdk");
     return await Fuul.getStatsBreakdown({
@@ -305,7 +322,7 @@ export async function getFuulUserReferralCodes(
   page = 1,
   pageSize = 25,
 ): Promise<ListUserReferralCodesResponse | null> {
-  if (typeof window === "undefined") return null;
+  if (!(await waitForFuul())) return null;
   try {
     const { Fuul } = await import("@fuul/sdk");
     return await Fuul.listUserReferralCodes({

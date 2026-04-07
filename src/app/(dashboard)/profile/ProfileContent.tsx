@@ -8,6 +8,7 @@ import { usePositionsStore } from "@/stores/positions";
 import { WinRateDonut } from "@/components/ui/WinRateDonut";
 import { PerformanceBreakdown } from "@/components/ui/PerformanceBreakdown";
 import { useCountUp } from "@/hooks/useCountUp";
+import { useFuulStats, useFuulLeaderboard, useFuulActivity } from "@/hooks/useFuulData";
 import Link from "next/link";
 import {
   User,
@@ -30,6 +31,7 @@ import {
   Calendar,
   Flame,
   Crosshair,
+  Gift,
 } from "lucide-react";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import type { BadgeType } from "@/types/app";
@@ -258,6 +260,17 @@ export default function ProfileContent() {
   const shortAddress = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : null;
   const walletProvider = wallet?.standardWallet?.name ?? "Unknown";
   const isEmbeddedWallet = walletProvider === "Privy";
+
+  const fuulStats = useFuulStats(address);
+  const fuulLeaderboard = useFuulLeaderboard(1, 20);
+  const fuulActivity = useFuulActivity(address, 1, 5);
+
+  const fuulUserRank = useMemo(() => {
+    if (!address || !fuulLeaderboard.data?.results) return null;
+    return fuulLeaderboard.data.results.find(
+      (r) => r.address.toLowerCase() === address.toLowerCase()
+    ) ?? null;
+  }, [address, fuulLeaderboard.data]);
 
   useEffect(() => {
     if (wallet) setActiveWallet(wallet as unknown as Parameters<typeof setActiveWallet>[0]);
@@ -968,6 +981,70 @@ export default function ProfileContent() {
               )}
             </div>
           )}
+
+          <div className="swiss-card bg-surface p-4 flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <Gift className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold font-display uppercase tracking-widest">Referral Rewards</span>
+            </div>
+            {fuulStats.loading ? (
+              <div className="grid grid-cols-2 gap-2 animate-pulse">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="border border-border-muted bg-surface px-3 py-2.5">
+                    <div className="h-3 w-14 rounded bg-muted-foreground/15 mb-1.5" />
+                    <div className="h-4 w-10 rounded bg-muted-foreground/15" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="border border-border-muted bg-surface px-3 py-2 flex flex-col">
+                    <span className="text-[10px] text-muted-foreground">Points</span>
+                    <span className="text-sm font-bold text-primary tabular-nums">
+                      {fuulUserRank?.total_amount?.toLocaleString() ?? "0"}
+                    </span>
+                  </div>
+                  <div className="border border-border-muted bg-surface px-3 py-2 flex flex-col">
+                    <span className="text-[10px] text-muted-foreground">Rank</span>
+                    <span className="text-sm font-bold tabular-nums">
+                      {fuulUserRank ? `#${fuulUserRank.rank}` : "—"}
+                    </span>
+                  </div>
+                  <div className="border border-border-muted bg-surface px-3 py-2 flex flex-col">
+                    <span className="text-[10px] text-muted-foreground">Referred</span>
+                    <span className="text-sm font-bold tabular-nums">
+                      {fuulStats.data?.referred_users?.toLocaleString() ?? "0"}
+                    </span>
+                  </div>
+                  <div className="border border-border-muted bg-surface px-3 py-2 flex flex-col">
+                    <span className="text-[10px] text-muted-foreground">Volume</span>
+                    <span className="text-sm font-bold tabular-nums">
+                      ${fuulStats.data?.total_volume?.toLocaleString() ?? "0"}
+                    </span>
+                  </div>
+                </div>
+                {fuulActivity.data?.results && fuulActivity.data.results.length > 0 && (
+                  <div className="flex flex-col gap-1 mt-1">
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">Recent Activity</span>
+                    {fuulActivity.data.results.map((item) => (
+                      <div key={item.conversion_id} className="flex items-center justify-between border border-border-muted bg-surface px-3 py-1.5 text-[10px]">
+                        <span className="text-muted-foreground">{item.conversion_name}</span>
+                        <span className="font-semibold text-primary tabular-nums">+{parseFloat(item.total_amount).toLocaleString()} pts</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <Link
+                  href="/referral"
+                  className="swiss-btn-outline flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/5 transition-colors"
+                >
+                  View Referral Program
+                  <ArrowUpRight className="h-3 w-3" />
+                </Link>
+              </>
+            )}
+          </div>
 
           <div className="swiss-card bg-surface p-4 flex flex-col gap-2">
             <div className="flex items-center justify-between">

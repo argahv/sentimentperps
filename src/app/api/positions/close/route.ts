@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { evaluateAndPersist } from "@/lib/badges";
+import { sendFuulServerEvent } from "@/lib/fuul-server";
 
 export async function POST(request: Request) {
   try {
@@ -101,6 +102,20 @@ export async function POST(request: Request) {
         console.error("[positions/close] DB persist failed (non-blocking):", dbErr);
       }
     }
+
+    // Server-side Fuul conversion event (non-blocking)
+    sendFuulServerEvent({
+      eventName: "trade_close",
+      walletAddress,
+      volumeUsdc: Number(amount),
+      metadata: {
+        symbol,
+        side,
+        ...(positionMeta?.pnlUsdc !== undefined && { pnl_usd: positionMeta.pnlUsdc }),
+        ...(positionMeta?.direction && { direction: positionMeta.direction }),
+        ...(positionMeta?.leverage && { leverage: positionMeta.leverage }),
+      },
+    });
 
     return NextResponse.json({ order });
   } catch (error) {

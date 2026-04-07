@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { sendFuulServerEvent } from "@/lib/fuul-server";
 
 export async function POST(request: Request) {
   try {
@@ -39,6 +40,15 @@ export async function POST(request: Request) {
         },
         auth
       );
+      // Server-side Fuul conversion event (non-blocking — must not break trade flow)
+      if (!body.reduce_only) {
+        sendFuulServerEvent({
+          eventName: "trade_open",
+          walletAddress,
+          volumeUsdc: Number(amount),
+          metadata: { symbol, side },
+        });
+      }
       return NextResponse.json({ order });
     }
 
@@ -57,6 +67,15 @@ export async function POST(request: Request) {
       },
       auth
     );
+    // Server-side Fuul conversion event (non-blocking — must not break trade flow)
+    if (!body.reduce_only) {
+      sendFuulServerEvent({
+        eventName: "trade_open",
+        walletAddress,
+        volumeUsdc: Number(amount),
+        metadata: { symbol, side },
+      });
+    }
 
     return NextResponse.json({ order });
   } catch (error) {
