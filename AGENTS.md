@@ -142,13 +142,10 @@ All new UI must follow the Dark Industrial Skeuomorphism style — neumorphic ca
 
 - **Pacifica auth timestamps**: 60s expiry window. Client clock skew = auth failures.
 - **Position close side flip**: `long → ask`, `short → bid`. Easy to reverse. Always test.
-- **Leaderboard data is seeded demo data** — not connected to a real backend yet.
-- **Price chart candles are synthetic** (seeded PRNG) — not live market data.
 - **Multiple `useMarkets()` mounts can spawn duplicate polling intervals.**
 
 ## WIP / Incomplete Features
 
-- Live chart data (currently synthetic)
 - State persistence (localStorage/backend)
 
 ## Premium UX Standards

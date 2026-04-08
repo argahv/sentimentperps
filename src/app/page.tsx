@@ -66,7 +66,7 @@ const FEATURES = [
 const STATS = [
   { value: "50+", label: "Active Traders", icon: Users },
   { value: "$1.2M", label: "Volume Traded", icon: TrendingUp },
-  { value: "5", label: "Chains Supported", icon: Globe },
+  { value: "10+", label: "Chains Supported", icon: Globe },
   { value: "24/7", label: "Live Signals", icon: Activity },
 ];
 
@@ -234,6 +234,11 @@ export default function HomePage() {
 
       {/* Stats Section */}
       <section className="border-y border-border-muted bg-surface-muted px-4 py-12 md:px-8">
+        <div className="mx-auto max-w-7xl">
+          <span className="mb-8 block font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
+            {"// Platform Metrics"}
+          </span>
+        </div>
         <div className="mx-auto grid max-w-7xl grid-cols-2 gap-8 lg:grid-cols-4 lg:gap-4">
           {STATS.map((stat, i) => (
             <div
