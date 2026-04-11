@@ -36,6 +36,28 @@ export async function POST(request: Request) {
       );
     }
 
+    // SAFETY: validate side is a recognised value.
+    if (side !== "ask" && side !== "bid") {
+      return NextResponse.json(
+        { error: "Invalid close side: must be 'ask' or 'bid'" },
+        { status: 400 },
+      );
+    }
+
+    // SAFETY: when positionMeta.direction is present, enforce long→ask / short→bid.
+    // A mismatch would open a new position rather than close the existing one.
+    if (positionMeta?.direction) {
+      const expectedSide = positionMeta.direction === "long" ? "ask" : "bid";
+      if (side !== expectedSide) {
+        return NextResponse.json(
+          {
+            error: `Close side mismatch: '${positionMeta.direction}' position must use '${expectedSide}', received '${side}'`,
+          },
+          { status: 400 },
+        );
+      }
+    }
+
     const { createMarketOrder } = await import("@/lib/pacifica");
     const order = await createMarketOrder(
       {

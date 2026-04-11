@@ -225,6 +225,7 @@ export function useTrade() {
       setLastError(null);
 
       try {
+        // SAFETY: long position closes on ask (sell), short on bid (buy). Never reverse.
         const closeSide: PacificaOrderSide = side === "long" ? "ask" : "bid";
 
         const closeSignFields: Record<string, unknown> = {
