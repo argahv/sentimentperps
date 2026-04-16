@@ -30,7 +30,7 @@ export function ToastContainer() {
   if (notifications.length === 0) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm">
+    <div className="fixed bottom-20 right-4 md:bottom-4 z-[60] flex flex-col gap-2 max-w-sm w-[calc(100vw-2rem)] sm:w-auto">
       {notifications.map((notif) => {
         const Icon = iconMap[notif.type];
         return (

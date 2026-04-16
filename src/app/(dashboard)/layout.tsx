@@ -19,6 +19,9 @@ import {
 import { DepositBridgeModal } from "@/components/ui/DepositBridgeModal";
 import { AIChatPanel } from "@/components/ui/AIChatPanel";
 import { useMarkets } from "@/hooks/useMarkets";
+import { useSentimentPolling } from "@/hooks/useSentimentPolling";
+import { usePositions } from "@/hooks/usePositions";
+import { usePositionsStore } from "@/stores/positions";
 import { usePrivyConfigured } from "@/app/providers";
 import { usePrivy, useActiveWallet } from "@privy-io/react-auth";
 import { useWallets } from "@privy-io/react-auth/solana";
@@ -26,6 +29,30 @@ import { WalletsDialog } from "@privy-io/react-auth/ui";
 import { sendPageview } from "@/lib/fuul";
 import { ReferralRegistrar } from "@/components/ReferralRegistrar";
 import { FuulIdentify } from "@/components/FuulIdentify";
+
+const IS_DEVNET = process.env.NEXT_PUBLIC_PACIFICA_ENV !== "mainnet";
+
+/** Centralized data-polling component — mounts once in the layout, never per-page. */
+function PollingOrchestrator() {
+  const { wallets } = useWallets();
+  const wallet = useMemo(
+    () => wallets.find((w) => w.standardWallet.name !== "Privy") ?? wallets[0] ?? null,
+    [wallets],
+  );
+  const walletAddress = wallet?.address ?? null;
+  const _setRefetch = usePositionsStore((s) => s._setRefetch);
+
+  useSentimentPolling(60_000);
+  const { refetch } = usePositions(walletAddress, null, 15_000);
+
+  // Register refetch so page-level components can trigger immediate updates
+  useEffect(() => {
+    _setRefetch(refetch);
+    return () => _setRefetch(null);
+  }, [_setRefetch, refetch]);
+
+  return null;
+}
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -42,7 +69,12 @@ function SidebarWallet() {
 
   if (!configured) return null;
 
-  return <SidebarWalletInner copied={copied} setCopied={setCopied} />;
+  return (
+    <>
+      <PollingOrchestrator />
+      <SidebarWalletInner copied={copied} setCopied={setCopied} />
+    </>
+  );
 }
 
 function SidebarWalletInner({
@@ -136,11 +168,18 @@ export default function DashboardLayout({
     <WalletsDialog />
     <div className="flex h-full min-h-dvh flex-col md:flex-row bg-background text-foreground">
       <nav className="hidden md:flex md:w-64 md:flex-col md:h-dvh md:sticky md:top-0 bg-surface border-r border-border relative z-10 shadow-[var(--shadow-neu)]">
-        <div className="flex h-8 items-center gap-2 px-4 bg-surface-muted border-b border-border shadow-[var(--shadow-neu-inset-sm)]">
-          <span className="led-indicator led-green"></span>
-          <span className="font-mono text-[10px] font-bold text-success uppercase tracking-widest">
-            SYSTEM ONLINE
-          </span>
+        <div className="flex h-8 items-center justify-between gap-2 px-4 bg-surface-muted border-b border-border shadow-[var(--shadow-neu-inset-sm)]">
+          <div className="flex items-center gap-2">
+            <span className="led-indicator led-green"></span>
+            <span className="font-mono text-[10px] font-bold text-success uppercase tracking-widest">
+              SYSTEM ONLINE
+            </span>
+          </div>
+          {IS_DEVNET && (
+            <span className="font-mono text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded bg-warning/15 text-warning border border-warning/30">
+              DEVNET
+            </span>
+          )}
         </div>
 
         <div className="flex items-center justify-between h-16 px-4 border-b border-border shadow-[var(--shadow-neu-sm)]">

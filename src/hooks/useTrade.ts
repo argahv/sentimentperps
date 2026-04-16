@@ -181,6 +181,9 @@ export function useTrade() {
           message: `${params.size} USDC at ${params.leverage}x leverage`,
         });
 
+        const orderId = data.order?.order_id ?? data.orderId ?? "—";
+        const orderStatus = data.order?.status ?? data.status ?? "open";
+
         sendFuulConversionEvent({
           walletAddress,
           symbol: params.symbol,
@@ -188,10 +191,10 @@ export function useTrade() {
           sizeUsdc: params.size,
           leverage: params.leverage,
           eventType: "trade_open",
-          orderId: data.order.order_id,
+          orderId,
         });
 
-        return { orderId: data.order.order_id, status: data.order.status };
+        return { orderId, status: orderStatus };
       } catch (err) {
         const message = err instanceof Error ? err.message : "Trade failed";
         setLastError(message);
@@ -266,11 +269,18 @@ export function useTrade() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Close failed");
 
+        const pnlStr = positionMeta?.pnlUsdc != null
+          ? ` · PnL: ${positionMeta.pnlUsdc >= 0 ? "+" : ""}$${positionMeta.pnlUsdc.toFixed(2)}`
+          : "";
+
         addNotification({
           type: "success",
           title: "Position closed",
-          message: `Closed ${side} on ${symbol}`,
+          message: `Closed ${side} on ${symbol}${pnlStr}`,
         });
+
+        const orderId = data.order?.order_id ?? data.orderId ?? "—";
+        const orderStatus = data.order?.status ?? data.status ?? "filled";
 
         sendFuulConversionEvent({
           walletAddress,
@@ -280,10 +290,10 @@ export function useTrade() {
           leverage: positionMeta?.leverage ?? 1,
           eventType: "trade_close",
           pnlUsdc: positionMeta?.pnlUsdc,
-          orderId: data.order.order_id,
+          orderId,
         });
 
-        return { orderId: data.order.order_id, status: data.order.status };
+        return { orderId, status: orderStatus };
       } catch (err) {
         const message = err instanceof Error ? err.message : "Close failed";
         setLastError(message);
