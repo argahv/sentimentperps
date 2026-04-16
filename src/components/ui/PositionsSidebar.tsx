@@ -153,11 +153,28 @@ export function PositionsSidebar({ onClosePosition, onCancelOrder }: PositionsSi
       </div>
 
       {activeTab === 'open' ? (
-        positions.length === 0 ? (
+        isLoading && positions.length === 0 ? (
+          // Skeleton rows while loading
+          <div className="flex flex-col gap-2">
+            {[1, 2].map((i) => (
+              <div key={i} className="border border-border-muted flex items-center justify-between px-3 py-3 rounded-md">
+                <div className="flex items-center gap-2">
+                  <div className="h-5 w-10 bg-surface-elevated animate-pulse rounded" />
+                  <div className="flex flex-col gap-1">
+                    <div className="h-4 w-16 bg-surface-elevated animate-pulse rounded" />
+                    <div className="h-3 w-20 bg-surface-elevated animate-pulse rounded" />
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  <div className="h-4 w-16 bg-surface-elevated animate-pulse rounded" />
+                  <div className="h-3 w-12 bg-surface-elevated animate-pulse rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : positions.length === 0 ? (
           <div className="py-6 text-center text-xs text-muted-foreground">
-            {isLoading
-              ? "Loading positions..."
-              : "No open positions. Start trading to see them here."}
+            No open positions. Start trading to see them here.
           </div>
         ) : (
           <div className="flex flex-col gap-2">
@@ -231,14 +248,27 @@ export function PositionsSidebar({ onClosePosition, onCancelOrder }: PositionsSi
           </div>
         )
       ) : activeTab === 'orders' ? (
-        openOrders.length === 0 ? (
-          <div className="py-6 text-center text-xs text-muted-foreground">
-            {isLoading ? "Loading orders..." : (
-              <div className="flex flex-col items-center gap-2">
-                <ListOrdered className="h-6 w-6 opacity-30" />
-                No open limit orders
+        isLoading && openOrders.length === 0 ? (
+          <div className="flex flex-col gap-2">
+            {[1].map((i) => (
+              <div key={i} className="border border-border-muted flex items-center justify-between px-3 py-3 rounded-md">
+                <div className="flex items-center gap-2">
+                  <div className="h-5 w-10 bg-surface-elevated animate-pulse rounded" />
+                  <div className="flex flex-col gap-1">
+                    <div className="h-4 w-16 bg-surface-elevated animate-pulse rounded" />
+                    <div className="h-3 w-20 bg-surface-elevated animate-pulse rounded" />
+                  </div>
+                </div>
+                <div className="h-4 w-14 bg-surface-elevated animate-pulse rounded" />
               </div>
-            )}
+            ))}
+          </div>
+        ) : openOrders.length === 0 ? (
+          <div className="py-6 text-center text-xs text-muted-foreground">
+            <div className="flex flex-col items-center gap-2">
+              <ListOrdered className="h-6 w-6 opacity-30" />
+              No open limit orders
+            </div>
           </div>
         ) : (
           <div className="flex flex-col gap-2">

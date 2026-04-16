@@ -2,9 +2,8 @@
 
 import { useState, useMemo } from "react";
 import { usePrivy } from "@privy-io/react-auth";
-import { useSentimentPolling } from "@/hooks/useSentimentPolling";
 import { useTrade } from "@/hooks/useTrade";
-import { usePositions } from "@/hooks/usePositions";
+import { usePositionsStore } from "@/stores/positions";
 import { PortfolioPerformanceCard } from "@/components/ui/PortfolioPerformanceCard";
 import { YourEdgeCard } from "@/components/ui/YourEdgeCard";
 import { HotTokensFeed } from "@/components/ui/HotTokensFeed";
@@ -24,7 +23,9 @@ import { LogIn, ChevronDown, Crosshair, Gift, Trophy, ArrowUpRight } from "lucid
 export default function DashboardContent() {
   const { login, authenticated, ready } = usePrivy();
   const { walletAddress, closePosition, cancelOrder } = useTrade();
-  const { refetch } = usePositions(walletAddress, null, 30_000);
+  // Positions are polled centrally in the layout's PollingOrchestrator (15s).
+  // Grab the registered refetch so we can trigger immediate updates after actions.
+  const refetch = usePositionsStore((s) => s._refetch);
   const [edgeOpen, setEdgeOpen] = useState(false);
   const fuulStats = useFuulStats(walletAddress);
   const fuulLeaderboard = useFuulLeaderboard(1, 20);
@@ -37,8 +38,6 @@ export default function DashboardContent() {
     return entry ?? null;
   }, [walletAddress, fuulLeaderboard.data]);
 
-  useSentimentPolling(60_000);
-
   const handleClose = async (
     marketId: string,
     side: "long" | "short",
@@ -46,12 +45,12 @@ export default function DashboardContent() {
     positionMeta?: { entryPrice: number; markPrice: number; leverage: number; pnlUsdc: number; sentimentScoreAtEntry?: number; minutesAfterSignal?: number; sentimentAligned?: boolean }
   ) => {
     await closePosition(marketId, side, size, positionMeta);
-    refetch();
+    refetch?.();
   };
 
   const handleCancelOrder = async (orderId: string, symbol: string) => {
     await cancelOrder(orderId, symbol);
-    refetch();
+    refetch?.();
   };
 
   return (

@@ -3,12 +3,11 @@
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
-import { useSentimentPolling } from "@/hooks/useSentimentPolling";
 import { useTrade } from "@/hooks/useTrade";
-import { usePositions } from "@/hooks/usePositions";
 import { usePriceData } from "@/hooks/usePriceData";
 import { useMarketsStore } from "@/stores/markets";
 import { useSentimentStore } from "@/stores/sentiment";
+import { usePositionsStore } from "@/stores/positions";
 import { PriceChart } from "@/components/ui/PriceChart";
 import { SentimentPanel } from "@/components/ui/SentimentPanel";
 import { OrderForm } from "@/components/ui/OrderForm";
@@ -19,19 +18,25 @@ import { SentimentConfidenceMeter } from "@/components/ui/SentimentConfidenceMet
 import { LogIn, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import type { TradeDirection } from "@/types/app";
 
+const IS_DEVNET = process.env.NEXT_PUBLIC_PACIFICA_ENV !== "mainnet";
+
 export default function TradeContent() {
   const searchParams = useSearchParams();
   const symbol = searchParams.get("symbol") || "BTC";
   const { login, authenticated, ready: privyReady } = usePrivy();
 
   const getMarketId = useMarketsStore((s) => s.getMarketId);
+  const marketsLoading = useMarketsStore((s) => s.isLoading);
+  const marketsReady = useMarketsStore((s) => s.markets.length > 0);
   const marketId = getMarketId(symbol);
 
   const tokenCards = useSentimentStore((s) => s.tokenCards);
   const tokenCard = tokenCards.find((t) => t.symbol === symbol);
 
   const { ready: tradeReady, isSubmitting, lastError, submitTrade, closePosition, cancelOrder, walletAddress } = useTrade();
-  const { refetch: refetchPositions } = usePositions(walletAddress, null, 15_000);
+  // Positions are polled centrally by layout's PollingOrchestrator (15 s).
+  // Grab the refetch fn for immediate post-trade updates.
+  const refetchPositions = usePositionsStore((s) => s._refetch);
 
   // Fetch Pacifica account equity for balance display
   const [accountEquity, setAccountEquity] = useState<number | null>(null);
@@ -78,7 +83,7 @@ export default function TradeContent() {
     });
   }, [candles, tokenCard]);
 
-  useSentimentPolling(30_000);
+  // Sentiment is polled by layout PollingOrchestrator — no per-page polling needed.
 
   const [autoTradeEnabled, setAutoTradeEnabled] = useState(false);
 
@@ -93,7 +98,7 @@ export default function TradeContent() {
         size: params.size,
         leverage: params.leverage,
       });
-      refetchPositions();
+      refetchPositions?.();
     },
     [getMarketId, submitTrade, refetchPositions]
   );
@@ -130,7 +135,7 @@ export default function TradeContent() {
         takeProfit: data.takeProfit,
         stopLoss: data.stopLoss,
       });
-      refetchPositions();
+      refetchPositions?.();
     },
     [submitTrade, refetchPositions]
   );
@@ -143,7 +148,7 @@ export default function TradeContent() {
       positionMeta?: { entryPrice: number; markPrice: number; leverage: number; pnlUsdc: number; sentimentScoreAtEntry?: number; minutesAfterSignal?: number; sentimentAligned?: boolean }
     ) => {
       await closePosition(posMarketId, side, size, positionMeta);
-      refetchPositions();
+      refetchPositions?.();
     },
     [closePosition, refetchPositions]
   );
@@ -151,16 +156,18 @@ export default function TradeContent() {
   const handleCancelOrder = useCallback(
     async (orderId: string, symbol: string) => {
       await cancelOrder(orderId, symbol);
-      refetchPositions();
+      refetchPositions?.();
     },
     [cancelOrder, refetchPositions]
   );
 
-  const formattedPrice = currentPrice >= 1000
-    ? currentPrice.toLocaleString("en-US", { maximumFractionDigits: 0 })
-    : currentPrice >= 1
-      ? currentPrice.toFixed(2)
-      : currentPrice.toFixed(4);
+  const formattedPrice = currentPrice <= 0
+    ? "—"
+    : currentPrice >= 1000
+      ? currentPrice.toLocaleString("en-US", { maximumFractionDigits: 0 })
+      : currentPrice >= 1
+        ? currentPrice.toFixed(2)
+        : currentPrice.toFixed(4);
 
   return (
     <div className="page-enter flex flex-col gap-3 p-3 lg:gap-4 lg:p-5">
@@ -175,22 +182,35 @@ export default function TradeContent() {
               <span className="bg-surface-elevated rounded-full px-2 py-0.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                 Perp
               </span>
+              {IS_DEVNET && (
+                <span className="rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest bg-warning/15 text-warning border border-warning/30">
+                  DEVNET
+                </span>
+              )}
             </div>
             <div className="mt-0.5 flex items-center gap-3">
-              <span className="tabular-nums text-lg font-semibold">${formattedPrice}</span>
-              <span
-                className={`tabular-nums flex items-center gap-0.5 text-sm font-medium ${
-                  isPositive ? "text-success" : "text-danger"
-                }`}
-              >
-                {isPositive ? (
-                  <ArrowUpRight className="h-3.5 w-3.5" />
-                ) : (
-                  <ArrowDownRight className="h-3.5 w-3.5" />
-                )}
-                {isPositive ? "+" : ""}
-                {priceChangePct.toFixed(2)}%
-              </span>
+              {currentPrice <= 0 ? (
+                <span className="tabular-nums text-lg font-semibold text-muted-foreground animate-pulse">
+                  $—
+                </span>
+              ) : (
+                <span className="tabular-nums text-lg font-semibold">${formattedPrice}</span>
+              )}
+              {currentPrice > 0 && (
+                <span
+                  className={`tabular-nums flex items-center gap-0.5 text-sm font-medium ${
+                    isPositive ? "text-success" : "text-danger"
+                  }`}
+                >
+                  {isPositive ? (
+                    <ArrowUpRight className="h-3.5 w-3.5" />
+                  ) : (
+                    <ArrowDownRight className="h-3.5 w-3.5" />
+                  )}
+                  {isPositive ? "+" : ""}
+                  {priceChangePct.toFixed(2)}%
+                </span>
+              )}
             </div>
           </div>
           <div className="hidden sm:block">
@@ -238,22 +258,37 @@ export default function TradeContent() {
             className="card-entrance"
             style={{ animationDelay: `calc(4 * var(--stagger-base))` }}
           >
-            <OrderForm
-              symbol={symbol}
-              marketId={marketId}
-              currentPrice={currentPrice}
-              isSubmitting={isSubmitting}
-              lastError={lastError}
-              onSubmit={handleSubmit}
-              sentimentScore={tokenCard?.sentimentScore}
-              sentimentLabel={tokenCard?.sentiment}
-              sentimentVelocity={tokenCard?.velocity}
-              authenticated={authenticated && tradeReady && !!walletAddress}
-              onLogin={login}
-              autoTradeEnabled={autoTradeEnabled}
-              onAutoTradeToggle={setAutoTradeEnabled}
-              accountEquity={accountEquity}
-            />
+            {marketsLoading && !marketsReady ? (
+              // Markets still loading — show skeleton to prevent "not available" flash
+              <div className="swiss-card rounded-lg p-5 flex flex-col gap-5 border border-border-muted bg-surface">
+                <div className="h-4 w-24 bg-surface-elevated animate-pulse rounded" />
+                <div className="h-10 w-full bg-surface-elevated animate-pulse rounded-md" />
+                <div className="h-10 w-full bg-surface-elevated animate-pulse rounded-md" />
+                <div className="flex gap-2">
+                  {[1,2,3,4,5].map(i => (
+                    <div key={i} className="h-8 flex-1 bg-surface-elevated animate-pulse rounded" />
+                  ))}
+                </div>
+                <div className="h-12 w-full bg-surface-elevated animate-pulse rounded-md mt-2" />
+              </div>
+            ) : (
+              <OrderForm
+                symbol={symbol}
+                marketId={marketId}
+                currentPrice={currentPrice}
+                isSubmitting={isSubmitting}
+                lastError={lastError}
+                onSubmit={handleSubmit}
+                sentimentScore={tokenCard?.sentimentScore}
+                sentimentLabel={tokenCard?.sentiment}
+                sentimentVelocity={tokenCard?.velocity}
+                authenticated={authenticated && tradeReady && !!walletAddress}
+                onLogin={login}
+                autoTradeEnabled={autoTradeEnabled}
+                onAutoTradeToggle={setAutoTradeEnabled}
+                accountEquity={accountEquity}
+              />
+            )}
           </div>
 
           <div

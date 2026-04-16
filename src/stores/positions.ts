@@ -9,6 +9,9 @@ interface PositionsState {
   error: string | null;
   historyError: string | null;
 
+  /** Registered by the layout-level usePositions hook; call to trigger immediate refetch */
+  _refetch: (() => void) | null;
+
   setPositions: (positions: PacificaPosition[]) => void;
   setClosedPositions: (positions: PacificaPosition[]) => void;
   addClosedPosition: (position: PacificaPosition) => void;
@@ -16,6 +19,8 @@ interface PositionsState {
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   setHistoryError: (error: string | null) => void;
+  /** Internal — called by PollingOrchestrator to register the refetch fn */
+  _setRefetch: (fn: (() => void) | null) => void;
 
   getTotalUnrealizedPnl: () => number;
   getPositionByMarket: (marketId: string) => PacificaPosition | undefined;
@@ -28,6 +33,7 @@ export const usePositionsStore = create<PositionsState>((set, get) => ({
   isLoading: false,
   error: null,
   historyError: null,
+  _refetch: null,
 
   setPositions: (positions) => set({ positions }),
   setClosedPositions: (positions) => set({ closedPositions: positions }),
@@ -36,6 +42,7 @@ export const usePositionsStore = create<PositionsState>((set, get) => ({
   setLoading: (loading) => set({ isLoading: loading }),
   setError: (error) => set({ error }),
   setHistoryError: (error) => set({ historyError: error }),
+  _setRefetch: (fn) => set({ _refetch: fn }),
 
   getTotalUnrealizedPnl: () =>
     get().positions.reduce((sum, p) => sum + p.unrealized_pnl, 0),

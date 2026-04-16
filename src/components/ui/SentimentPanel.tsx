@@ -2,6 +2,7 @@
 
 import { useSentimentStore } from "@/stores/sentiment";
 import { SentimentBadge } from "./SentimentBadge";
+import { Loader2 } from "lucide-react";
 import { InfoTooltip } from "./InfoTooltip";
 import {
   MessageCircle,
@@ -19,13 +20,39 @@ function formatNumber(n: number): string {
 
 export function SentimentPanel({ symbol }: { symbol: string }) {
   const signal = useSentimentStore((s) => s.getSignalBySymbol(symbol));
+  const isLoading = useSentimentStore((s) => s.isLoading);
+  const lastUpdated = useSentimentStore((s) => s.lastUpdated);
 
   if (!signal) {
+    if (isLoading && !lastUpdated) {
+      // First load skeleton
+      return (
+        <div className="flat-card rounded-lg bg-surface flex flex-col gap-4 p-4">
+          <div className="flex items-center justify-between">
+            <div className="h-5 w-32 bg-surface-elevated animate-pulse rounded" />
+            <div className="h-5 w-16 bg-surface-elevated animate-pulse rounded-full" />
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-surface-elevated rounded-md flex flex-col items-center py-4 gap-2">
+                <div className="h-4 w-4 bg-muted-foreground/20 animate-pulse rounded" />
+                <div className="h-5 w-12 bg-muted-foreground/20 animate-pulse rounded" />
+                <div className="h-3 w-14 bg-muted-foreground/15 animate-pulse rounded" />
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            Loading sentiment data from Elfa AI…
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="flat-card rounded-lg bg-surface flex flex-col gap-3 p-4">
         <h3 className="text-sm font-semibold uppercase tracking-wider">Sentiment</h3>
         <p className="text-xs text-muted-foreground">
-          No sentiment data for {symbol}
+          No Elfa AI sentiment signal for {symbol} — it may not be trending yet.
         </p>
       </div>
     );
